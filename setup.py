@@ -27,11 +27,15 @@ from org.orekit.utils import Constants
 from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import SpacecraftState, EphemerisGenerator
-from org.orekit.bodies import OneAxisEllipsoid
+from org.orekit.bodies import OneAxisEllipsoid, CelestialBodyFactory
 from org.orekit.utils import IERSConventions
 from org.orekit.forces.gravity.potential import GravityFieldFactory
 from org.orekit.forces.gravity import HolmesFeatherstoneAttractionModel
 from orekit import JArray_double
+from org.orekit.forces.drag import AbstractDragForceModel, DragForce
+from org.orekit.models.earth.atmosphere import Atmosphere, HarrisPriester, DTM2000, NRLMSISE00
+from org.orekit.models.earth.atmosphere.data import CssiSpaceWeatherData
+from org.orekit.forces.drag import IsotropicDrag
 
 # Orekit constants
 okct = {'utc': TimeScalesFactory.getUTC(),
@@ -41,9 +45,31 @@ okct = {'utc': TimeScalesFactory.getUTC(),
         'earthangspd': Constants.IERS2010_EARTH_ANGULAR_VELOCITY,
         'earthJ2': -Constants.IERS2010_EARTH_C20,
         'earthmu': Constants.IERS2010_EARTH_MU,
+        'earthflat': Constants.IERS2010_EARTH_FLATTENING,
         'meananom': PositionAngleType.MEAN,
-        'trueanom': PositionAngleType.TRUE
+        'trueanom': PositionAngleType.TRUE,
+        'cartesian': OrbitType.CARTESIAN,
+        'sun': CelestialBodyFactory.getSun(),
+        'gravity': GravityFieldFactory.getNormalizedProvider(10, 10), # 10x10
+        'swdata': CssiSpaceWeatherData("SpaceWeather-All-v1.2.txt")
 }
+okct['earth'] = OneAxisEllipsoid(okct['earthrad'], okct['earthflat'],  okct['earthframe'])
+# Atmospheric density models
+okct['hp'] = HarrisPriester(okct['sun'], okct['earth']) # Harris-Priester atmospheric density model
+okct['dtm'] = DTM2000(okct['swdata'], okct['sun'], okct['earth']) # DTM2000 atmospheric density model
+okct['msis'] = NRLMSISE00(okct['swdata'], okct['sun'], okct['earth'])
+
+# Create an example spacecraft with B = C_D A/m = 0.01 m^2/kg
+scB010 = {'mass': 100.0,  # The models need a spacecraft mass, unit kg.
+        'dragarea': 1.0, # Cross-sectional area perpendicular to atmosphere direction, m^2
+        'dragcoef': 1.0 # Coefficient of drag
+        }
+scB010['drag'] = IsotropicDrag(scB010['dragarea'], scB010['dragcoef'])
+scB010['atmdens'] = okct['hp']
+scB010['dragforce'] = DragForce(scB010['atmdens'], scB010['drag']);
+
+def atmdens(location, time, model = 'hp'):
+    return(okct[model].getDensity(time, location, okct['celestialframe']))
 
 import datetime
 

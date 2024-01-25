@@ -22,7 +22,7 @@ def perapo1orb(zapo, zper, otherels, epoch, velscale):
     ret['scaled'] = rescalevel(orbpvt(ret['kepoes']), velscale)
     ret['period'] = period(ret['scaled'])
     ret['proptime'] = float(math.ceil(ret['period']+10.0))
-    ret['prop1orb'] = prop(ret['scaled'], ret['proptime'])
+    ret['prop1orb'] = prop(ret['scaled'], ret['proptime'], scB010)
     ret['alt1orb'] = [posmag(ephlookup(ret['prop1orb'], float(t)))-okct['earthrad']
                               for t in range(0,math.ceil(ret['proptime']),10)]
     ret['perapo1orb'] = [min(ret['alt1orb']), max(ret['alt1orb'])]

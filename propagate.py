@@ -1,7 +1,7 @@
 from setup import *
 
 # Propagate from epoch for a specified time
-def prop(orbit,proptime):
+def prop(orbit,proptime,spacecraft):
     # Set parameters
     minStep = 0.001
     maxstep = 1000.0
@@ -18,16 +18,16 @@ def prop(orbit,proptime):
     integrator.setInitialStepSize(initStep)
 
     # Initialize the spacecraft state
-    satellite_mass = 100.0  # The models need a spacecraft mass, unit kg.
-    initialState = SpacecraftState(orbit, satellite_mass)
+    # satellite_mass = 100.0  # The models need a spacecraft mass, unit kg.
+    initialState = SpacecraftState(orbit, spacecraft['mass'])
     prop = NumericalPropagator(integrator)
-    prop.setOrbitType(OrbitType.CARTESIAN)
+    prop.setOrbitType(okct['cartesian'])
     prop.setInitialState(initialState)
     generator = prop.getEphemerisGenerator()
 
     # Forces
-    gravityProvider = GravityFieldFactory.getNormalizedProvider(10, 10) # 10x10
-    prop.addForceModel(HolmesFeatherstoneAttractionModel(okct['earthframe'], gravityProvider))
+    prop.addForceModel(HolmesFeatherstoneAttractionModel(okct['earthframe'], okct['gravity']))
+    prop.addForceModel(spacecraft['dragforce'])
 
     # Propagate
     propagated = prop.propagate(orbit.date, orbit.date.shiftedBy(proptime))
