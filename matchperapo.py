@@ -1,6 +1,8 @@
 from elements import *
 from propagate import *
 import math
+from scipy import signal
+import numpy as np
 
 # Semimajor axis and eccentricity from apogee and perigee altitudes
 def zazptoae(zapo,zper):
@@ -8,22 +10,29 @@ def zazptoae(zapo,zper):
     return([sma, abs((zapo-zper)/(2*sma))])
 
 # Scalar multiplication of velocity vector
-def rescalevel(pvt,mult):
-    return(cartorb(pvt.position, pvt.velocity.scalarMultiply(mult), pvt.date))
+def rescale(pvt,posscale,velscale):
+    return(cartorb(pvt.position.scalarMultiply(posscale), pvt.velocity.scalarMultiply(velscale), pvt.date))
 
 # Find first-orbit perigee and apogee altitudes changing the velocity
 # from the two-body velocity that meet the specified perigee and
 # apogee
-def perapo1orb(zapo, zper, otherels, epoch, velscale):
+def peraponorb(zapo, zper, otherels, epoch, numorb=1, scale=[1.0,1.0]):
     ret = {'zapo': zapo, 'zper': zper}
     ret['ae'] = zazptoae(ret['zapo'], ret['zper'])
     args = [epoch] + ret['ae'] + otherels + [okct['meananom']]
     ret['kepoes'] = kepler_oes(*args)
-    ret['scaled'] = rescalevel(orbpvt(ret['kepoes']), velscale)
+    ret['scaled'] = rescale(orbpvt(ret['kepoes']), *scale)
     ret['period'] = period(ret['scaled'])
-    ret['proptime'] = float(math.ceil(ret['period']+10.0))
-    ret['prop1orb'] = prop(ret['scaled'], ret['proptime'], scB010)
-    ret['alt1orb'] = [posmag(ephlookup(ret['prop1orb'], float(t)))-okct['earthrad']
+    ret['proptime'] = float(math.ceil(numorb*ret['period']+10.0))
+    ret['prop'] = prop(ret['scaled'], ret['proptime'], scB010)
+    ret['alt'] = [posmag(ephlookup(ret['prop'], float(t)))-okct['earthrad']
                               for t in range(0,math.ceil(ret['proptime']),10)]
-    ret['perapo1orb'] = [min(ret['alt1orb']), max(ret['alt1orb'])]
+    ret['perapo'] = [min(ret['alt']), max(ret['alt'])]
     return(ret)
+
+# Find the apogee and perigee altitudes on each orbit
+def decay(data):
+    alts = data['alt']
+    vinds = list(signal.argrelextrema(np.array(alts), np.less)[0])
+    pinds = list(signal.argrelextrema(np.array(alts), np.greater)[0])
+    return ([alts[i] for i in pinds], [alts[i] for i in vinds])

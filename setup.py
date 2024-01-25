@@ -79,3 +79,5 @@ def datm(year, month, day, hour=12, minute=0, second=0.0, microsecond=0):
 def nowutc():
     now = datetime.datetime.now(datetime.UTC)
     return(datm(now.year, now.month, now.day, now.hour, now.minute, now.second+1.0e-6*now.microsecond))
+
+hour = 3600.0
