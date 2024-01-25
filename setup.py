@@ -33,14 +33,23 @@ from org.orekit.forces.gravity.potential import GravityFieldFactory
 from org.orekit.forces.gravity import HolmesFeatherstoneAttractionModel
 from orekit import JArray_double
 
+# Orekit constants
+okct = {'utc': TimeScalesFactory.getUTC(),
+        'earthframe': FramesFactory.getITRF(IERSConventions.IERS_2010, True),
+        'celestialframe': FramesFactory.getEME2000(),
+        'earthrad': Constants.IERS2010_EARTH_EQUATORIAL_RADIUS,
+        'earthangspd': Constants.IERS2010_EARTH_ANGULAR_VELOCITY,
+        'earthJ2': -Constants.IERS2010_EARTH_C20,
+        'earthmu': Constants.IERS2010_EARTH_MU,
+        'meananom': PositionAngleType.MEAN,
+        'trueanom': PositionAngleType.TRUE
+}
 
-utc = TimeScalesFactory.getUTC()
-itrf = FramesFactory.getITRF(IERSConventions.IERS_2010, True)
-earthrad = Constants.IERS2010_EARTH_EQUATORIAL_RADIUS
-earthangspd = Constants.IERS2010_EARTH_ANGULAR_VELOCITY
-earthJ2 = -Constants.IERS2010_EARTH_C20
-earthmu = Constants.IERS2010_EARTH_MU
+import datetime
 
+def datm(year, month, day, hour=12, minute=0, second=0.0, microsecond=0):
+    return(AbsoluteDate(year, month, day, hour, minute, float(second), okct['utc']))
 
-#def nowutc():
-#    now = datetime.datetime.now(datetime.UTC)
+def nowutc():
+    now = datetime.datetime.now(datetime.UTC)
+    return(datm(now.year, now.month, now.day, now.hour, now.minute, now.second+1.0e-6*now.microsecond))

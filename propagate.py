@@ -27,7 +27,7 @@ def prop(orbit,proptime):
 
     # Forces
     gravityProvider = GravityFieldFactory.getNormalizedProvider(10, 10) # 10x10
-    prop.addForceModel(HolmesFeatherstoneAttractionModel(itrf, gravityProvider))
+    prop.addForceModel(HolmesFeatherstoneAttractionModel(okct['earthframe'], gravityProvider))
 
     # Propagate
     propagated = prop.propagate(orbit.date, orbit.date.shiftedBy(proptime))
@@ -36,7 +36,7 @@ def prop(orbit,proptime):
 
 def cartorb(posv3d, velv3d, datetime):
     pvt = TimeStampedPVCoordinates(datetime, posv3d, velv3d) # Make the PVT initial state
-    return(CartesianOrbit(pvt, FramesFactory.getEME2000(), Constants.WGS84_EARTH_MU))
+    return(CartesianOrbit(pvt, okct['celestialframe'], okct['earthmu']))
 
 # Create the PVT orbit
 def orbitpvt(pos, vel, datetime):
