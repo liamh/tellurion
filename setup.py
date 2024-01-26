@@ -26,7 +26,8 @@ from org.orekit.utils import Constants
 # Propagation and ephemeris
 from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
-from org.orekit.propagation import SpacecraftState, EphemerisGenerator
+from org.orekit.propagation import Propagator, SpacecraftState, EphemerisGenerator
+from org.orekit.propagation.events import AltitudeDetector
 from org.orekit.bodies import OneAxisEllipsoid, CelestialBodyFactory
 from org.orekit.utils import IERSConventions
 from org.orekit.forces.gravity.potential import GravityFieldFactory
@@ -50,10 +51,14 @@ okct = {'utc': TimeScalesFactory.getUTC(),
         'trueanom': PositionAngleType.TRUE,
         'cartesian': OrbitType.CARTESIAN,
         'sun': CelestialBodyFactory.getSun(),
-        'gravity': GravityFieldFactory.getNormalizedProvider(10, 10), # 10x10
-        'swdata': CssiSpaceWeatherData("SpaceWeather-All-v1.2.txt")
+        'gravity10x10': GravityFieldFactory.getNormalizedProvider(10, 10), # 10x10
+        'gravity0x0': GravityFieldFactory.getNormalizedProvider(0, 0), # 0x0
+        'swdata': CssiSpaceWeatherData("SpaceWeather-All-v1.2.txt"),
+        'stopalt': 125.0e3  # Altitude at which propagation should stop
 }
+okct['gravity']=okct['gravity0x0']
 okct['earth'] = OneAxisEllipsoid(okct['earthrad'], okct['earthflat'],  okct['earthframe'])
+okct['sphearth'] = OneAxisEllipsoid(okct['earthrad'], 0.0,  okct['earthframe'])
 # Atmospheric density models
 okct['hp'] = HarrisPriester(okct['sun'], okct['earth']) # Harris-Priester atmospheric density model
 okct['dtm'] = DTM2000(okct['swdata'], okct['sun'], okct['earth']) # DTM2000 atmospheric density model
@@ -81,3 +86,4 @@ def nowutc():
     return(datm(now.year, now.month, now.day, now.hour, now.minute, now.second+1.0e-6*now.microsecond))
 
 hour = 3600.0
+day = 24.0*hour

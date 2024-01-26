@@ -29,6 +29,10 @@ def prop(orbit,proptime,spacecraft):
     prop.addForceModel(HolmesFeatherstoneAttractionModel(okct['earthframe'], okct['gravity']))
     prop.addForceModel(spacecraft['dragforce'])
 
+    # Events
+    altdet = AltitudeDetector(okct['stopalt'], okct['earth'])
+    prop.addEventDetector(altdet)
+
     # Propagate
     propagated = prop.propagate(orbit.date, orbit.date.shiftedBy(proptime))
     ephemeris = generator.getGeneratedEphemeris();

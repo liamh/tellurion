@@ -23,11 +23,16 @@ def peraponorb(zapo, zper, otherels, epoch, numorb=1, scale=[1.0,1.0]):
     ret['kepoes'] = kepler_oes(*args)
     ret['scaled'] = rescale(orbpvt(ret['kepoes']), *scale)
     ret['period'] = period(ret['scaled'])
-    ret['proptime'] = float(math.ceil(numorb*ret['period']+10.0))
-    ret['prop'] = prop(ret['scaled'], ret['proptime'], scB010)
+    ret['reqproptime'] = float(math.ceil(numorb*ret['period']+10.0))
+    ret['prop'] = prop(ret['scaled'], ret['reqproptime'], scB010)
+    ret['mindate'] = ret['prop'].minDate
+    ret['maxdate'] = ret['prop'].maxDate
+    ret['actproptime'] = ret['maxdate'].offsetFrom(ret['mindate'],okct['utc'])
+    ret['shortfall'] = ret['reqproptime'] - ret['actproptime']
     ret['alt'] = [posmag(ephlookup(ret['prop'], float(t)))-okct['earthrad']
-                              for t in range(0,math.ceil(ret['proptime']),10)]
+                  for t in range(0,math.floor(ret['actproptime']),1)]
     ret['perapo'] = [min(ret['alt']), max(ret['alt'])]
+    ret['decay'] = decay(ret)
     return(ret)
 
 # Find the apogee and perigee altitudes on each orbit
