@@ -30,7 +30,7 @@ def prop(orbit,proptime,spacecraft):
     prop.addForceModel(spacecraft['dragforce'])
 
     # Events
-    altdet = AltitudeDetector(okct['stopalt'], okct['earth'])
+    altdet = AltitudeDetector(okct['stopalt'], okct['sphearth'])
     prop.addEventDetector(altdet)
 
     # Propagate

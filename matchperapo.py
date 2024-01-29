@@ -2,7 +2,19 @@ from elements import *
 from propagate import *
 import math
 from scipy import signal
+from scipy.optimize import fsolve
+from org.hipparchus.geometry.euclidean.threed import Vector3D
+
 import numpy as np
+
+# Find the initial position and velocity by rescaling the values
+# obtained from the two-body solution that matches the desired perigee
+# and apogee altitudes
+#
+# Use peraposolve() to find these factors
+
+# fixargs={'zapo': 325.e3, 'zper': 250.0e3, 'otherels':i45otherels, 'epoch': epoch2022}
+# root = peraposolve([1.0, 1.0], fixargs)
 
 # Semimajor axis and eccentricity from apogee and perigee altitudes
 def zazptoae(zapo,zper):
@@ -11,11 +23,10 @@ def zazptoae(zapo,zper):
 
 # Scalar multiplication of velocity vector
 def rescale(pvt,posscale,velscale):
-    return(cartorb(pvt.position.scalarMultiply(posscale), pvt.velocity.scalarMultiply(velscale), pvt.date))
+    print('posscale: ', posscale,'  velscale: ', velscale)
+    return(cartorb(pvt.position.scalarMultiply(float(posscale)), pvt.velocity.scalarMultiply(float(velscale)), pvt.date))
 
-# Find first-orbit perigee and apogee altitudes changing the velocity
-# from the two-body velocity that meet the specified perigee and
-# apogee
+# Find perigee and apogee altitudes over the specified number of orbits
 def peraponorb(zapo, zper, otherels, epoch, numorb=1, scale=[1.0,1.0]):
     ret = {'zapo': zapo, 'zper': zper}
     ret['ae'] = zazptoae(ret['zapo'], ret['zper'])
@@ -35,9 +46,18 @@ def peraponorb(zapo, zper, otherels, epoch, numorb=1, scale=[1.0,1.0]):
     ret['decay'] = decay(ret)
     return(ret)
 
-# Find the apogee and perigee altitudes on each orbit
 def decay(data):
     alts = data['alt']
     vinds = list(signal.argrelextrema(np.array(alts), np.less)[0])
     pinds = list(signal.argrelextrema(np.array(alts), np.greater)[0])
     return ([alts[i] for i in pinds], [alts[i] for i in vinds])
+
+def perapodiff(scale, args):
+    oneorb = peraponorb(args['zapo'], args['zper'], args['otherels'], args['epoch'], 1, scale)
+    return oneorb['perapo']-np.array([args['zper'], args['zapo']])
+
+def peraposolve(scale, args):
+    root = fsolve(perapodiff, scale, args).tolist()
+    diffs = perapodiff(root, args)
+    print ('first perigee error (m): ', diffs[0], ' first apogee error (m): ', diffs[1])
+    return (root)
