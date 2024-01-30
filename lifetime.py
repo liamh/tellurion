@@ -23,7 +23,7 @@ def zazptoae(zapo,zper):
 
 # Scalar multiplication of velocity vector
 def rescale(pvt,posscale,velscale):
-    print('posscale: ', posscale,'  velscale: ', velscale)
+    #print('posscale: ', posscale,'  velscale: ', velscale)
     return(cartorb(pvt.position.scalarMultiply(float(posscale)), pvt.velocity.scalarMultiply(float(velscale)), pvt.date))
 
 # Find perigee and apogee altitudes over the specified number of orbits
@@ -59,5 +59,36 @@ def perapodiff(scale, args):
 def peraposolve(scale, args):
     root = fsolve(perapodiff, scale, args).tolist()
     diffs = perapodiff(root, args)
-    print ('first perigee error (m): ', diffs[0], ' first apogee error (m): ', diffs[1])
+    #print ('first perigee error (m): ', diffs[0], ' first apogee error (m): ', diffs[1])
     return (root)
+
+maxrevs = 1000
+
+# Lifetime using full Cartesian integration
+def ltfci(zper, zapo, inc, startyr, startmo, gravdeg, gravord):
+    grav = GravityFieldFactory.getNormalizedProvider(gravdeg, gravord)
+    okct['gravity']=grav
+    otherels = [inc, 30.0, 0.0, 0.0]
+    epoch = datm(startyr, startmo, 1)
+    fixargs={'zapo': zapo, 'zper': zper, 'otherels':otherels, 'epoch': epoch}
+    ret = {'gravdeg': gravdeg,
+           'gravord': gravord,
+           'epoch': epoch,
+           'pvscale': peraposolve([1.0, 1.0], fixargs)
+           }
+    ret['proporb'] = peraponorb(zapo, zper, otherels, epoch, maxrevs, ret['pvscale'])
+    if (ret['proporb']['shortfall']) > 1.0e5:
+        ret['lifetime_days'] = ret['proporb']['actproptime']/day
+    else:
+        ret['lifetime_days'] = np.inf
+    return(ret)
+
+# Difference in lifetime between 0x0+drag and 10x10+drag force models
+# Returned [days difference, lifetime days with gravity, percent difference]
+#  ltgravdiff(250.0e3, 325.0e3, 45.0, 2019, 12)
+#  [0.7060279749908673, 32.50941793237671, 2.1717644298014993]
+def ltgravdiff(zper, zapo, inc, startyr, startmo):
+    ltgrav = ltfci(zper, zapo, inc, startyr, startmo, 10, 10)
+    ltkep = ltfci(zper, zapo, inc, startyr, startmo, 0, 0)
+    ltdiff = ltkep['lifetime_days']-ltgrav['lifetime_days']
+    return([ltdiff,ltgrav['lifetime_days'],100.0*ltdiff/ltgrav['lifetime_days']])
