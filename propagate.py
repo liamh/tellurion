@@ -3,7 +3,7 @@ from setup import *
 # Propagate from epoch for a specified time
 def prop(orbit,proptime,spacecraft):
     # Set parameters
-    minStep = 0.001
+    minstep = 0.001
     maxstep = 1000.0
     initStep = 60.0
     positionTolerance = 1.0
@@ -11,7 +11,7 @@ def prop(orbit,proptime,spacecraft):
 
     # Initialize the integrator
     integrator = DormandPrince853Integrator(
-    	       minStep,
+    	       minstep,
     	       maxstep,
 	       JArray_double.cast_(tolerances[0]),  # Double array of doubles needs to be casted in Python
 	       JArray_double.cast_(tolerances[1]))
