@@ -84,11 +84,12 @@ def ltfci(zper, zapo, inc, startyr, startmo, gravdeg, gravord):
     return(ret)
 
 # Difference in lifetime between 0x0+drag and 10x10+drag force models
-# Returned [days difference, lifetime days with gravity, percent difference]
+# Returned ltdiff: days difference, ltgrav: lifetime days with gravity, pctdif: percent difference
 #  ltgravdiff(250.0e3, 325.0e3, 45.0, 2019, 12)
-#  [0.7060279749908673, 32.50941793237671, 2.1717644298014993]
 def ltgravdiff(zper, zapo, inc, startyr, startmo):
     ltgrav = ltfci(zper, zapo, inc, startyr, startmo, 10, 10)
     ltkep = ltfci(zper, zapo, inc, startyr, startmo, 0, 0)
     ltdiff = ltkep['lifetime_days']-ltgrav['lifetime_days']
-    return([ltdiff,ltgrav['lifetime_days'],100.0*ltdiff/ltgrav['lifetime_days']])
+    return({'zapo': zapo, 'zper': zper, 'inc': inc, 'year': startyr, 'month': startmo, # inputs
+            'ltdiff': ltdiff, 'ltgrav': ltgrav['lifetime_days'],
+            'pctdiff': 100.0*ltdiff/ltgrav['lifetime_days']}) # outputs
