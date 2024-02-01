@@ -4,7 +4,8 @@ import math
 from scipy import signal
 from scipy.optimize import fsolve
 from org.hipparchus.geometry.euclidean.threed import Vector3D
-
+import itertools
+import pandas as pd
 import numpy as np
 
 # Find the initial position and velocity by rescaling the values
@@ -90,6 +91,80 @@ def ltgravdiff(zper, zapo, inc, startyr, startmo):
     ltgrav = ltfci(zper, zapo, inc, startyr, startmo, 10, 10)
     ltkep = ltfci(zper, zapo, inc, startyr, startmo, 0, 0)
     ltdiff = ltkep['lifetime_days']-ltgrav['lifetime_days']
-    return({'zapo': zapo, 'zper': zper, 'inc': inc, 'year': startyr, 'month': startmo, # inputs
-            'ltdiff': ltdiff, 'ltgrav': ltgrav['lifetime_days'],
+    return({zapo, zper,inc, startyr, startmo, ltdiff 'ltgrav': ltgrav['lifetime_days'],
             'pctdiff': 100.0*ltdiff/ltgrav['lifetime_days']}) # outputs
+
+#    return({'zapo': zapo, 'zper': zper, 'inc': inc, 'year': startyr, 'month': startmo, # inputs
+#            'ltdiff': ltdiff, 'ltgrav': ltgrav['lifetime_days'],
+#            'pctdiff': 100.0*ltdiff/ltgrav['lifetime_days']}) # outputs
+
+
+# Difference in lifetime between 0x0+drag and 10x10+drag force models
+# presented as a table
+def ltgdtable(zper, zapo, inc, startyr, startmo):
+    # arglists = [i for i in itertools.product(zper, zapo, inc, startyr, startmo)]
+    # resultsll = Parallel(n_jobs=len(arglists))(delayed(ltgravdiff)(*args) for args in arglists)
+    # df = pd.DataFrame(resultsll)
+    if (type(zper) is list):
+        pf = f"p{int(zper[0]/1e3)}-{int(zper[-1]/1e3)}"
+        parg = zper
+    else:
+        pf = f"p{int(zper/1e3)}"
+        parg = [zper]
+    if (type(zapo) is list):
+        af = f"a{int(zapo[0]/1e3)}-{int(zapo[-1]/1e3)}"
+        aarg = zapo
+    else:
+        af = f"a{int(zapo/1e3)}"
+        aarg = [zapo]
+    if (type(inc) is list):
+        ifmt = f"i{int(inc[0])}-{int(inc[-1])}"
+        iarg = inc
+    else:
+        ifmt = f"i{int(inc)}"
+        iarg = [inc]
+    if (type(startyr) is list):
+        yfmt = f"y{startyr[0]}-{startyr[-1]}"
+        yarg = startyr
+    else:
+        yfmt = f"y{startyr}"
+        yarg = [startyr]
+    if (type(startmo) is list):
+        mfmt = f"m{startmo[0]}-{startmo[-1]}"
+        marg = startmo
+    else:
+        mfmt = f"m{startmo}"
+        marg = [startmo]
+    filename = "gravdiff--" + pf + af + ifmt + yfmt + mfmt + ".csv"
+    #df.to_csv(filename)
+    return(filename)
+
+
+
+# ([250.0e3],[325.0e3],[45.0],[j for j in range(2015,2023)],[1,4,7,10])
+# samp = ([250.0e3],[325.0e3],[45.0],[j for j in range(2015,2023)],[1,4,7,10])
+# samp = ([float(zp*1e3) for zp in range(250,576,25)], 250.0e3,325.0e3,45.0,[j for j in range(2015,2023)],[1,4,7,10])
+zazpal = itertools.product([[float(zp*1e3),float(za*1e3)] for zp in range(250,576,25) for za in range(zp,576,25)], [2020,2021])
+
+
+# Inclusive range
+def rangi(start, stop=None, step=1):
+    if (stop==None):
+        stop=start
+    rg = range(start, stop, step)
+    if rg[-1]+step == stop:
+        rgs = itertools.chain(rg, (stop,))
+    else:
+        rgs = rg
+    return
+
+def outparam (zpkm, zakm, inc, startyr, startmo):
+    l = [list(i) for i in itertools.product(rangi(*zpkm), rangi(*zakm), rangi(*inc), rangi(*startyr), rangi(*startmo)) if i[0] <= i[1]]
+    return(l)
+
+outparam([250,275,25],[300],[45],[2021,2022],[1,12,3])
+
+
+
+zazpkm = [250,575]
+zazprange = range(zazpkm[0],zazpkm[1]+1,25)
