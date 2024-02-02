@@ -1,6 +1,6 @@
 # Set up for orbit computations from Orekit
 # Load with: from pyork import *
-import sys
+import sys, os
 
 # Easy way to see what is defined for an object
 from inspect import getmembers
@@ -13,7 +13,7 @@ print ('Python version:',sys.version)
 print ('Java version:',vm.java_version)
 print ('Orekit version:', orekit.VERSION)
 from orekit.pyhelpers import setup_orekit_curdir, absolutedate_to_datetime
-setup_orekit_curdir()
+setup_orekit_curdir(os.environ['OREKITDATA']) # set in shell: export OREKITDATA=$(locate orekit-data.zip)
 
 # Orbital elements and PVT
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates

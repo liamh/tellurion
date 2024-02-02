@@ -1,6 +1,8 @@
 # Python utilities
 
 import itertools
+from joblib import Parallel, delayed
+import pandas as pd
 
 # Inclusive range
 # In [29]: rangi(45)
@@ -27,18 +29,50 @@ def rangi(start, stop=None, step=1):
     return ([i for i in rgs])
 
 
+def ensurelist(arg):
+    if type(arg) is list:
+        return(arg)
+    else:
+        return([arg])
+
+def dictvals(dict):
+    return list(dict.values())
+
 ####### Outer product of lists with constraint
 
 # Outer (Cartesian) product of values from ranges, with optional constraint
-# Ranges is a list of ranges, as arguments to rangi
+# Ranges is a list of ranges, as arguments to rangi; singletons may be left as numbers
 # coutprod([[250,325,25],[275],[45],[2021,2022],[1,12,3]])
-# coutprod([[250,325,25],[275],[45],[2021,2022],[1,12,3]], lambda l: l[0] <= l[1])
+# coutprod([[250,325,25],275,45,[2021,2022],[1,12,3]], lambda l: l[0] <= l[1])
 def coutprod (ranges, constraint=None):
     # iparg = [rangi(*ranges[0]), rangi(*ranges[1]), rangi(*ranges[2]), rangi(*ranges[3]), rangi(*ranges[4])]
-    iparg = list(map(lambda range: rangi(*range), ranges))
+    iparg = list(map(lambda range: rangi(*ensurelist(range)), ranges))
     ipr = itertools.product(*iparg)
     if constraint==None:
         ret = [list(i) for i in ipr]
     else:
         ret = [list(i) for i in ipr if constraint(i)]
     return(ret)
+
+####### Call a function with integer arguments in every combination of specified ranges
+
+# Print to string https://stackoverflow.com/a/56103429/238405
+import io
+def sprint(*args, end='', **kwargs):
+    sio = io.StringIO()
+    print(*args, **kwargs, end=end, file=sio)
+    return sio.getvalue()
+
+def nospaces(*objects):
+    return sprint(*objects).replace(" ", "")
+
+# Call the function with all argument combinations and collect the
+# result in a CSV which is named in the return value. The function fn
+# should return a dict with the same keys regardless of the arguments.
+def allargcomb(args,constraint,fn):
+    arglists = coutprod(args, constraint)
+    resultsll = Parallel(n_jobs=len(arglists))(delayed(fn)(*args) for args in arglists)
+    df = pd.DataFrame(resultsll)
+    filename = nospaces(fn.__name__,"-",args,".csv")
+    df.to_csv(filename)
+    return(filename)
