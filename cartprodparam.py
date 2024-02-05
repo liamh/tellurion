@@ -1,10 +1,16 @@
-# Python utilities
+# Utilities to help with studies that repeat the same calculation with
+# different combinations of input parameters, specifically, a
+# Cartesian product of parameters. The function `callparamset()`
+# generates the combinations, calls the function, collects the
+# results in a data frame, and outputs to CSV.
 
 import itertools
-from joblib import Parallel, delayed
+import io
 import pandas as pd
+from joblib import Parallel, delayed
 
-# Inclusive range
+####### Inclusive range
+
 # In [29]: rangi(45)
 # Out[29]: [45]
 
@@ -28,36 +34,43 @@ def rangi(start, stop=None, step=1):
         rgs = rg
     return ([i for i in rgs])
 
+####### Utilities for lists and dictionaries
 
+# If argument is a list, return it; otherwise, make a singleton list
 def ensurelist(arg):
     if type(arg) is list:
         return(arg)
     else:
         return([arg])
 
+# Make a list of the dictionary values (no keys)
 def dictvals(dict):
     return list(dict.values())
 
 ####### Outer product of lists with constraint
 
-# Outer (Cartesian) product of values from ranges, with optional constraint
+# Cartesian product of values from ranges, with optional constraint
 # Ranges is a list of ranges, as arguments to rangi; singletons may be left as numbers
-# coutprod([[250,325,25],[275],[45],[2021,2022],[1,12,3]])
-# coutprod([[250,325,25],275,45,[2021,2022],[1,12,3]], lambda l: l[0] <= l[1])
-def coutprod (ranges, constraint=None):
-    # iparg = [rangi(*ranges[0]), rangi(*ranges[1]), rangi(*ranges[2]), rangi(*ranges[3]), rangi(*ranges[4])]
-    iparg = list(map(lambda range: rangi(*ensurelist(range)), ranges))
-    ipr = itertools.product(*iparg)
+# cartprodrange([[250,325,25],[275],[45],[2021,2022],[1,12,3]])
+# cartprodrange([[250,325,25],275,45,[2021,2022],[1,12,3]], lambda l: l[0] <= l[1])
+def cartprodrange (ranges, constraint=None):
+    return(cartprod(list(map(lambda range: rangi(*ensurelist(range)), ranges)), constraint))
+
+# Cartesian products of sets
+def cartprod (paramsets, constraint=None):
+    ipr = itertools.product(*paramsets)
     if constraint==None:
         ret = [list(i) for i in ipr]
     else:
         ret = [list(i) for i in ipr if constraint(i)]
     return(ret)
 
-####### Call a function with integer arguments in every combination of specified ranges
+####### Call function in parallel with combinations of arguments and collect results
+
+# Call a function with integer arguments in every combination of
+# specified ranges and create a CSV of the results
 
 # Print to string https://stackoverflow.com/a/56103429/238405
-import io
 def sprint(*args, end='', **kwargs):
     sio = io.StringIO()
     print(*args, **kwargs, end=end, file=sio)
@@ -69,8 +82,8 @@ def nospaces(*objects):
 # Call the function with all argument combinations and collect the
 # result in a CSV which is named in the return value. The function fn
 # should return a dict with the same keys regardless of the arguments.
-def allargcomb(args,constraint,fn):
-    arglists = coutprod(args, constraint)
+def callparamset(args, fn, constraint=None):
+    arglists = cartprodrange(args, constraint)
     resultsll = Parallel(n_jobs=len(arglists))(delayed(fn)(*args) for args in arglists)
     df = pd.DataFrame(resultsll)
     filename = nospaces(fn.__name__,"-",args,".csv")
