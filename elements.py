@@ -1,4 +1,10 @@
-from setup import *
+from org.orekit.orbits import CartesianOrbit, KeplerianOrbit, PositionAngleType, OrbitType
+from org.orekit.time import AbsoluteDate, TimeScalesFactory
+
+okc = {'utc': TimeScalesFactory.getUTC(), # Orekit configuration
+       'meananom': PositionAngleType.MEAN,
+       'trueanom': PositionAngleType.TRUE,
+       'cartesian': OrbitType.CARTESIAN}
 
 # Make a Kepler orbital element set
 def kepler_oes(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, timeelt_type):
@@ -9,9 +15,9 @@ def kepler_oes(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, time
                           radians(raan_deg),   # Right ascension of ascending node (degrees)
                           radians(timeelt_deg),  # Time element (deg)
                           timeelt_type,  # Sets which type of anomaly we use
-                          okct['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
+                          envct['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
                           epoch,   # Sets the date of the orbital parameters
-                          okct['earthmu']))   # Sets the central attraction coefficient (m³/s²)
+                          envct['earthmu']))   # Sets the central attraction coefficient (m³/s²)
 
 # Transform to Kepler orbital elements
 def orbkep(orbit):

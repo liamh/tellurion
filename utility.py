@@ -1,8 +1,21 @@
-# Python utilities
+# Utilities for calling Python functions with combinations of arguments
 
+import io
 import itertools
 from joblib import Parallel, delayed
 import pandas as pd
+
+
+####### List and dict utilities
+
+def ensurelist(arg):
+    if type(arg) is list:
+        return(arg)
+    else:
+        return([arg])
+
+def dictvals(dict):
+    return list(dict.values())
 
 # Inclusive range
 # In [29]: rangi(45)
@@ -28,24 +41,16 @@ def rangi(start, stop=None, step=1):
         rgs = rg
     return ([i for i in rgs])
 
-
-def ensurelist(arg):
-    if type(arg) is list:
-        return(arg)
-    else:
-        return([arg])
-
-def dictvals(dict):
-    return list(dict.values())
-
 ####### Outer product of lists with constraint
 
 # Outer (Cartesian) product of values from ranges, with optional constraint
-# Ranges is a list of ranges, as arguments to rangi; singletons may be left as numbers
-# coutprod([[250,325,25],[275],[45],[2021,2022],[1,12,3]])
-# coutprod([[250,325,25],275,45,[2021,2022],[1,12,3]], lambda l: l[0] <= l[1])
+#  ranges:     a list of ranges, as arguments to rangi; singletons may be left as numbers
+#  constraint: `None` or a boolean function of one argument, a list of values;
+#              True indicates it is included, False that it is not
+# Examples
+#  coutprod([[250,325,25],[275],[45],[2021,2022],[1,12,3]])
+#  coutprod([[250,325,25],275,45,[2021,2022],[1,12,3]], lambda l: l[0] <= l[1])
 def coutprod (ranges, constraint=None):
-    # iparg = [rangi(*ranges[0]), rangi(*ranges[1]), rangi(*ranges[2]), rangi(*ranges[3]), rangi(*ranges[4])]
     iparg = list(map(lambda range: rangi(*ensurelist(range)), ranges))
     ipr = itertools.product(*iparg)
     if constraint==None:
@@ -54,10 +59,9 @@ def coutprod (ranges, constraint=None):
         ret = [list(i) for i in ipr if constraint(i)]
     return(ret)
 
-####### Call a function with integer arguments in every combination of specified ranges
+####### Call a function in parallel with integer arguments in every combination of specified ranges
 
 # Print to string https://stackoverflow.com/a/56103429/238405
-import io
 def sprint(*args, end='', **kwargs):
     sio = io.StringIO()
     print(*args, **kwargs, end=end, file=sio)
