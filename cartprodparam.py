@@ -8,6 +8,7 @@ import itertools
 import io
 import pandas as pd
 from joblib import Parallel, delayed
+from random import shuffle
 
 ####### Inclusive range
 
@@ -82,9 +83,11 @@ def nospaces(*objects):
 # Call the function with all argument combinations and collect the
 # result in a CSV which is named in the return value. The function fn
 # should return a dict with the same keys regardless of the arguments.
-def callparamset(args, fn, constraint=None):
+def callparamset(args, fn, constraint=None, numjobs=-1):
     arglists = cartprodrange(args, constraint)
-    resultsll = Parallel(n_jobs=len(arglists))(delayed(fn)(*args) for args in arglists)
+    shuffle(arglists)
+    print ("Will start", len(arglists)," jobs")
+    resultsll = Parallel(n_jobs=numjobs)(delayed(fn)(*args) for args in arglists)
     df = pd.DataFrame(resultsll)
     filename = nospaces(fn.__name__,"-",args,".csv")
     df.to_csv(filename)
