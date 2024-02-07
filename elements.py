@@ -1,10 +1,8 @@
-from org.orekit.orbits import CartesianOrbit, KeplerianOrbit, PositionAngleType, OrbitType
-from org.orekit.time import AbsoluteDate, TimeScalesFactory
+from propagate import *
+from org.orekit.orbits import KeplerianOrbit, PositionAngleType
 
-okc = {'utc': TimeScalesFactory.getUTC(), # Orekit configuration
-       'meananom': PositionAngleType.MEAN,
-       'trueanom': PositionAngleType.TRUE,
-       'cartesian': OrbitType.CARTESIAN}
+okc['meananom']= PositionAngleType.MEAN
+okc['trueanom']= PositionAngleType.TRUE
 
 # Make a Kepler orbital element set
 def kepler_oes(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, timeelt_type):
