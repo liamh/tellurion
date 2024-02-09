@@ -44,7 +44,7 @@ def cartorb(posv3d, velv3d, datetime):
 
 # Create the PVT orbit
 def orbitpvt(pos, vel, datetime):
-    cartorb(Vector3D(pos), Vector3D(vel), datetime)
+    return(cartorb(Vector3D(pos), Vector3D(vel), datetime))
 
 # The position-velocity-time for the state
 def orbpvt(orbit):
