@@ -1,14 +1,20 @@
-import datetime
-from orekit.pyhelpers import absolutedate_to_datetime
-from org.orekit.time import AbsoluteDate, TimeScalesFactory
+from datetime import datetime, UTC, timezone
+from orekit.pyhelpers import absolutedate_to_datetime, datetime_to_absolutedate
+from org.orekit.time import AbsoluteDate
 
-dtct = {'utc': TimeScalesFactory.getUTC(),
-        'hour': 3600.0,
+dtct = {'hour': 3600.0,
         'day': 86400.0}
 
-def datm(year, month, day, hour=12, minute=0, second=0.0, microsecond=0):
-    return(AbsoluteDate(year, month, day, hour, minute, float(second), dtct['utc']))
+# Python datetime as an ISO8601 string
+def isodttm(dttm):
+    return(dttm.isoformat())
 
+# Create an AbsoluteDate from the specified datetime components
+def datm(year, month, day, hour=12, minute=0, second=0.0):
+    return(datetime_to_absolutedate(datetime(year, month, day, hour, minute,
+                                             int(second), int(1e6*(second%1.0)),
+                                             tzinfo=timezone.utc)))
+
+# The current time as an AbsoluteDate
 def nowutc():
-    now = datetime.datetime.now(datetime.UTC)
-    return(datm(now.year, now.month, now.day, now.hour, now.minute, now.second+1.0e-6*now.microsecond))
+    return(datetime_to_absolutedate(datetime.now(UTC)))

@@ -23,8 +23,7 @@ from org.hipparchus.geometry.euclidean.threed import Vector3D
 from org.orekit.frames import FramesFactory
 
 # Orekit configuration
-okc = {'utc': TimeScalesFactory.getUTC(), # Orekit configuration
-       'cartesian': OrbitType.CARTESIAN}
+okc = {'cartesian': OrbitType.CARTESIAN}
 
 # Orbital environment constants
 envct = {
@@ -100,13 +99,13 @@ def prop(orbit,proptime,spacecraft=scB010):
     ephemeris = generator.getGeneratedEphemeris();
     return(ephemeris)
 
-def cartorb(posv3d, velv3d, datetime):
-    pvt = TimeStampedPVCoordinates(datetime, posv3d, velv3d) # Make the PVT initial state
-    return(CartesianOrbit(pvt, envct['celestialframe'], envct['earthmu']))
-
-# Create the PVT orbit
+# Create a PVT for propagation
+# Input: Python position 3-vector, velocity 3-vector, and Orekit AbsoluteDate
+# Output: Orekit CartesianOrbit
 def orbitpvt(pos, vel, dttm):
-    return(cartorb(Vector3D(pos), Vector3D(vel), dttm))
+    pvt = TimeStampedPVCoordinates(dttm, Vector3D(pos), Vector3D(vel)) # Make the PVT initial state
+    cartorb = CartesianOrbit(pvt, envct['celestialframe'], envct['earthmu'])
+    return(cartorb)
 
 # The position-velocity-time for the state
 def orbpvt(orbit):
