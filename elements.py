@@ -17,13 +17,17 @@ def kepler_oes(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, time
                           epoch,   # Sets the date of the orbital parameters
                           envct['earthmu']))   # Sets the central attraction coefficient (m³/s²)
 
-# Transform to Kepler orbital elements
-def orbkep(orbit):
-    return(OrbitType.KEPLERIAN.convertType(orbit))
-
-# Transform to Cartesian orbit
-def cartorb_conv(orbit):
-    return(OrbitType.CARTESIAN.convertType(orbit))
+# Convert to the requested orbit type "cart", "kep"
+def convert(orbit, orbtype):
+    match orbtype:
+        case "cart":
+            return(OrbitType.CARTESIAN.convertType(orbit))
+        case "kep":
+            return(OrbitType.KEPLERIAN.convertType(orbit))
+        case "circ":
+            return(OrbitType.CIRCULAR.convertType(orbit))
+        case "equi":
+            return(OrbitType.EQUINOCTIAL.convertType(orbit))
 
 def period(orbit):
-    return(orbkep(orbit).getKeplerianPeriod())
+    return(convert(orbit,"kep").getKeplerianPeriod())

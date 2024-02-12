@@ -1,5 +1,4 @@
-from orkinit import *
-from dttm import *
+from orbit import *
 
 # Propagation and ephemeris
 from org.orekit.orbits import CartesianOrbit, OrbitType
@@ -98,22 +97,6 @@ def prop(orbit,proptime,spacecraft=scB010):
     propagated = prop.propagate(orbit.date, orbit.date.shiftedBy(proptime))
     ephemeris = generator.getGeneratedEphemeris();
     return(ephemeris)
-
-# Create a PVT for propagation
-# Input: Python position 3-vector, velocity 3-vector, and Orekit AbsoluteDate
-# Output: Orekit CartesianOrbit
-def orbitpvt(pos, vel, dttm):
-    pvt = TimeStampedPVCoordinates(dttm, Vector3D(pos), Vector3D(vel)) # Make the PVT initial state
-    cartorb = CartesianOrbit(pvt, envct['celestialframe'], envct['earthmu'])
-    return(cartorb)
-
-# The position-velocity-time for the state
-def orbpvt(orbit):
-    return(orbit.pVCoordinates)
-
-# The geocentric distance of the orbit
-def posmag(orbit):
-    return(orbit.pVCoordinates.position.norm)
 
 # Lookup the state at a particular time that is with the range bounded by the minimum and maximum times
 # eph: output from prop()
