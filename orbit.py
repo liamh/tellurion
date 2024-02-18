@@ -4,9 +4,29 @@ from org.orekit.orbits import CartesianOrbit, OrbitType
 from org.orekit.orbits import KeplerianOrbit, PositionAngleType
 from org.orekit.orbits import CircularOrbit
 from org.orekit.orbits import EquinoctialOrbit
+# Orbital elements and PVT
+from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
+from org.hipparchus.geometry.euclidean.threed import Vector3D
+from org.orekit.frames import FramesFactory
+from org.orekit.utils import IERSConventions
+from org.orekit.bodies import OneAxisEllipsoid, CelestialBodyFactory
 
-okc['meananom']= PositionAngleType.MEAN
-okc['trueanom']= PositionAngleType.TRUE
+# Orekit configuration
+okc = {'cartesian': OrbitType.CARTESIAN,
+       'meananom': PositionAngleType.MEAN,
+       'trueanom': PositionAngleType.TRUE}
+
+# Orbital environment constants
+envct = {
+        'earthframe': FramesFactory.getITRF(IERSConventions.IERS_2010, True),
+        'celestialframe': FramesFactory.getEME2000(),
+        'earthrad': Constants.IERS2010_EARTH_EQUATORIAL_RADIUS,
+        'earthangspd': Constants.IERS2010_EARTH_ANGULAR_VELOCITY,
+        'earthJ2': -Constants.IERS2010_EARTH_C20,
+        'earthmu': Constants.IERS2010_EARTH_MU,
+        'earthflat': Constants.IERS2010_EARTH_FLATTENING,
+        'sun': CelestialBodyFactory.getSun(),
+}
 
 ######## Convert between Python and Orekit PVT
 
@@ -22,12 +42,6 @@ def pvtpy(pvt):
     jv = [pvt.velocity.x, pvt.velocity.y, pvt.velocity.z]
     epoch = absolutedate_to_datetime(pvt.date)
     return([jp, jv, epoch])
-
-## TODO
-# To be consistent, datm() should generate a Python datetime so that pvtok can convert.
-# ex1p = [5740132.68349499, 3314067.15, 0.0]
-# ex1v = [-2750.82683526322, 4764.5718414998, 5501.65367052644]
-# ex1t = datm(2022, 6, 1, 12, 0, 00.000)
 
 ######## Make orbits
 
@@ -48,6 +62,13 @@ def kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, timeelt_
                           envct['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
                           epoch,   # Sets the date of the orbital parameters
                           envct['earthmu']))   # Sets the central attraction coefficient (m³/s²)
+
+## Example orbit
+# ex1p = [5740132.68349499, 3314067.15, 0.0]
+# ex1v = [-2750.82683526322, 4764.5718414998, 5501.65367052644]
+# ex1t = datetime(2022, 6, 1, 12, 0, 0)
+# ex1pvt = pvtok(ex1p,ex1v,ex1t)
+# ex1orb = cartesian(ex1pvt)
 
 ######## Convert orbits
 
