@@ -10,6 +10,8 @@ from org.hipparchus.geometry.euclidean.threed import Vector3D
 from org.orekit.frames import FramesFactory
 from org.orekit.utils import IERSConventions
 from org.orekit.bodies import OneAxisEllipsoid, CelestialBodyFactory
+# ECIS
+from ecis import *
 
 # Orekit configuration
 okc = {'cartesian': OrbitType.CARTESIAN,
@@ -36,21 +38,16 @@ def pvtok(pos, vel, dttm):
     return(TimeStampedPVCoordinates(datetime_to_absolutedate(dttm), Vector3D(pos), Vector3D(vel)))
 
 # PVT as Python arrays and datetime
-# pvt: Orekit PVT
-def pvtpy(pvt):
-    jp = [pvt.position.x, pvt.position.y, pvt.position.z]
-    jv = [pvt.velocity.x, pvt.velocity.y, pvt.velocity.z]
-    epoch = absolutedate_to_datetime(pvt.date)
-    return([jp, jv, epoch])
+TimeStampedPVCoordinates.pyrep = lambda self: [[self.position.x, self.position.y, self.position.z],
+                                               [self.velocity.x, self.velocity.y, self.velocity.z],
+                                               absolutedate_to_datetime(self.date)]
 
 ######## Make orbits
 
-# Make a Cartesian orbit from the Orekit PVT
-# The inverse of pvt()
-def cartesian(pvt):
-    return(CartesianOrbit(pvt, envct['celestialframe'], envct['earthmu']))
+# Make a Cartesian orbit from Orekit PVT
+TimeStampedPVCoordinates.cartesian = lambda self: CartesianOrbit(self, envct['celestialframe'], envct['earthmu'])
 
-# Make a Kepler orbital element set
+# Make a Kepler orbital element set - this should be
 def kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, timeelt_type):
     return(KeplerianOrbit(sma, # Semimajor Axis (m)
                           ecc,    # Eccentricity
@@ -63,28 +60,48 @@ def kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, timeelt_
                           epoch,   # Sets the date of the orbital parameters
                           envct['earthmu']))   # Sets the central attraction coefficient (m³/s²)
 
-## Example orbit
-# ex1p = [5740132.68349499, 3314067.15, 0.0]
-# ex1v = [-2750.82683526322, 4764.5718414998, 5501.65367052644]
-# ex1t = datetime(2022, 6, 1, 12, 0, 0)
-# ex1pvt = pvtok(ex1p,ex1v,ex1t)
-# ex1orb = cartesian(ex1pvt)
-
 ######## Convert orbits
 
 # Convert to the requested orbit type "cart", "kep"
-def convert(orbit, orbtype):
+def convert(tree, orbtype):
+    if "cart" in tree:
+        orbit = tree.cart
+    elif "kep" in tree:
+        orbit = tree.kep
+    elif "circ" in tree:
+        orbit = tree.circ
+    elif "equi" in tree:
+        orbit = tree.equi
+    elif "pvt" in tree:
+        tree.update(cart = tree.pvt.cartesian())
+        orbit = tree.cart
+    else:
+        raise ValueError("Nothing to convert")
     match orbtype:
         case "cart":
-            return(OrbitType.CARTESIAN.convertType(orbit))
+            ret = OrbitType.CARTESIAN.convertType(orbit)
+            tree.update(cart = ret)
         case "kep":
-            return(OrbitType.KEPLERIAN.convertType(orbit))
+            ret = OrbitType.KEPLERIAN.convertType(orbit)
+            tree.update(kep = ret)
         case "circ":
-            return(OrbitType.CIRCULAR.convertType(orbit))
+            ret = OrbitType.CIRCULAR.convertType(orbit)
+            tree.update(circ = ret)
         case "equi":
-            return(OrbitType.EQUINOCTIAL.convertType(orbit))
+            ret = OrbitType.EQUINOCTIAL.convertType(orbit)
+            tree.update(equi = ret)
+        case "pvt":
+            ret = orbit.pVCoordinates
+            tree.update(pvt = ret)
         case _:
             raise ValueError("Type \"" + orbtype + "\" unknown")
+    return(ret)
+
+Ecis.cartesian = lambda tree: convert(tree, "cart")
+Ecis.kepler = lambda tree: convert(tree, "kep")
+Ecis.circular = lambda tree: convert(tree, "circ")
+Ecis.equinoctial = lambda tree: convert(tree, "equi")
+Ecis.pvt = lambda tree: convert(tree, "pvt")
 
 ######## Properties of orbits
 
@@ -99,3 +116,17 @@ def posmag(orbit):
 
 def period(orbit):
     return(orbit.getKeplerianPeriod())
+
+## Make a computation tree from PVT
+
+def cspvt(pos, vel, dttm):
+    return(newtree('pvt', pvtok(pos, vel, dttm)))
+
+## Example orbit
+ex1 = cspvt([5740132.68349499, 3314067.15, 0.0],
+            [-2750.82683526322, 4764.5718414998, 5501.65367052644],
+            datetime(2022, 6, 1, 12, 0, 0))
+
+# ex1.cartesian()
+
+# Need to build and convert a Kepler
