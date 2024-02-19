@@ -101,7 +101,7 @@ Ecis.cartesian = lambda tree: convert(tree, "cart")
 Ecis.kepler = lambda tree: convert(tree, "kep")
 Ecis.circular = lambda tree: convert(tree, "circ")
 Ecis.equinoctial = lambda tree: convert(tree, "equi")
-Ecis.pvt = lambda tree: convert(tree, "pvt")
+Ecis.posveltime = lambda tree: convert(tree, "pvt")
 
 ######## Properties of orbits
 
