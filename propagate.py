@@ -1,10 +1,11 @@
 from orbit import *
+import warnings
 
 # Propagation and ephemeris
 from org.orekit.orbits import CartesianOrbit, OrbitType
 from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
-from org.orekit.propagation import Propagator, SpacecraftState, EphemerisGenerator
+from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState, EphemerisGenerator
 from org.orekit.propagation.events import AltitudeDetector
 from org.orekit.forces.gravity.potential import GravityFieldFactory
 from org.orekit.forces.gravity import HolmesFeatherstoneAttractionModel
@@ -46,12 +47,14 @@ setgravity(0, 0)
 
 # Propagate from epoch for a specified time
 def prop(orbit,proptime,spacecraft=scB010):
+    orb = thingofclass(orbit, Orbit)
+
     # Set parameters
     minstep = 0.001
     maxstep = 1000.0
     initStep = 60.0
     positionTolerance = 1.0
-    tolerances = NumericalPropagator.tolerances(positionTolerance, orbit, orbit.getType())
+    tolerances = NumericalPropagator.tolerances(positionTolerance, orb, orb.getType())
 
     # Initialize the integrator
     integrator = DormandPrince853Integrator(
@@ -63,7 +66,7 @@ def prop(orbit,proptime,spacecraft=scB010):
 
     # Initialize the spacecraft state
     # satellite_mass = 100.0  # The models need a spacecraft mass, unit kg.
-    initialState = SpacecraftState(orbit, spacecraft['mass'])
+    initialState = SpacecraftState(orb, spacecraft['mass'])
     prop = NumericalPropagator(integrator)
     prop.setOrbitType(okc['cartesian'])
     prop.setInitialState(initialState)
@@ -78,25 +81,36 @@ def prop(orbit,proptime,spacecraft=scB010):
     prop.addEventDetector(altdet)
 
     # Propagate
-    propagated = prop.propagate(orbit.date, orbit.date.shiftedBy(proptime))
+    propagated = prop.propagate(orb.date, orb.date.shiftedBy(proptime))
     ephemeris = generator.getGeneratedEphemeris();
-    return(ephemeris)
+
+    if type(orbit) is Ecis:
+        orbit.update(prop=newtree('ephemeris',ephemeris))
+        orbit.prop.maxtime = proptime
+        newname = f"prop{int(proptime)}s"
+        orbit[newname] = orbit.pop('prop')
+        return(orbit[newname])
+    else:
+        return(ephemeris)
 
 # Lookup the state at a particular time that is with the range bounded by the minimum and maximum times
 # eph: output from prop()
 # reltime: time (seconds) past the earliest time of the propagation
 def ephlookup(eph, reltime):
-    return(eph.propagate(eph.getMinDate().shiftedBy(reltime)).orbit)
+    bp = thingofclass(eph, BoundedPropagator)
+    state = bp.propagate(bp.getMinDate().shiftedBy(reltime)).orbit
+    if type(eph) is Ecis:
+        name = f"state{int(reltime)}s"
+        eph[name] = state
+    return(state)
 
 # Example, see example in orbit.pv
-# ex1eph1hr = prop(ex1orb,3600.0)
-# ex1prop1200s = ephlookup(ex1eph1hr,1200.0)
-# pvt(ex1prop1200s)
-# Out[20]: <TimeStampedPVCoordinates: {2022-06-01T12:20:00.000, P(-1363975.7207431477, 4575863.159211461, 4639461.68560796), V(-7076.625054306512, -2994.509027288756, 933.643196058037), A(1.8386249331276936, -6.167921710610659, -6.272353908960307)}>
-# pvtpy(pvt(ex1prop1200s))
-# [-1359953.707299648, 4580203.17356122, 4646548.529260602],
-#  [-7074.051859352501, -2989.0818948108367, 948.4044990087592],
-#  datetime.datetime(2022, 6, 1, 12, 20)]
+# prop(ex1,3600.0)
+# ephlookup(ex1.prop3600s, 1200.0)
+# ephlookup(ex1.prop3600s, 2400.0)
+# ex1.prop3600s.state1200s.pVCoordinates.snl()
+# <PVT position: [-1359953.707299648, 4580203.17356122, 4646548.529260602] (m) velocity:[-7074.051859352501, -2989.0818948108367, 948.4044990087592] (m/s) epoch 2022-06-01 12:20:00 (UTC)>
+## Doesn't work:
 # convert(ex1prop1200s,'kep')
 # Out[21]: <Orbit: Keplerian parameters: {a: 6662696.447232186; e: 0.005515508998697014; i: 44.958136752610166; pa: -1.8475032055235747; raan: 29.924998771236737; v: 82.3318582445891;}>
 # posmag(ex1prop1200s)
