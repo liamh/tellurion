@@ -117,7 +117,7 @@ def convert(tree, orbtype):
             ret = OrbitType.EQUINOCTIAL.convertType(orbit)
             tree.update(equi = ret)
         case "pvt":
-            ret = orbit.pVCoordinates
+            ret = orbit.posveltime()
             tree.update(pvt = ret)
         case _:
             raise ValueError("Type \"" + orbtype + "\" unknown")
