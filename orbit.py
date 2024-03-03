@@ -144,20 +144,20 @@ def period(orbit):
 
 ## Make a computation tree from position, velocity, and datetime
 
-def cspvt(pos, vel, dttm):
+def new_posveltime(pos, vel, dttm):
     ret = newtree('pvt', PVT(pos, vel, dttm)) # Create the tree and set the first component to the PVT
     ret.cartesian() # Convert the PVT to the Orekit CartesianOrbit and save that as the next component
     return(ret)
 
 ## Make a computation tree from Kepler elements and datetime
 
-def cskep(sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, epoch):
+def new_kepler(sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, epoch):
     ret = newtree('kep', kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt))
     convert(ret, "pvt")
     return(ret)
 
 ## Example orbit
-ex1 = cspvt([5740132.68349499, 3314067.15, 0.0],
+ex1 = new_posveltime([5740132.68349499, 3314067.15, 0.0],
             [-2750.82683526322, 4764.5718414998, 5501.65367052644],
             datetime(2022, 6, 1, 12, 0, 0))
 ex1.pvtorbrec = ex1.cart.posveltime() # The PVT recalculated from the Cartesian orbit
@@ -166,4 +166,4 @@ ex1.pvtorkrec = ex1.pvt.ork.snl() # The PVT recalculated from the Orekit represe
 # ex1.cartesian()
 
 # Need to build and convert a Kepler
-ex2 = cskep(8.0e6, 0.1, 42.0, 217.4, -90.0, 7.25, True, datetime(2023, 9, 14, 8, 30, 0))
+ex2 = new_kepler(8.0e6, 0.1, 42.0, 217.4, -90.0, 7.25, True, datetime(2023, 9, 14, 8, 30, 0))

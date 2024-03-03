@@ -12,7 +12,7 @@ def newtree(name=None, value=None):
     return(ret)
 
 def getobjs(tree, classtype):
-    return([key for key in tree if type(tree[key]) is classtype])
+    return([key for key in tree if isinstance(tree[key], classtype)])
 
 def thingofclass(tree, classtype):
     if type(tree) is classtype:
@@ -21,12 +21,18 @@ def thingofclass(tree, classtype):
         objs = getobjs(tree, classtype)
         match len(objs):
            case 0:
-              thing=None
-              raise ValueError(f"No `{classtype.__name__}` objects found in tree")
+              subtrees = getobjs(tree, Ecis)
+              if len(subtrees)==0:
+                  thing=None
+                  raise ValueError(f"No `{classtype.__name__}` objects found in tree")
+              else:
+                  for st in subtrees:
+                      branch = tree[st]
+                      thing = [thingofclass(branch, classtype)[0], branch]
            case 1:
-              thing = tree[objs[0]]
+              thing = [tree[objs[0]], tree]
            case _:
-              thing = tree[objs[-1]]
+              thing = [tree[objs[-1]], tree]
               warnings.warn(f"Multiple `{classtype.__name__}` objects defined in tree, using `{objs[-1]}`")
     else:
         thing=Nothing

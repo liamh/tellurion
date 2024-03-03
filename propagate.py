@@ -47,7 +47,7 @@ setgravity(0, 0)
 
 # Propagate from epoch for a specified time
 def prop(orbit,proptime,spacecraft=scB010):
-    orb = thingofclass(orbit, Orbit)
+    [orb, tree] = thingofclass(orbit, Orbit)
 
     # Set parameters
     minstep = 0.001
@@ -66,7 +66,10 @@ def prop(orbit,proptime,spacecraft=scB010):
 
     # Initialize the spacecraft state
     # satellite_mass = 100.0  # The models need a spacecraft mass, unit kg.
-    initialState = SpacecraftState(orb, spacecraft['mass'])
+    if spacecraft is None:
+        initialState = SpacecraftState(orb, 100.0)
+    else:
+        initialState = SpacecraftState(orb, spacecraft['mass'])
     prop = NumericalPropagator(integrator)
     prop.setOrbitType(okc['cartesian'])
     prop.setInitialState(initialState)
@@ -74,7 +77,8 @@ def prop(orbit,proptime,spacecraft=scB010):
 
     # Forces
     prop.addForceModel(HolmesFeatherstoneAttractionModel(envct['earthframe'], envct['gravity']))
-    prop.addForceModel(spacecraft['dragforce'])
+    if spacecraft is not None:
+        prop.addForceModel(spacecraft['dragforce'])
 
     # Events
     altdet = AltitudeDetector(envct['stopalt'], envct['sphearth'])
@@ -88,8 +92,8 @@ def prop(orbit,proptime,spacecraft=scB010):
         orbit.update(prop=newtree('ephemeris',ephemeris))
         orbit.prop.maxtime = proptime
         newname = f"prop{int(proptime)}s"
-        orbit[newname] = orbit.pop('prop')
-        return(orbit[newname])
+        tree[newname] = orbit.pop('prop')
+        return(tree[newname])
     else:
         return(ephemeris)
 
@@ -97,11 +101,11 @@ def prop(orbit,proptime,spacecraft=scB010):
 # eph: output from prop()
 # reltime: time (seconds) past the earliest time of the propagation
 def ephlookup(eph, reltime):
-    bp = thingofclass(eph, BoundedPropagator)
+    [bp, tree] = thingofclass(eph, BoundedPropagator)
     state = bp.propagate(bp.getMinDate().shiftedBy(reltime)).orbit
     if type(eph) is Ecis:
         name = f"state{int(reltime)}s"
-        eph[name] = state
+        tree[name] = state
     return(state)
 
 # Example, see example in orbit.pv
