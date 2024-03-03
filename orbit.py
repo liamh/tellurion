@@ -4,7 +4,7 @@
 ## Orekit has a separate class of CartesianOrbit that can be
 ## propagated, so these are have different representation.
 
-from orkinit import *
+from force import *
 from dttm import *
 from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
 from org.orekit.orbits import KeplerianOrbit, PositionAngleType
@@ -13,26 +13,11 @@ from org.orekit.orbits import EquinoctialOrbit
 # Orbital elements and PVT
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.hipparchus.geometry.euclidean.threed import Vector3D
-from org.orekit.frames import FramesFactory
-from org.orekit.utils import IERSConventions
-from org.orekit.bodies import OneAxisEllipsoid, CelestialBodyFactory
 # ECIS - exploratory computation in stages
 from ecis import *
 
 # Orekit configuration
 okc = {'cartesian': OrbitType.CARTESIAN}
-
-# Orbital environment constants
-envct = {
-        'earthframe': FramesFactory.getITRF(IERSConventions.IERS_2010, True),
-        'celestialframe': FramesFactory.getEME2000(),
-        'earthrad': Constants.IERS2010_EARTH_EQUATORIAL_RADIUS,
-        'earthangspd': Constants.IERS2010_EARTH_ANGULAR_VELOCITY,
-        'earthJ2': -Constants.IERS2010_EARTH_C20,
-        'earthmu': Constants.IERS2010_EARTH_MU,
-        'earthflat': Constants.IERS2010_EARTH_FLATTENING,
-        'sun': CelestialBodyFactory.getSun(),
-}
 
 ######## Snaglab (Python) and Orekit representation of a postion-velocity-time (PVT)
 
@@ -67,10 +52,10 @@ TimeStampedPVCoordinates.snl \
 ######## Make orbits
 
 # Make a Cartesian orbit from Orekit PVT
-TimeStampedPVCoordinates.cartesian = lambda self: CartesianOrbit(self, envct['celestialframe'], envct['earthmu'])
+TimeStampedPVCoordinates.cartesian = lambda self, gravity: CartesianOrbit(self, gravity['celestialframe'], gravity['earthmu'])
 
 # Make a Kepler orbital element set
-def kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt):
+def kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, gravity):
     if mean_timeelt:
         timeelt_type = PositionAngleType.MEAN
     else:
@@ -82,9 +67,9 @@ def kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_tim
                           radians(raan_deg),   # Right ascension of ascending node (degrees)
                           radians(timeelt_deg),  # Time element (deg)
                           timeelt_type,  # Sets which type of anomaly we use
-                          envct['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
+                          gravity['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
                           datetime_to_absolutedate(epoch),   # Sets the date of the orbital parameters
-                          envct['earthmu']))   # Sets the central attraction coefficient (m³/s²)
+                          gravity['earthmu']))   # Sets the central attraction coefficient (m³/s²)
 
 ######## Convert orbits
 
@@ -93,7 +78,7 @@ def convert(tree, orbtype):
     [orbit, parent] = thingofclass(tree, Orbit)
     if orbit is None:
         [orbit, parent] = thingofclass(tree, PVT)
-        parent.update(cart = parent.pvt.ork.cartesian())
+        parent.update(cart = parent.pvt.ork.cartesian(forcedef))
         orbit = parent.cart
     match orbtype:
         case "cart":
@@ -143,8 +128,8 @@ def new_posveltime(pos, vel, dttm):
 
 ## Make a computation tree from Kepler elements and datetime
 
-def new_kepler(sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, epoch):
-    ret = newtree('kep', kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt))
+def new_kepler(sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, epoch, gravity):
+    ret = newtree('kep', kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, gravity))
     convert(ret, "pvt")
     return(ret)
 
@@ -158,4 +143,4 @@ ex1.pvtorkrec = ex1.pvt.ork.snl() # The PVT recalculated from the Orekit represe
 # ex1.cartesian()
 
 # Need to build and convert a Kepler
-ex2 = new_kepler(8.0e6, 0.1, 42.0, 217.4, -90.0, 7.25, True, datetime(2023, 9, 14, 8, 30, 0))
+ex2 = new_kepler(8.0e6, 0.1, 42.0, 217.4, -90.0, 7.25, True, datetime(2023, 9, 14, 8, 30, 0), forcedef)
