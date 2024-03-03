@@ -46,7 +46,7 @@ def setgravity(degree, order):
 setgravity(0, 0)
 
 # Propagate from epoch for a specified time
-def prop(orbit,proptime,spacecraft=scB010):
+def mkephem(orbit,proptime,spacecraft=scB010):
     [orb, tree] = thingofclass(orbit, Orbit)
 
     # Set parameters
@@ -100,10 +100,13 @@ def prop(orbit,proptime,spacecraft=scB010):
 # Lookup the state at a particular time that is with the range bounded by the minimum and maximum times
 # eph: output from prop()
 # reltime: time (seconds) past the earliest time of the propagation
-def ephlookup(eph, reltime):
-    [bp, tree] = thingofclass(eph, BoundedPropagator)
+def prop(orbit, reltime, spacecraft=scB010):
+    [bp, tree] = thingofclass(orbit, BoundedPropagator)
+    if bp is None:
+        bp = mkephem(orbit, reltime, spacecraft)
+        [bp, tree] = thingofclass(orbit, BoundedPropagator)
     state = bp.propagate(bp.getMinDate().shiftedBy(reltime)).orbit
-    if type(eph) is Ecis:
+    if type(orbit) is Ecis:
         name = f"state{int(reltime)}s"
         tree[name] = state
     return(state)

@@ -23,8 +23,8 @@ def thingofclass(tree, classtype):
            case 0:
               subtrees = getobjs(tree, Ecis)
               if len(subtrees)==0:
-                  thing=None
-                  raise ValueError(f"No `{classtype.__name__}` objects found in tree")
+                  thing = [None, tree]
+                  #raise ValueError(f"No `{classtype.__name__}` objects found in tree")
               else:
                   for st in subtrees:
                       branch = tree[st]

@@ -90,35 +90,27 @@ def kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_tim
 
 # Convert to the requested orbit type "cart", "kep"
 def convert(tree, orbtype):
-    if "cart" in tree:
-        orbit = tree.cart
-    elif "kep" in tree:
-        orbit = tree.kep
-    elif "circ" in tree:
-        orbit = tree.circ
-    elif "equi" in tree:
-        orbit = tree.equi
-    elif "pvt" in tree:
-        tree.update(cart = tree.pvt.ork.cartesian())
-        orbit = tree.cart
-    else:
-        raise ValueError("Nothing to convert")
+    [orbit, parent] = thingofclass(tree, Orbit)
+    if orbit is None:
+        [orbit, parent] = thingofclass(tree, PVT)
+        parent.update(cart = parent.pvt.ork.cartesian())
+        orbit = parent.cart
     match orbtype:
         case "cart":
             ret = OrbitType.CARTESIAN.convertType(orbit)
-            tree.update(cart = ret)
+            parent.update(cart = ret)
         case "kep":
             ret = OrbitType.KEPLERIAN.convertType(orbit)
-            tree.update(kep = ret)
+            parent.update(kep = ret)
         case "circ":
             ret = OrbitType.CIRCULAR.convertType(orbit)
-            tree.update(circ = ret)
+            parent.update(circ = ret)
         case "equi":
             ret = OrbitType.EQUINOCTIAL.convertType(orbit)
-            tree.update(equi = ret)
+            parent.update(equi = ret)
         case "pvt":
             ret = orbit.posveltime()
-            tree.update(pvt = ret)
+            parent.update(pvt = ret)
         case _:
             raise ValueError("Type \"" + orbtype + "\" unknown")
     return(ret)
@@ -158,8 +150,8 @@ def new_kepler(sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeel
 
 ## Example orbit
 ex1 = new_posveltime([5740132.68349499, 3314067.15, 0.0],
-            [-2750.82683526322, 4764.5718414998, 5501.65367052644],
-            datetime(2022, 6, 1, 12, 0, 0))
+                     [-2750.82683526322, 4764.5718414998, 5501.65367052644],
+                     datetime(2022, 6, 1, 12, 0, 0))
 ex1.pvtorbrec = ex1.cart.posveltime() # The PVT recalculated from the Cartesian orbit
 ex1.pvtorkrec = ex1.pvt.ork.snl() # The PVT recalculated from the Orekit representation
 # ex1.keys()
