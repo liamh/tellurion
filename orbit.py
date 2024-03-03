@@ -78,7 +78,7 @@ def convert(tree, orbtype):
     [orbit, parent] = thingofclass(tree, Orbit)
     if orbit is None:
         [orbit, parent] = thingofclass(tree, PVT)
-        parent.update(cart = parent.pvt.ork.cartesian(forcedef))
+        parent.update(cart = parent.pvt.ork.cartesian(forcedflt))
         orbit = parent.cart
     match orbtype:
         case "cart":
@@ -143,4 +143,4 @@ ex1.pvtorkrec = ex1.pvt.ork.snl() # The PVT recalculated from the Orekit represe
 # ex1.cartesian()
 
 # Need to build and convert a Kepler
-ex2 = new_kepler(8.0e6, 0.1, 42.0, 217.4, -90.0, 7.25, True, datetime(2023, 9, 14, 8, 30, 0), forcedef)
+ex2 = new_kepler(8.0e6, 0.1, 42.0, 217.4, -90.0, 7.25, True, datetime(2023, 9, 14, 8, 30, 0), forcedflt)

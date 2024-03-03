@@ -8,11 +8,8 @@ from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState, EphemerisGenerator
 from org.orekit.propagation.events import AltitudeDetector
 
-eventdflt = {'sphearth': OneAxisEllipsoid(forcedef['earthrad'], 0.0,  forcedef['earthframe']),
-             'stopalt': 125.0e3}  # Altitude at which propagation should stop
-
 # Propagate from epoch for a specified time
-def mkephem(orbit,proptime,spacecraft=None):
+def mkephem(orbit,proptime,spacecraft=None,stopalt=125.0e3):
     [orb, tree] = thingofclass(orbit, Orbit)
 
     # Set parameters
@@ -42,13 +39,12 @@ def mkephem(orbit,proptime,spacecraft=None):
     generator = prop.getEphemerisGenerator()
 
     # Forces
-    prop.addForceModel(HolmesFeatherstoneAttractionModel(forcedef['earthframe'], forcedef['gravity']))
+    prop.addForceModel(HolmesFeatherstoneAttractionModel(forcedflt['earthframe'], forcedflt['gravity']))
     if spacecraft is not None:
         prop.addForceModel(spacecraft['dragforce'])
 
     # Events
-    altdet = AltitudeDetector(eventdflt['stopalt'], eventdflt['sphearth'])
-    prop.addEventDetector(altdet)
+    prop.addEventDetector(AltitudeDetector(stopalt, sphalt))
 
     # Propagate
     propagated = prop.propagate(orb.date, orb.date.shiftedBy(proptime))
