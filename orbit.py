@@ -55,7 +55,7 @@ TimeStampedPVCoordinates.snl \
 TimeStampedPVCoordinates.cartesian = lambda self, gravity: CartesianOrbit(self, gravity['celestialframe'], gravity['earthmu'])
 
 # Make a Kepler orbital element set
-def kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, gravity):
+def kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, gravity=forcedflt):
     if mean_timeelt:
         timeelt_type = PositionAngleType.MEAN
     else:
@@ -123,13 +123,15 @@ def period(orbit):
 
 def new_posveltime(pos, vel, dttm):
     ret = newtree('pvt', PVT(pos, vel, dttm)) # Create the tree and set the first component to the PVT
+    ret.forces = forcedflt
     ret.cartesian() # Convert the PVT to the Orekit CartesianOrbit and save that as the next component
     return(ret)
 
 ## Make a computation tree from Kepler elements and datetime
 
-def new_kepler(sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, epoch, gravity):
+def new_kepler(sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, epoch, gravity=forcedflt):
     ret = newtree('kep', kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, gravity))
+    ret.forces = gravity
     convert(ret, "pvt")
     return(ret)
 

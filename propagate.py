@@ -9,7 +9,7 @@ from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftStat
 from org.orekit.propagation.events import AltitudeDetector
 
 # Propagate from epoch for a specified time
-def mkephem(orbit,proptime,spacecraft=None,stopalt=125.0e3):
+def mkephem(orbit, proptime, stopalt=125.0e3):
     [orb, tree] = thingofclass(orbit, Orbit)
 
     # Set parameters
@@ -27,12 +27,7 @@ def mkephem(orbit,proptime,spacecraft=None,stopalt=125.0e3):
 	       JArray_double.cast_(tolerances[1]))
     integrator.setInitialStepSize(initStep)
 
-    # Initialize the spacecraft state
-    # satellite_mass = 100.0  # The models need a spacecraft mass, unit kg.
-    if spacecraft is None:
-        initialState = SpacecraftState(orb, 100.0)
-    else:
-        initialState = SpacecraftState(orb, spacecraft['mass'])
+    initialState = SpacecraftState(orb, forcedflt['mass'])
     prop = NumericalPropagator(integrator)
     prop.setOrbitType(okc['cartesian'])
     prop.setInitialState(initialState)
@@ -40,8 +35,8 @@ def mkephem(orbit,proptime,spacecraft=None,stopalt=125.0e3):
 
     # Forces
     prop.addForceModel(HolmesFeatherstoneAttractionModel(forcedflt['earthframe'], forcedflt['gravity']))
-    if spacecraft is not None:
-        prop.addForceModel(spacecraft['dragforce'])
+    if 'dragforce' in forcedflt:
+        prop.addForceModel(forcedflt['dragforce'])
 
     # Events
     prop.addEventDetector(AltitudeDetector(stopalt, sphalt))
@@ -62,10 +57,10 @@ def mkephem(orbit,proptime,spacecraft=None,stopalt=125.0e3):
 # Propagate to the relative time requested
 # orbit: tree with orbit in it
 # reltime: time (seconds) past the earliest time of the propagation
-def prop(orbit, reltime, spacecraft=None):
+def prop(orbit, reltime, stopalt=125.0e3):
     [bp, tree] = thingofclass(orbit, BoundedPropagator)
     if bp is None:
-        bp = mkephem(orbit, reltime, spacecraft)
+        bp = mkephem(orbit, reltime, stopalt)
         [bp, tree] = thingofclass(orbit, BoundedPropagator)
     state = bp.propagate(bp.getMinDate().shiftedBy(reltime)).orbit
     if type(orbit) is Ecis:
