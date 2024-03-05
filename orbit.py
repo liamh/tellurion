@@ -121,17 +121,17 @@ def period(orbit):
 
 ## Make a computation tree from position, velocity, and datetime
 
-def new_posveltime(pos, vel, dttm):
+def new_posveltime(pos, vel, dttm, force=forcedflt):
     ret = newtree('pvt', PVT(pos, vel, dttm)) # Create the tree and set the first component to the PVT
-    ret.forces = forcedflt
+    ret.forces = force
     ret.cartesian() # Convert the PVT to the Orekit CartesianOrbit and save that as the next component
     return(ret)
 
 ## Make a computation tree from Kepler elements and datetime
 
-def new_kepler(sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, epoch, gravity=forcedflt):
-    ret = newtree('kep', kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, gravity))
-    ret.forces = gravity
+def new_kepler(sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, epoch, force=forcedflt):
+    ret = newtree('kep', kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, force))
+    ret.forces = force
     convert(ret, "pvt")
     return(ret)
 

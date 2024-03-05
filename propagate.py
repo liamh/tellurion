@@ -9,7 +9,7 @@ from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftStat
 from org.orekit.propagation.events import AltitudeDetector
 
 # Propagate from epoch for a specified time
-def mkephem(orbit, proptime, stopalt=125.0e3):
+def mkephem(orbit, proptime, stopalt=125.0e3, force=forcedflt):
     [orb, tree] = thingofclass(orbit, Orbit)
 
     # Set parameters
@@ -27,19 +27,19 @@ def mkephem(orbit, proptime, stopalt=125.0e3):
 	       JArray_double.cast_(tolerances[1]))
     integrator.setInitialStepSize(initStep)
 
-    initialState = SpacecraftState(orb, forcedflt['mass'])
+    initialState = SpacecraftState(orb, force['mass'])
     prop = NumericalPropagator(integrator)
     prop.setOrbitType(okc['cartesian'])
     prop.setInitialState(initialState)
     generator = prop.getEphemerisGenerator()
 
     # Forces
-    prop.addForceModel(HolmesFeatherstoneAttractionModel(forcedflt['earthframe'], forcedflt['gravity']))
-    if 'dragforce' in forcedflt:
-        prop.addForceModel(forcedflt['dragforce'])
+    prop.addForceModel(HolmesFeatherstoneAttractionModel(force['earthframe'], force['gravity']))
+    if 'dragforce' in force:
+        prop.addForceModel(force['dragforce'])
 
     # Events
-    prop.addEventDetector(AltitudeDetector(stopalt, sphalt))
+    prop.addEventDetector(AltitudeDetector(stopalt, force['sphalt']))
 
     # Propagate
     propagated = prop.propagate(orb.date, orb.date.shiftedBy(proptime))
