@@ -55,21 +55,30 @@ TimeStampedPVCoordinates.snl \
 TimeStampedPVCoordinates.cartesian = lambda self, gravity: CartesianOrbit(self, gravity['celestialframe'], gravity['earthmu'])
 
 # Make a Kepler orbital element set
-def kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, gravity):
-    if mean_timeelt:
+def kepler(oes, epoch, constants):
+    zapo = oes.get('zapo_m')
+    zper = oes.get('zper_m')
+    sma = oes.get('sma_m')
+    ecc = oes.get('ecc')
+    if zapo is not None and zper is not None:
+        rapo = constants['earthrad'] + zapo
+        rper = constants['earthrad'] + zper
+        sma = (rapo+rper)/2.0
+        ecc = (rapo-rper)/(2.0*sma)
+    if oes['mean_timeelt']:
         timeelt_type = PositionAngleType.MEAN
     else:
         timeelt_type = PositionAngleType.TRUE
     return(KeplerianOrbit(sma, # Semimajor Axis (m)
                           ecc,    # Eccentricity
-                          radians(inc_deg),  # Inclination (deg)
-                          radians(argper_deg),   # Perigee argument (deg)
-                          radians(raan_deg),   # Right ascension of ascending node (degrees)
-                          radians(timeelt_deg),  # Time element (deg)
-                          timeelt_type,  # Sets which type of anomaly we use
-                          gravity['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
+                          radians(oes.get('inc_deg', 0.0)),  # Inclination (deg)
+                          radians(oes.get('argper_deg', -90.0)),   # Perigee argument (deg)
+                          radians(oes.get('raan_deg', 0.0)),   # Right ascension of ascending node (degrees)
+                          radians(oes.get('timeelt_deg', 0.0)),  # Time element (deg)
+                          timeelt_type,  # Sets which type of anomaly we use (true
+                          constants['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
                           datetime_to_absolutedate(epoch),   # Sets the date of the orbital parameters
-                          gravity['earthmu']))   # Sets the central attraction coefficient (m³/s²)
+                          constants['earthmu']))   # Sets the central attraction coefficient (m³/s²)
 
 ######## Convert orbits
 
@@ -128,10 +137,8 @@ def new_posveltime(pos, vel, dttm, force):
 
 ## Make a computation tree from Kepler elements and datetime
 
-def new_kepler(sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, epoch, force):
-    ret = newtree('kep',
-                  kepler(epoch, sma, ecc, inc_deg, raan_deg, argper_deg, timeelt_deg, mean_timeelt, force),
-                  force)
+def new_kepler(oes, epoch, constants):
+    ret = newtree('kep', kepler(oes, epoch, constants), constants)
     convert(ret, "pvt")
     return(ret)
 
@@ -142,8 +149,8 @@ ex1 = new_posveltime([5740132.68349499, 3314067.15, 0.0],
                      setgravity(0,0))
 ex1.pvtorbrec = ex1.cart.posveltime() # The PVT recalculated from the Cartesian orbit
 ex1.pvtorkrec = ex1.pvt.ork.snl() # The PVT recalculated from the Orekit representation
-ex1.keys()
-ex1.cartesian()
+# ex1.keys()
+# ex1.cartesian()
 
-# Need to build and convert a Kepler
-ex2 = new_kepler(8.0e6, 0.1, 42.0, 217.4, -90.0, 7.25, True, datetime(2023, 9, 14, 8, 30, 0), setgravity(0, 0))
+# Build and convert a Kepler
+ex2 = new_kepler({'sma_m': 8.0e6, 'ecc': 0.1, 'inc_deg':42.0, 'raan_deg':217.4, 'argper_deg':-90.0, 'timeelt_deg':7.25, 'mean_timeelt':True}, datetime(2023, 9, 14, 8, 30, 0), setgravity(0, 0))
