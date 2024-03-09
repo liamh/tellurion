@@ -34,14 +34,12 @@ def setgravity(degree, order, mass = 100.0):
     # Define spherical altitude for convience, not specifically force related, but uses the definitions
     return celestdflt | force | {'sphalt': OneAxisEllipsoid(force['earthrad'], 0.0, celestdflt['earthframe'])}
 
-# Set the default gravity 0x0
-forcedflt = setgravity(0, 0)
-
 swdata = CssiSpaceWeatherData("SpaceWeather-All-v1.2.txt")
 
 # Optionally add a drag force
 # Default spacecraft parameters gives B = C_D A/m = 0.01 m^2/kg
-def dragforce(atmdensname = None, dragcoef = 1.0, dragarea = 1.0, force = forcedflt):
+default_atmdens = 'hp'
+def dragforce(force, atmdensname = default_atmdens, dragcoef = 1.0, dragarea = 1.0):
     earth = OneAxisEllipsoid(force['earthrad'], force['earthflat'],  force['earthframe'])
     match atmdensname:
         case 'hp': # Harris-Priester atmospheric density model
@@ -50,15 +48,13 @@ def dragforce(atmdensname = None, dragcoef = 1.0, dragarea = 1.0, force = forced
             atmdens = DTM2000(swdata, force['sun'], earth)
         case 'msis':
             atmdens = NRLMSISE00(swdata, force['sun'], earth)
-        case None:
-            return None
-    frc = {'mass': mass,  # The models need a spacecraft mass, unit kg.
-             'dragarea': dragarea, # Cross-sectional area perpendicular to atmosphere direction, m^2
-             'dragcoef': dragcoef, # Coefficient of drag
-             'B': dragarea*dragcoef/mass,
-             'atmdens': atmdens,
-             'dragforce': DragForce(atmdens, IsotropicDrag(dragarea, dragcoef))}
-    force.update(frc)
+    mass = force['mass']  # The models need a spacecraft mass, unit kg.
+    drforce = {'dragarea': dragarea, # Cross-sectional area perpendicular to atmosphere direction, m^2
+               'dragcoef': dragcoef, # Coefficient of drag
+               'B': dragarea*dragcoef/mass,
+               'atmdens': atmdens,
+               'dragforce': DragForce(atmdens, IsotropicDrag(dragarea, dragcoef))}
+    return force | drforce
 
 # def atmdens(location, time, model = 'hp'):
 #     return(envct[model].getDensity(time, location, envct['celestialframe']))

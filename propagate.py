@@ -9,7 +9,7 @@ from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftStat
 from org.orekit.propagation.events import AltitudeDetector
 
 # Propagate from epoch for a specified time
-def mkephem(orbit, proptime, stopalt=125.0e3, force=forcedflt):
+def mkephem(orbit, proptime, force, stopalt=125.0e3):
     [orb, tree] = thingofclass(orbit, Orbit)
 
     # Set parameters
@@ -59,8 +59,12 @@ def mkephem(orbit, proptime, stopalt=125.0e3, force=forcedflt):
 # reltime: time (seconds) past the earliest time of the propagation
 def prop(orbit, reltime, stopalt=125.0e3):
     [bp, tree] = thingofclass(orbit, BoundedPropagator)
+    if tree is None:
+        default = None
+    else:
+        default = tree.default
     if bp is None:
-        bp = mkephem(orbit, reltime, stopalt)
+        bp = mkephem(orbit, reltime, default, stopalt)
         [bp, tree] = thingofclass(orbit, BoundedPropagator)
     state = bp.propagate(bp.getMinDate().shiftedBy(reltime)).orbit
     if type(orbit) is Ecis:

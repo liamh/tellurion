@@ -3,10 +3,12 @@ from munch import *
 import warnings
 
 class Ecis(Munch):
-    pass
+    def __init__(self, defaultdict=None):
+        if defaultdict is not None:
+            self.update({'default': defaultdict})
 
-def newtree(name=None, value=None):
-    ret = Ecis()
+def newtree(name=None, value=None, defaultdict=None):
+    ret = Ecis(defaultdict)
     if name is not None:
         ret.update({name: value})
     return(ret)
@@ -14,9 +16,13 @@ def newtree(name=None, value=None):
 def getobjs(tree, classtype):
     return([key for key in tree if isinstance(tree[key], classtype)])
 
+# Return the item in the tree, or the time itself, if it is of the requested classtype
+# If there is more than one, the last one in the tree is returned.
+# Performs a recursive search in branches (ecis instances).
+# Returns a list of [item, dict]
 def thingofclass(tree, classtype):
     if type(tree) is classtype:
-        ret = tree
+        ret = [tree, None]
     elif type(tree) is Ecis:
         objs = getobjs(tree, classtype)
         match len(objs):
