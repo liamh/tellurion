@@ -55,6 +55,13 @@ TimeStampedPVCoordinates.snl \
 TimeStampedPVCoordinates.cartesian = lambda self, gravity: CartesianOrbit(self, gravity['celestialframe'], gravity['earthmu'])
 
 # Make a Kepler orbital element set
+# `oes` is the orbital element set as a dictionary with the following elements
+# zapo_m and zper_m or sma_m and ecc
+# 'inc_deg' (default 0)
+# 'argper_deg' (default -90.0)    Perigee argument (deg)
+# 'raan_deg' (default 0.0)        Right ascension of ascending node (degrees)
+# 'timeelt_deg' (default 0.0)     Time element (deg)
+# 'mean_timeelt' True or False (default)  Whether time element is true or mean anomaly
 def kepler(oes, epoch, constants):
     zapo = oes.get('zapo_m')
     zper = oes.get('zper_m')
@@ -65,7 +72,7 @@ def kepler(oes, epoch, constants):
         rper = constants['earthrad'] + zper
         sma = (rapo+rper)/2.0
         ecc = (rapo-rper)/(2.0*sma)
-    if oes['mean_timeelt']:
+    if oes.get('mean_timeelt', False):
         timeelt_type = PositionAngleType.MEAN
     else:
         timeelt_type = PositionAngleType.TRUE
@@ -130,8 +137,15 @@ def period(orbit):
 
 ## Make a computation tree from position, velocity, and datetime
 
-def new_posveltime(pos, vel, dttm, force):
-    ret = newtree('pvt', PVT(pos, vel, dttm), force) # Create the tree and set the first component to the PVT
+def new_posveltime(posvel, dttm, constants):
+    if type(posvel) is list:
+        if len(posvel) == 6:
+            pos = posvel[0:3]
+            vel = posvel[3:6]
+        elif len(posvel):
+            pos = posvel[0]
+            vel = posvel[1]
+    ret = newtree('pvt', PVT(pos, vel, dttm), constants) # Create the tree and set the first component to the PVT
     ret.cartesian() # Convert the PVT to the Orekit CartesianOrbit and save that as the next component
     return(ret)
 
@@ -143,8 +157,8 @@ def new_kepler(oes, epoch, constants):
     return(ret)
 
 ## Example orbit
-ex1 = new_posveltime([5740132.68349499, 3314067.15, 0.0],
-                     [-2750.82683526322, 4764.5718414998, 5501.65367052644],
+ex1 = new_posveltime([5740132.68349499, 3314067.15, 0.0,
+                      -2750.82683526322, 4764.5718414998, 5501.65367052644],
                      datetime(2022, 6, 1, 12, 0, 0),
                      setgravity(0,0))
 ex1.pvtorbrec = ex1.cart.posveltime() # The PVT recalculated from the Cartesian orbit
