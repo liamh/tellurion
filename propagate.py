@@ -1,4 +1,5 @@
 from orbit import *
+from cartprodparam import *
 import warnings
 
 # Propagation and ephemeris
@@ -42,7 +43,7 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
     prop.addEventDetector(AltitudeDetector(stopalt, force['sphalt']))
 
     # Propagate
-    propagated = prop.propagate(orb.date, orb.date.shiftedBy(proptime))
+    propagated = prop.propagate(orb.date, orb.date.shiftedBy(float(proptime)))
     ephemeris = generator.getGeneratedEphemeris();
 
     if type(orbit) is Ecis:
@@ -63,11 +64,12 @@ def prop(orbit, reltime, stopalt=125.0e3):
         default = None
     else:
         default = tree.default
+    maxtime = max(reltime)
     if bp is None:
-        bp = mkephem(orbit, reltime, default, stopalt)
+        bp = mkephem(orbit, maxtime, default, stopalt)
         [bp, tree] = thingofclass(orbit, BoundedPropagator)
-    state = bp.propagate(bp.getMinDate().shiftedBy(reltime)).orbit
+    state = [bp.propagate(bp.getMinDate().shiftedBy(float(rt))).orbit for rt in reltime]
     if type(orbit) is Ecis:
-        name = f"state{int(reltime)}s"
+        name = "table" # f"state{int(reltime)}s"
         tree[name] = state
     return(state)

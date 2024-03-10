@@ -26,7 +26,7 @@ okc = {'cartesian': OrbitType.CARTESIAN}
 class PVT:
     position: list # Position 3-vector in meters
     velocity: list # Velocity 3-vector in meters/seconds
-    dttm: datetime # Epoch time
+    dttm: Time # Epoch time
     ork: TimeStampedPVCoordinates
 
     def __init__(self, position, velocity, dttm, ork=None):
@@ -34,7 +34,7 @@ class PVT:
         self.velocity = velocity
         self.dttm = dttm
         if ork is None:
-            self.ork = TimeStampedPVCoordinates(datetime_to_absolutedate(self.dttm),
+            self.ork = TimeStampedPVCoordinates(self.dttm.okad(),
                                                 Vector3D(self.position),
                                                 Vector3D(self.velocity))
         else:
@@ -46,7 +46,7 @@ class PVT:
 TimeStampedPVCoordinates.snl \
     = lambda self: PVT([self.position.x, self.position.y, self.position.z],
                        [self.velocity.x, self.velocity.y, self.velocity.z],
-                       absolutedate_to_datetime(self.date),
+                       apt(self.date),
                        self)
 
 ######## Make orbits
@@ -84,7 +84,7 @@ def kepler(oes, epoch, constants):
                           radians(oes.get('timeelt_deg', 0.0)),  # Time element (deg)
                           timeelt_type,  # Sets which type of anomaly we use (true
                           constants['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                          datetime_to_absolutedate(epoch),   # Sets the date of the orbital parameters
+                          epoch.okad(),   # Sets the date of the orbital parameters
                           constants['earthmu']))   # Sets the central attraction coefficient (m³/s²)
 
 ######## Convert orbits
@@ -159,7 +159,7 @@ def new_kepler(oes, epoch, constants):
 ## Example orbit
 ex1 = new_posveltime([5740132.68349499, 3314067.15, 0.0,
                       -2750.82683526322, 4764.5718414998, 5501.65367052644],
-                     datetime(2022, 6, 1, 12, 0, 0),
+                     Time('2022-06-01T12:00:00.000000'),
                      setgravity(0,0))
 ex1.pvtorbrec = ex1.cart.posveltime() # The PVT recalculated from the Cartesian orbit
 ex1.pvtorkrec = ex1.pvt.ork.snl() # The PVT recalculated from the Orekit representation
@@ -167,4 +167,8 @@ ex1.pvtorkrec = ex1.pvt.ork.snl() # The PVT recalculated from the Orekit represe
 # ex1.cartesian()
 
 # Build and convert a Kepler
-ex2 = new_kepler({'sma_m': 8.0e6, 'ecc': 0.1, 'inc_deg':42.0, 'raan_deg':217.4, 'argper_deg':-90.0, 'timeelt_deg':7.25, 'mean_timeelt':True}, datetime(2023, 9, 14, 8, 30, 0), setgravity(0, 0))
+ex2 = new_kepler({'sma_m': 8.0e6, 'ecc': 0.1, 'inc_deg':42.0,
+                  'raan_deg':217.4, 'argper_deg':-90.0,
+                  'timeelt_deg':7.25, 'mean_timeelt':True},
+                 Time('2023-09-14T08:30:00'),
+                 setgravity(0, 0))

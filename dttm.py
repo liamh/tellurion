@@ -1,20 +1,20 @@
 from datetime import datetime, UTC, timezone
 from orekit.pyhelpers import absolutedate_to_datetime, datetime_to_absolutedate
-from org.orekit.time import AbsoluteDate
+from org.orekit.time import AbsoluteDate # "okad" = Orekit AbsoluteDate
 
-dtct = {'hour': 3600.0,
-        'day': 86400.0}
+# Astropy definitions of time; see https://docs.astropy.org/en/stable/time/index.html
+from astropy.time import Time # "apt" = astropy Time
+from astropy.units import * # Define time units, e.g. nowutc() + 5*day
 
-# Python datetime as an ISO8601 string
-def isodttm(dttm):
-    return(dttm.isoformat())
+# https://docs.astropy.org/en/stable/timeseries/times.html
+# from astropy.timeseries import TimeSeries
 
-# Create an AbsoluteDate from the specified datetime components
-def datm(year, month, day, hour=12, minute=0, second=0.0):
-    return(datetime_to_absolutedate(datetime(year, month, day, hour, minute,
-                                             int(second), int(1e6*(second%1.0)),
-                                             tzinfo=timezone.utc)))
+# Converte Astropy Time, absolutedate
+Time.okad = lambda t: datetime_to_absolutedate(t.datetime)
+#cannot set 'apt' attribute of immutable type 'datetime.datetime'
+#   datetime.apt = lambda t: Time(absolutedate_to_datetime(t))
+apt = lambda t: Time(absolutedate_to_datetime(t))
 
-# The current time as an AbsoluteDate
-def nowutc():
-    return(datetime_to_absolutedate(datetime.now(UTC)))
+# Create the UTC apt at this instant: nowutc()
+# Create the Hipparchus AbsoluteDate at this instant: nowutc().okad()
+nowutc = lambda: Time(datetime.now(UTC), scale='utc')
