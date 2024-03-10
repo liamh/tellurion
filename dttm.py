@@ -17,4 +17,8 @@ apt = lambda t: Time(absolutedate_to_datetime(t))
 
 # Create the UTC apt at this instant: nowutc()
 # Create the Hipparchus AbsoluteDate at this instant: nowutc().okad()
-nowutc = lambda: Time(datetime.now(UTC), scale='utc')
+def nowutc(as_okad=False):
+    if as_okad:
+        return nowutc(False).okad()
+    else:
+        return Time(datetime.now(UTC), scale='utc')

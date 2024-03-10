@@ -5,7 +5,6 @@
 ## propagated, so these are have different representation.
 
 from force import *
-from dttm import *
 from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
 from org.orekit.orbits import KeplerianOrbit, PositionAngleType
 from org.orekit.orbits import CircularOrbit

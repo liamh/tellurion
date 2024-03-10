@@ -1,6 +1,7 @@
 from orkinit import *
+from dttm import *
 
-from org.orekit.forces.gravity.potential import GravityFieldFactory
+from org.orekit.forces.gravity.potential import GravityFieldFactory, UnnormalizedSphericalHarmonicsProvider
 from org.orekit.forces.gravity import HolmesFeatherstoneAttractionModel
 from orekit import JArray_double
 from org.orekit.forces.drag import AbstractDragForceModel, DragForce
@@ -14,7 +15,7 @@ from org.orekit.bodies import OneAxisEllipsoid, CelestialBodyFactory
 OneAxisEllipsoid.__repr__ = \
     lambda self: f"<Near-spherical body equatorial radius {self.equatorialRadius}m, polar radius difference {-self.equatorialRadius*self.flattening}m >"
 
-def setgravity(degree, order, mass = 100.0):
+def setgravity(degree, order, mass = 100.0, when = nowutc(True)):
     # Default celestial environment constants
     celestdflt = {
         'earthframe': FramesFactory.getITRF(IERSConventions.IERS_2010, True),
@@ -24,17 +25,57 @@ def setgravity(degree, order, mass = 100.0):
         'sun': CelestialBodyFactory.getSun(),
     }
     eg = GravityFieldFactory.getNormalizedProvider(degree, order)
+    unco = GravityFieldFactory.getUnnormalizedProvider(degree, order).coefficients(when)
+    if unco[0] is not None:
+        znl = -unco[0][:,0]
+    else:
+        znl = None
     force = {'gravity': eg,
              'gravity-degree-order': [eg.maxDegree, eg.maxOrder],
              'earthrad': eg.ae,
              'earthmu': eg.mu,
-             # This isn't necessarily what it's using, how to get actual coefficient used?
-             'zonals': [-Constants.IERS2010_EARTH_C20],
+             'unnormalizedCnm': unco[0],
+             'unnormalizedSnm': unco[1],
+             'zonals': znl,
              'mass': mass} # Needed by several forces but not gravity
     # Define spherical altitude for convience, not specifically force related, but uses the definitions
     return celestdflt | force | {'sphalt': OneAxisEllipsoid(force['earthrad'], 0.0, celestdflt['earthframe'])}
 
 swdata = CssiSpaceWeatherData("SpaceWeather-All-v1.2.txt")
+
+def unnormcoef(provider, when):
+    degree = provider.maxDegree
+    order= provider.maxOrder
+    if degree > 0:
+        if order > 0:
+            cnm = np.zeros((degree-1, order))
+            with np.nditer(cnm, flags=['multi_index'], op_flags=['writeonly']) as it:
+                for x in it:
+                    n = it.multi_index[0]+2
+                    m = it.multi_index[1]
+                    if n >= m:
+                        x[...] = provider.onDate(when).getUnnormalizedCnm(n, m)
+            snm = np.zeros((degree-1, order))
+            with np.nditer(snm, flags=['multi_index'], op_flags=['writeonly']) as it:
+                for x in it:
+                    n = it.multi_index[0]+2
+                    m = it.multi_index[1]
+                    if n >= m:
+                        x[...] = provider.onDate(when).getUnnormalizedSnm(n, m)
+        else:
+            cnm = np.zeros(degree-1)
+            with np.nditer(cnm, flags=['multi_index'], op_flags=['writeonly']) as it:
+                for x in it:
+                    x[...] = provider.onDate(when).getUnnormalizedCnm(it.multi_index[0]+2, 0)
+            snm = np.zeros(degree-1)
+            with np.nditer(snm, flags=['multi_index'], op_flags=['writeonly']) as it:
+                for x in it:
+                    x[...] = provider.onDate(when).getUnnormalizedSnm(it.multi_index[0]+2, 0)
+    else:
+        cnm = None
+        snm = None
+    return (cnm,snm)
+UnnormalizedSphericalHarmonicsProvider.coefficients = lambda self, when: unnormcoef(self, when)
 
 # Optionally add a drag force
 # Default spacecraft parameters gives B = C_D A/m = 0.01 m^2/kg
