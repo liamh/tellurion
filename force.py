@@ -35,7 +35,7 @@ def setgravity(degree, order, mass = 100.0):
 
 swdata = CssiSpaceWeatherData("SpaceWeather-All-v1.2.txt")
 
-# This will find the unnormalized coefficients independently from any simulation.
+# This will find the unnormalized coefficients independent of any simulation.
 # Returns three arrays: zonals (J2,...), Cnm, Snm
 def unnormcoef(degree, order, when = nowutc(True)):
     if type(when) is Quantity and get_physical_type(when) == 'time':

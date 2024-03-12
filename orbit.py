@@ -48,6 +48,11 @@ TimeStampedPVCoordinates.snl \
                        apt(self.date),
                        self)
 
+Quantity.snl \
+    = lambda self, date: PVT(ex1pvq.si['p'][0].value.tolist(),
+                             ex1pvq.si['v'][0].value.tolist(),
+                             date)
+
 ######## Make orbits
 
 # Make a Cartesian orbit from Orekit PVT
@@ -136,14 +141,15 @@ def period(orbit):
 
 ## Make a computation tree from position, velocity, and datetime
 
-def new_posveltime(posvel, dttm, constants):
-    if type(posvel) is list:
-        if len(posvel) == 6:
-            pos = posvel[0:3]
-            vel = posvel[3:6]
+def new_posveltime(pv, dttm, constants):
+#    if type(pv) is Quantity
+    if type(pv) is list:
+        if len(pv) == 6:
+            pos = pv[0:3]
+            vel = pv[3:6]
         elif len(posvel):
-            pos = posvel[0]
-            vel = posvel[1]
+            pos = pv[0]
+            vel = pv[1]
     ret = newtree('pvt', PVT(pos, vel, dttm), constants) # Create the tree and set the first component to the PVT
     ret.cartesian() # Convert the PVT to the Orekit CartesianOrbit and save that as the next component
     return(ret)
@@ -156,6 +162,8 @@ def new_kepler(oes, epoch, constants):
     return(ret)
 
 ## Example orbit
+ex1pvt = posvel([5740.13268349499, 3314.06715, 0.0],
+                [-2.75082683526322, 4.7645718414998, 5.50165367052644]).snl(Time('2022-06-01T12:00:00.000000'))
 ex1 = new_posveltime([5740132.68349499, 3314067.15, 0.0,
                       -2750.82683526322, 4764.5718414998, 5501.65367052644],
                      Time('2022-06-01T12:00:00.000000'),
