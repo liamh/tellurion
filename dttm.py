@@ -4,7 +4,8 @@ from org.orekit.time import AbsoluteDate # "okad" = Orekit AbsoluteDate
 
 # Astropy definitions of time; see https://docs.astropy.org/en/stable/time/index.html
 from astropy.time import Time # "apt" = astropy Time
-from astropy.units import * # Define time units, e.g. nowutc() + 5*day
+import astropy.units as u # Define time units, e.g. nowutc() + 5*day
+from astropy.units import second, minute, hour, day, Quantity, get_physical_type
 
 # https://docs.astropy.org/en/stable/timeseries/times.html
 # from astropy.timeseries import TimeSeries
