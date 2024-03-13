@@ -29,8 +29,8 @@ def nowutc(as_okad=False):
 default_length_unit = u.km
 
 def posvel(position, velocity, length_unit=default_length_unit):
-    # See https://docs.astropy.org/en/stable/units/structured_units.html#example
-    pv = np.array([(position, velocity)],
+    # See https://docs.astropy.org/en/stable/units/structured_units.html#examplen
+    pv = np.array((position, velocity),
                   dtype=[('p', '(3,)f8'), ('v', '(3,)f8')])
     pv = Quantity(pv, u.StructuredUnit((length_unit, length_unit/u.second)))
     return(pv)
