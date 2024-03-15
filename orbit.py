@@ -142,14 +142,7 @@ def period(orbit):
 ## Make a computation tree from position, velocity, and datetime
 
 def new_posveltime(pv, dttm, constants):
-    if type(pv) is list:
-        if len(pv) == 6:
-            pos = pv[0:3]
-            vel = pv[3:6]
-        elif len(posvel):
-            pos = pv[0]
-            vel = pv[1]
-    pvt = posvel(pos, vel).snl(Time(dttm))
+    pvt = posvel(pv).snl(Time(dttm))
     ret = newtree('pvt', pvt, constants) # Create the tree and set the first component to the PVT
     ret.cartesian() # Convert the PVT to the Orekit CartesianOrbit and save that as the next component
     return(ret)
