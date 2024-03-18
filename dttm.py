@@ -1,22 +1,12 @@
-import numpy as np
+import astro
+from astropy.time import Time # "apt" = astropy Time
 from datetime import datetime, UTC, timezone
 from orekit.pyhelpers import absolutedate_to_datetime, datetime_to_absolutedate
 from org.orekit.time import AbsoluteDate # "okad" = Orekit AbsoluteDate
 
-# Astropy definitions of time; see https://docs.astropy.org/en/stable/time/index.html
-from astropy.time import Time # "apt" = astropy Time
-import astropy.units as u # Define time units, e.g. nowutc() + 5*day
-from astropy.units import second, minute, hour, day, Quantity, get_physical_type
-# Sidereal day in seconds: u.sday.to('s'), u.sday.to(u.second)
-
-# https://docs.astropy.org/en/stable/timeseries/times.html
-# from astropy.timeseries import TimeSeries
-
-# Converte Astropy Time, absolutedate
+# Convert Astropy Time, absolutedate
 Time.okad = lambda t: datetime_to_absolutedate(t.datetime)
-#cannot set 'apt' attribute of immutable type 'datetime.datetime'
-#   datetime.apt = lambda t: Time(absolutedate_to_datetime(t))
-apt = lambda t: Time(absolutedate_to_datetime(t))
+AbsoluteDate.apt = lambda t: Time(absolutedate_to_datetime(t))
 
 # Create the UTC apt at this instant: nowutc()
 # Create the Hipparchus AbsoluteDate at this instant: nowutc().okad()
@@ -25,19 +15,3 @@ def nowutc(as_okad=False):
         return nowutc(False).okad()
     else:
         return Time(datetime.now(UTC), scale='utc')
-
-default_length_unit = u.km
-
-def posvel(pv, length_unit=default_length_unit):
-    if type(pv) is list:
-        if len(pv) == 6:
-            pos = pv[0:3]
-            vel = pv[3:6]
-        elif len(pv) == 2:
-            pos = pv[0]
-            vel = pv[1]
-    # See https://docs.astropy.org/en/stable/units/structured_units.html#examplen
-    pv = np.array((pos, vel),
-                  dtype=[('p', '(3,)f8'), ('v', '(3,)f8')])
-    pv = Quantity(pv, u.StructuredUnit((length_unit, length_unit/u.second)))
-    return(pv)

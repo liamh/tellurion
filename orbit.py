@@ -18,6 +18,15 @@ from ecis import *
 # Orekit configuration
 okc = {'cartesian': OrbitType.CARTESIAN}
 
+
+
+######### base on astropy
+
+from astro import *
+
+
+
+
 ######## Snaglab (Python) and Orekit representation of a postion-velocity-time (PVT)
 
 # PVT as Orekit arrays and AbsoluteDate
@@ -29,9 +38,9 @@ class PVT:
     ork: TimeStampedPVCoordinates
 
     def __init__(self, position, velocity, dttm, ork=None):
-        self.position = position
-        self.velocity = velocity
-        self.dttm = dttm
+        self.position = position # Are these necessary?
+        self.velocity = velocity # Are these necessary?
+        self.dttm = dttm# Are these necessary?
         if ork is None:
             self.ork = TimeStampedPVCoordinates(self.dttm.okad(),
                                                 Vector3D(self.position),
