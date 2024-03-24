@@ -54,7 +54,7 @@ class PVT:
 TimeStampedPVCoordinates.snl \
     = lambda self: PVT([self.position.x, self.position.y, self.position.z],
                        [self.velocity.x, self.velocity.y, self.velocity.z],
-                       apt(self.date),
+                       self.date.apt(),
                        self)
 
 Quantity.snl \
