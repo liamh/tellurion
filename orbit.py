@@ -32,6 +32,29 @@ from astro import *
 # PVT as Orekit arrays and AbsoluteDate
 # These are made with the `ork` variable set to a TimeStampedPVCoordinates instance
 class PVT:
+    pvt: TQuantity
+    ork: TimeStampedPVCoordinates
+    position: list
+    velocity: list
+    time: Time
+
+    def __init__(self, position, velocity, time, ork=None):
+        self.pvt = posvel([position, velocity], time)
+        self.position = position
+        self.velocity = velocity
+        self.time = time
+        if ork is None:
+            psi = self.pvt.si['p'].value.tolist()
+            vsi = self.pvt.si['v'].value.tolist()
+            self.ork = TimeStampedPVCoordinates(self.time.okad(), Vector3D(psi), Vector3D(vsi))
+        else:
+            self.ork = ork
+    def __repr__(self):
+        return f"<PVT position: {self.pvt['p'].value.tolist()} ({default_length_unit.short_names[0]}) velocity:{self.pvt['v'].value.tolist()} ({default_length_unit.short_names[0]}/s) epoch {self.time} (UTC)>"
+
+# PVT as Orekit arrays and AbsoluteDate
+# These are made with the `ork` variable set to a TimeStampedPVCoordinates instance
+class PVTorig:
     position: list # Position 3-vector in meters
     velocity: list # Velocity 3-vector in meters/seconds
     dttm: Time # Epoch time
@@ -58,8 +81,8 @@ TimeStampedPVCoordinates.snl \
                        self)
 
 Quantity.snl \
-    = lambda self, date: PVT(self.si['p'].value.tolist(),
-                             self.si['v'].value.tolist(),
+    = lambda self, date: PVT(self['p'].value.tolist(),
+                             self['v'].value.tolist(),
                              date)
 
 ######## Make orbits
@@ -150,8 +173,9 @@ def period(orbit):
 
 ## Make a computation tree from position, velocity, and datetime
 
-def new_posveltime(pv, dttm, constants):
-    pvt = posvel(pv).snl(Time(dttm))
+def new_posveltime(pv, time, constants):
+    pvt = posvel(pv).snl(Time(time))
+    # pvt = posvel(pv, time)
     ret = newtree('pvt', pvt, constants) # Create the tree and set the first component to the PVT
     ret.cartesian() # Convert the PVT to the Orekit CartesianOrbit and save that as the next component
     return(ret)
@@ -171,6 +195,19 @@ ex1 = new_posveltime([5740.13268349499, 3314.06715, 0.0,
 ex1.pvtorbrec = ex1.cart.posveltime() # The PVT recalculated from the Cartesian orbit
 ex1.pvtorkrec = ex1.pvt.ork.snl() # The PVT recalculated from the Orekit representation
 # ex1.keys()
+# In [3]: ex1.pvt
+# Out[3]: <PVT position: [5740.13268349499, 3314.06715, 0.0] (km) velocity:[-2.75082683526322, 4.7645718414998, 5.50165367052644] (km/s) epoch 2022-06-01T12:00:00.000 (UTC)>
+# In [4]: ex1.pvt.pvt
+# Out[4]: <TQuantity ([5740.13268349, 3314.06715   ,    0.        ], [-2.75082684,  4.76457184,  5.50165367]) (km, km / s), time=2022-06-01T12:00:00.000>
+# In [5]: ex1.pvt.position
+# Out[5]: [5740.13268349499, 3314.06715, 0.0]
+# In [6]: ex1.pvt.velocity
+# Out[6]: [-2.75082683526322, 4.7645718414998, 5.50165367052644]
+# In [7]: ex1.pvt.time
+# Out[7]: <Time object: scale='utc' format='isot' value=2022-06-01T12:00:00.000>
+# In [8]: ex1.pvt.ork
+# Out[8]: <TimeStampedPVCoordinates: {2022-06-01T12:00:00.000, P(5740132.68349499, 3314067.15, 0.0), V(-2750.82683526322, 4764.5718414998, 5501.65367052644), A(0.0, 0.0, 0.0)}>
+
 # ex1.cartesian()
 
 # Build and convert a Kepler
