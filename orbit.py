@@ -38,8 +38,9 @@ class PVT:
     velocity: list
     time: Time
 
-    def __init__(self, position, velocity, time, ork=None):
-        self.pvt = posvel([position, velocity], time)
+    def __init__(self, position, velocity, time, ork=None, units=[default_length_unit]):
+        self.pvt = posvel([position, velocity], time, length_unit=units[0])
+        self.units = units
         self.position = position
         self.velocity = velocity
         self.time = time
@@ -50,35 +51,15 @@ class PVT:
         else:
             self.ork = ork
     def __repr__(self):
-        return f"<PVT position: {self.pvt['p'].value.tolist()} ({default_length_unit.short_names[0]}) velocity:{self.pvt['v'].value.tolist()} ({default_length_unit.short_names[0]}/s) epoch {self.time} (UTC)>"
-
-# PVT as Orekit arrays and AbsoluteDate
-# These are made with the `ork` variable set to a TimeStampedPVCoordinates instance
-class PVTorig:
-    position: list # Position 3-vector in meters
-    velocity: list # Velocity 3-vector in meters/seconds
-    dttm: Time # Epoch time
-    ork: TimeStampedPVCoordinates
-
-    def __init__(self, position, velocity, dttm, ork=None):
-        self.position = position # Are these necessary?
-        self.velocity = velocity # Are these necessary?
-        self.dttm = dttm# Are these necessary?
-        if ork is None:
-            self.ork = TimeStampedPVCoordinates(self.dttm.okad(),
-                                                Vector3D(self.position),
-                                                Vector3D(self.velocity))
-        else:
-            self.ork = ork
-    def __repr__(self):
-        return f"<PVT position: {self.position} (m) velocity:{self.velocity} (m/s) epoch {self.dttm} (UTC)>"
+        return f"<PVT position: {self.pvt['p'].value.tolist()} ({self.units[0].short_names[0]}) velocity:{self.pvt['v'].value.tolist()} ({self.units[0].short_names[0]}/s) epoch {self.time} (UTC)>"
 
 # .snl(): Convert PVT from Orekit to Python
 TimeStampedPVCoordinates.snl \
     = lambda self: PVT([self.position.x, self.position.y, self.position.z],
                        [self.velocity.x, self.velocity.y, self.velocity.z],
                        self.date.apt(),
-                       self)
+                       self,
+                       [u.meter])
 
 Quantity.snl \
     = lambda self, date: PVT(self['p'].value.tolist(),
