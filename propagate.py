@@ -43,13 +43,14 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
     prop.addEventDetector(AltitudeDetector(stopalt, force['sphalt']))
 
     # Propagate
-    propagated = prop.propagate(orb.date, orb.date.shiftedBy(float(proptime)))
+    pt = timesec(proptime) # Won't handle lists yet
+    propagated = prop.propagate(orb.date, orb.date.shiftedBy(pt))
     ephemeris = generator.getGeneratedEphemeris();
 
     if type(orbit) is Ecis:
         orbit.update(prop=newtree('ephemeris',ephemeris))
-        orbit.prop.maxtime = proptime
-        newname = f"prop{int(proptime)}s"
+        orbit.prop.maxtime = pt
+        newname = f"prop{int(pt)}s"
         tree[newname] = orbit.pop('prop')
         return(tree[newname])
     else:
@@ -73,3 +74,17 @@ def prop(orbit, reltime, stopalt=125.0e3):
         name = "table" # f"state{int(reltime)}s"
         tree[name] = state
     return(state)
+
+
+# from astropy.timeseries import TimeSeries
+# ts1 = TimeSeries(time_start='2016-03-22T12:30:31', time_delta=3 * u.s, n_samples=5)
+
+
+# >>>>>>>>>> Apply to list too
+# Convert a Quantity to seconds as a Python float
+def timesec(t):
+    if type(t) is Quantity and get_physical_type(t) == 'time':
+        pt = float(t.si.value) # convert to seconds and get the value_unit
+    else:
+        pt = float(t) # assume seconds
+    return(pt)
