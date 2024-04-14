@@ -50,6 +50,7 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
     if type(orbit) is Ecis:
         orbit.update(prop=newtree('ephemeris',ephemeris))
         orbit.prop.maxtime = pt
+        orbit.prop.default = force
         newname = f"prop{int(pt)}s"
         tree[newname] = orbit.pop('prop')
         return(tree[newname])
@@ -65,15 +66,25 @@ def prop(orbit, reltime, stopalt=125.0e3):
         default = None
     else:
         default = tree.default
-    maxtime = max(reltime)
+    maxtime = reltime # max(reltime)
     if bp is None:
         bp = mkephem(orbit, maxtime, default, stopalt)
         [bp, tree] = thingofclass(orbit, BoundedPropagator)
-    state = [bp.propagate(bp.getMinDate().shiftedBy(float(rt))).orbit for rt in reltime]
-    if type(orbit) is Ecis:
-        name = "table" # f"state{int(reltime)}s"
-        tree[name] = state
+    #state = [bp.propagate(bp.getMinDate().shiftedBy(float(rt))).orbit for rt in reltime]
+    state = bp.propagate(bp.getMinDate().shiftedBy(float(reltime))).orbit
+#    if type(orbit) is Ecis:
+#        name = "table" # f"state{int(reltime)}s"
+#        tree[name] = state
     return(state)
+
+############### [2024-04-07 Sun 22:41] This only works for scalar time, and only once
+#from propagate import *
+# ex1day = prop(ex1,86400.0)
+# prop(ex1,43200.0) # show state at half day
+# prop(ex1,86400.0) # show state at full day
+
+# use timeseries to produce table of values
+
 
 
 # from astropy.timeseries import TimeSeries
