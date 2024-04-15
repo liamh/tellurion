@@ -1,6 +1,7 @@
 from orbit import *
 from cartprodparam import *
 import warnings
+import collections.abc
 
 # Propagation and ephemeris
 from org.orekit.orbits import CartesianOrbit, OrbitType
@@ -10,6 +11,11 @@ from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftStat
 from org.orekit.propagation.events import AltitudeDetector
 
 # Propagate from epoch for a specified time
+# mkephem creates a BoundedPropagator but computes no actual states (see prop())
+#  orbit:    the initial state
+#  proptime: the maximum time (s) to propagate
+#  force:    forces to use
+#  stopalt:  lowest altitude above spherical earth (m) to propagate
 def mkephem(orbit, proptime, force, stopalt=125.0e3):
     [orb, tree] = thingofclass(orbit, Orbit)
 
@@ -43,7 +49,7 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
     prop.addEventDetector(AltitudeDetector(stopalt, force['sphalt']))
 
     # Propagate
-    pt = timesec(proptime) # Won't handle lists yet
+    pt = timesec(proptime)
     propagated = prop.propagate(orb.date, orb.date.shiftedBy(pt))
     ephemeris = generator.getGeneratedEphemeris();
 
@@ -57,33 +63,39 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
     else:
         return(ephemeris)
 
-# Propagate to the relative time requested
+# Propagate the BoundedPropagator
 # orbit: tree with orbit in it
-# reltime: time (seconds) past the earliest time of the propagation
-def prop(orbit, reltime, stopalt=125.0e3):
+# reltimes: times (seconds) past the initial time; may be a number (seconds), Quantity with type 'time' or list of these
+def prop(orbit, reltimes, stopalt=125.0e3):
     [bp, tree] = thingofclass(orbit, BoundedPropagator)
     if tree is None:
         default = None
     else:
         default = tree.default
-    maxtime = reltime # max(reltime)
+    if isinstance(reltimes, collections.abc.Iterable):
+        maxtime = max(reltimes)
+    else:
+        maxtime = reltimes
     if bp is None:
         bp = mkephem(orbit, maxtime, default, stopalt)
         [bp, tree] = thingofclass(orbit, BoundedPropagator)
-    #state = [bp.propagate(bp.getMinDate().shiftedBy(float(rt))).orbit for rt in reltime]
-    state = bp.propagate(bp.getMinDate().shiftedBy(float(reltime))).orbit
+    if isinstance(reltimes, collections.abc.Iterable):
+        state = [bp.propagate(bp.getMinDate().shiftedBy(timesec(rt))).orbit for rt in reltimes]
+    else:
+        state = bp.propagate(bp.getMinDate().shiftedBy(timesec(reltimes))).orbit
 #    if type(orbit) is Ecis:
-#        name = "table" # f"state{int(reltime)}s"
+#        name = "table" # f"state{int(reltimes)}s"
 #        tree[name] = state
     return(state)
 
-############### [2024-04-07 Sun 22:41] This only works for scalar time, and only once
 #from propagate import *
 # ex1day = prop(ex1,86400.0)
 # prop(ex1,43200.0) # show state at half day
 # prop(ex1,86400.0) # show state at full day
-
+# ex1day = prop(ex1,[43200.0, 86400.0])
+# ex1day = prop(ex1,[43200.0, 86400.0]*u.s)
 # use timeseries to produce table of values
+
 
 
 
