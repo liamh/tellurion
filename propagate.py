@@ -9,6 +9,8 @@ from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState, EphemerisGenerator
 from org.orekit.propagation.events import AltitudeDetector
+# Time series for ephemeris
+from astropy.timeseries import TimeSeries
 
 # Propagate from epoch for a specified time
 # mkephem creates a BoundedPropagator but computes no actual states (see prop())
@@ -88,22 +90,22 @@ def prop(orbit, reltimes, stopalt=125.0e3):
 #        tree[name] = state
     return(state)
 
-#from propagate import *
-# ex1day = prop(ex1,86400.0)
-# prop(ex1,43200.0) # show state at half day
-# prop(ex1,86400.0) # show state at full day
-# ex1day = prop(ex1,[43200.0, 86400.0])
-# ex1day = prop(ex1,[43200.0, 86400.0]*u.s)
-# use timeseries to produce table of values
 
+# prop(ex1,86400.0)
+# ephemeris(ex1,10*u.min,12)
 
+# Compute an ephemeris table from an orbital state, assuming a
+# BoundedPropagator exists in the tree.
+def ephemeris(orbit, tstep, nsteps):
+    tss = int(timesec(tstep))
+    pvts = [prop(orbit,float(dt)).posveltime().pvt for dt in rangi(0,tss*nsteps,tss)]
+    ts = TimeSeries(time=[pvt.time for pvt in pvts],
+               data={'position': [pvt['p'] for pvt in pvts],
+                     'velocity': [pvt['v'] for pvt in pvts]})
+    ts['position'].info.format = '10.3f'
+    ts['velocity'].info.format = '7.6f'
+    return(ts)
 
-
-# from astropy.timeseries import TimeSeries
-# ts1 = TimeSeries(time_start='2016-03-22T12:30:31', time_delta=3 * u.s, n_samples=5)
-
-
-# >>>>>>>>>> Apply to list too
 # Convert a Quantity to seconds as a Python float
 def timesec(t):
     if type(t) is Quantity and get_physical_type(t) == 'time':
