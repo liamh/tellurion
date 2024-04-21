@@ -13,7 +13,8 @@ from org.orekit.orbits import EquinoctialOrbit
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 # ECIS - exploratory computation in stages
-from ecis import *
+import ecis
+ecis.ecisdefault='forceenv' # Forces and other environmental constants
 
 # Orekit configuration
 okc = {'cartesian': OrbitType.CARTESIAN}
@@ -108,10 +109,10 @@ def kepler(oes, epoch, constants):
 
 # Convert to the requested orbit type "cart", "kep"
 def convert(tree, orbtype):
-    [orbit, parent] = thingofclass(tree, Orbit)
+    [orbit, parent] = ecis.thingofclass(tree, Orbit)
     if orbit is None:
-        [orbit, parent] = thingofclass(tree, PVT)
-        parent.update(cart = parent.pvt.ork.cartesian(tree.default))
+        [orbit, parent] = ecis.thingofclass(tree, PVT)
+        parent.update(cart = parent.pvt.ork.cartesian(tree.forceenv))
         orbit = parent.cart
     match orbtype:
         case "cart":
@@ -133,11 +134,11 @@ def convert(tree, orbtype):
             raise ValueError("Type \"" + orbtype + "\" unknown")
     return(ret)
 
-Ecis.cartesian = lambda tree: convert(tree, "cart")
-Ecis.kepler = lambda tree: convert(tree, "kep")
-Ecis.circular = lambda tree: convert(tree, "circ")
-Ecis.equinoctial = lambda tree: convert(tree, "equi")
-Ecis.posveltime = lambda tree: convert(tree, "pvt")
+ecis.Ecis.cartesian = lambda tree: convert(tree, "cart")
+ecis.Ecis.kepler = lambda tree: convert(tree, "kep")
+ecis.Ecis.circular = lambda tree: convert(tree, "circ")
+ecis.Ecis.equinoctial = lambda tree: convert(tree, "equi")
+ecis.Ecis.posveltime = lambda tree: convert(tree, "pvt")
 
 ######## Properties of orbits
 
@@ -157,14 +158,14 @@ def period(orbit):
 def new_posveltime(pv, time, constants):
     pvt = posvel(pv).snl(Time(time))
     # pvt = posvel(pv, time)
-    ret = newtree('pvt', pvt, constants) # Create the tree and set the first component to the PVT
+    ret = ecis.newtree('pvt', pvt, constants) # Create the tree and set the first component to the PVT
     ret.cartesian() # Convert the PVT to the Orekit CartesianOrbit and save that as the next component
     return(ret)
 
 ## Make a computation tree from Kepler elements and datetime
 
 def new_kepler(oes, epoch, constants):
-    ret = newtree('kep', kepler(oes, epoch, constants), constants)
+    ret = ecis.newtree('kep', kepler(oes, epoch, constants), constants)
     convert(ret, "pvt")
     return(ret)
 

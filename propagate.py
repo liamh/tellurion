@@ -19,7 +19,7 @@ from astropy.timeseries import TimeSeries
 #  force:    forces to use
 #  stopalt:  lowest altitude above spherical earth (m) to propagate
 def mkephem(orbit, proptime, force, stopalt=125.0e3):
-    [orb, tree] = thingofclass(orbit, Orbit)
+    [orb, tree] = ecis.thingofclass(orbit, Orbit)
 
     # Set parameters
     minstep = 0.001
@@ -53,52 +53,52 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
     # Propagate
     pt = timesec(proptime)
     propagated = prop.propagate(orb.date, orb.date.shiftedBy(pt))
-    ephemeris = generator.getGeneratedEphemeris();
+    ephgen = generator.getGeneratedEphemeris();
 
-    if type(orbit) is Ecis:
-        orbit.update(prop=newtree('ephemeris',ephemeris))
+    if type(orbit) is ecis.Ecis:
+        orbit.update(prop=ecis.newtree('ephgen',ephgen))
         orbit.prop.maxtime = pt
-        orbit.prop.default = force
+        orbit.prop.forceenv = force
         newname = f"prop{int(pt)}s"
         tree[newname] = orbit.pop('prop')
         return(tree[newname])
     else:
-        return(ephemeris)
+        return(ephgen)
 
 # Propagate the BoundedPropagator
 # orbit: tree with orbit in it
 # reltimes: times (seconds) past the initial time; may be a number (seconds), Quantity with type 'time' or list of these
 def prop(orbit, reltimes, stopalt=125.0e3):
-    [bp, tree] = thingofclass(orbit, BoundedPropagator)
+    [bp, tree] = ecis.thingofclass(orbit, BoundedPropagator)
     if tree is None:
-        default = None
+        forceenv = None
     else:
-        default = tree.default
+        forceenv = tree.forceenv
     if isinstance(reltimes, collections.abc.Iterable):
         maxtime = max(reltimes)
     else:
         maxtime = reltimes
     if bp is None:
-        bp = mkephem(orbit, maxtime, default, stopalt)
-        [bp, tree] = thingofclass(orbit, BoundedPropagator)
+        bp = mkephem(orbit, maxtime, forceenv, stopalt)
+        [bp, tree] = ecis.thingofclass(orbit, BoundedPropagator)
     if isinstance(reltimes, collections.abc.Iterable):
         state = [bp.propagate(bp.getMinDate().shiftedBy(timesec(rt))).orbit for rt in reltimes]
     else:
         state = bp.propagate(bp.getMinDate().shiftedBy(timesec(reltimes))).orbit
-#    if type(orbit) is Ecis:
+#    if type(orbit) is ecis.Ecis:
 #        name = "table" # f"state{int(reltimes)}s"
 #        tree[name] = state
     return(state)
 
 
-# prop(ex1,86400.0)
 # ephemeris(ex1,10*u.min,12)
 
 # Compute an ephemeris table from an orbital state, assuming a
 # BoundedPropagator exists in the tree.
 def ephemeris(orbit, tstep, nsteps):
     tss = int(timesec(tstep))
-    pvts = [prop(orbit,float(dt)).posveltime().pvt for dt in rangi(0,tss*nsteps,tss)]
+    times = [timesec(dt) for dt in rangi(0,tss*nsteps,tss)]
+    pvts = [porb.posveltime().pvt for porb in prop(ex1,times)]
     ts = TimeSeries(time=[pvt.time for pvt in pvts],
                data={'position': [pvt['p'] for pvt in pvts],
                      'velocity': [pvt['v'] for pvt in pvts]})

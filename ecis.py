@@ -2,10 +2,12 @@
 from munch import *
 import warnings
 
+ecisdefault = 'ecdefault'
+
 class Ecis(Munch):
     def __init__(self, defaultdict=None):
         if defaultdict is not None:
-            self.update({'default': defaultdict})
+            self.update({ecisdefault: defaultdict})
 
 def newtree(name=None, value=None, defaultdict=None):
     ret = Ecis(defaultdict)
