@@ -1,3 +1,16 @@
+##### Propagate orbits
+## Main function: ephemeris() will generate an ephemeris of uniform step times from an orbit
+##  ephemeris(orbit, tstep, nsteps):
+## Returns a TimeSeries
+##
+## Example propagate ex1 for 10 minutes from epoch to epoch + 2 hours inclusive
+##  ephemeris(ex1,10*u.min,12)
+## Returns the ephemeris TimeSeries and saves in ex1.prop7200s.ephem600s12
+## Get a single PVT from the sixth row
+##  ex1.prop7200s.ephem600s12[5].posveltime()
+## Get the whole time series as a list of PVTs
+##  ex1.prop7200s.ephem600s12.posveltime()
+
 from orbit import *
 from cartprodparam import *
 import warnings
@@ -85,13 +98,7 @@ def prop(orbit, reltimes, stopalt=125.0e3):
         state = [bp.propagate(bp.getMinDate().shiftedBy(timesec(rt))).orbit for rt in reltimes]
     else:
         state = bp.propagate(bp.getMinDate().shiftedBy(timesec(reltimes))).orbit
-#    if type(orbit) is ecis.Ecis:
-#        name = "table" # f"state{int(reltimes)}s"
-#        tree[name] = state
     return(state)
-
-
-# ephemeris(ex1,10*u.min,12)
 
 # Compute an ephemeris table from an orbital state, assuming a
 # BoundedPropagator exists in the tree.
@@ -102,9 +109,16 @@ def ephemeris(orbit, tstep, nsteps):
     ts = TimeSeries(time=[pvt.time for pvt in pvts],
                data={'position': [pvt['p'] for pvt in pvts],
                      'velocity': [pvt['v'] for pvt in pvts]})
-    ts['position'].info.format = '10.3f'
-    ts['velocity'].info.format = '7.6f'
-    return(ts)
+    ts['position'].info.format = '7.0f'
+    ts['velocity'].info.format = '5.3f'
+    [bp, tree] = ecis.thingofclass(orbit, BoundedPropagator)
+    tree[f"ephem{tss}s{nsteps}"] = ts
+    return ts
+
+TimeSeries.posveltime = lambda ts: [ts[row].posveltime() for row in range(0,len(ts))]
+astropy.table.row.Row.posveltime = \
+    lambda row: PVT(row['position'], row['velocity'],row['time'],
+                    units=[row.columns['position'].unit, row.columns['velocity'].unit])
 
 # Convert a Quantity to seconds as a Python float
 def timesec(t):

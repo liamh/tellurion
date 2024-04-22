@@ -35,8 +35,9 @@ class TQuantity(Quantity):
 ######## PVT: Position, velocity, and time
 
 default_length_unit = u.km
+default_velocity_unit = u.km/u.second
 
-def posvel(pv, time=None, length_unit=default_length_unit, time_unit=u.second):
+def posvel(pv, time=None, length_unit=default_length_unit, velocity_unit=default_velocity_unit):
     if type(pv) is list:
         if len(pv) == 6:
             pos = pv[0:3]
@@ -47,13 +48,15 @@ def posvel(pv, time=None, length_unit=default_length_unit, time_unit=u.second):
     # See https://docs.astropy.org/en/stable/units/structured_units.html#example
     pvtype = [('p', '(3,)f8'), ('v', '(3,)f8')]
     pv = np.array((pos, vel), dtype = pvtype)
-    pv = TQuantity(pv, u.StructuredUnit((length_unit, length_unit/time_unit)), time)
+    pv = TQuantity(pv, u.StructuredUnit((length_unit, velocity_unit)), time)
     return(pv)
 
+# Convert posvel units
+# pv_convert_units(ex1pvtabs, u.m, u.m/u.s)
+def pv_convert_units (pv, length_unit=default_length_unit, velocity_unit=default_velocity_unit):
+    conv = pv.to(u.StructuredUnit((length_unit, velocity_unit)))
+    return(conv)
 ex1pv = [5740.13268349499, 3314.06715, 0.0, -2.75082683526322, 4.7645718414998, 5.50165367052644]
 ex1pvtabs = posvel(ex1pv, Time('2023-09-14T08:30:00'))
-# ex1pvtrel = posvel(ex1pv, 100.0)
 
-# reltime
-# refepoch
-# epoch
+# ex1pvtrel = posvel(ex1pv, 100.0)

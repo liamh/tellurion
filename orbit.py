@@ -12,20 +12,14 @@ from org.orekit.orbits import EquinoctialOrbit
 # Orbital elements and PVT
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.hipparchus.geometry.euclidean.threed import Vector3D
+# Representation using AstroPy
+from astro import *
 # ECIS - exploratory computation in stages
 import ecis
 ecis.ecisdefault='forceenv' # Forces and other environmental constants
 
 # Orekit configuration
 okc = {'cartesian': OrbitType.CARTESIAN}
-
-
-
-######### base on astropy
-
-from astro import *
-
-
 
 
 ######## Snaglab (Python) and Orekit representation of a postion-velocity-time (PVT)
@@ -39,8 +33,9 @@ class PVT:
     velocity: list
     time: Time
 
-    def __init__(self, position, velocity, time, ork=None, units=[default_length_unit]):
-        self.pvt = posvel([position, velocity], time, length_unit=units[0])
+    def __init__(self, position, velocity, time, ork=None,
+                 units=[default_length_unit, default_velocity_unit]):
+        self.pvt = posvel([position, velocity], time, length_unit=units[0], velocity_unit=units[1])
         self.units = units
         self.position = position
         self.velocity = velocity
@@ -60,7 +55,7 @@ TimeStampedPVCoordinates.snl \
                        [self.velocity.x, self.velocity.y, self.velocity.z],
                        self.date.apt(),
                        self,
-                       [u.meter])
+                       [u.meter, u.meter/u.second])
 
 Quantity.snl \
     = lambda self, date: PVT(self['p'].value.tolist(),
