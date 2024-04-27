@@ -81,24 +81,37 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
 # Propagate the BoundedPropagator
 # orbit: tree with orbit in it
 # reltimes: times (seconds) past the initial time; may be a number (seconds), Quantity with type 'time' or list of these
+#
+# Example
+# In [2]: prop(ex1,120.0)
+# Out[2]: <PVT position: [5354.637330991254, 3851.33092506453, 658.031753990879] (km) velocity:[-3.6635093933608296, 4.1751310121471175, 5.447524217328053] (km/s) epoch 2022-06-01 12:02:00 (UTC)>
+#
+# In [3]: ex1.prop120s.pvt
+# Out[3]: <PVT position: [5354.637330991254, 3851.33092506453, 658.031753990879] (km) velocity:[-3.6635093933608296, 4.1751310121471175, 5.447524217328053] (km/s) epoch 2022-06-01 12:02:00 (UTC)>
+#
+# In [4]: ex1.prop120s.orbit
+# Out[4]: <Orbit: Cartesian parameters: {P(5354637.330991254, 3851330.92506453, 658031.7539908789), V(-3663.5093933608296, 4175.131012147117, 5447.524217328053)}>
 def prop(orbit, reltimes, stopalt=125.0e3):
+    if isinstance(reltimes, collections.abc.Iterable):
+        maxtime = max(reltimes)
+    else:
+        maxtime = reltimes
     [bp, tree] = ecis.thingofclass(orbit, BoundedPropagator)
     if tree is None:
         forceenv = None
     else:
         forceenv = tree.forceenv
-    if isinstance(reltimes, collections.abc.Iterable):
-        maxtime = max(reltimes)
-    else:
-        maxtime = reltimes
-    if bp is None:
+    if bp is None or ("maxtime" in tree and type(tree.maxtime) is float and maxtime > tree.maxtime):
         bp = mkephem(orbit, maxtime, forceenv, stopalt)
         [bp, tree] = ecis.thingofclass(orbit, BoundedPropagator)
     if isinstance(reltimes, collections.abc.Iterable):
         state = [bp.propagate(bp.getMinDate().shiftedBy(timesec(rt))).orbit for rt in reltimes]
     else:
         state = bp.propagate(bp.getMinDate().shiftedBy(timesec(reltimes))).orbit
-    return(state)
+    pvt=state.pVCoordinates.snl()
+    tree.update(pvt=pvt)
+    tree.update(orbit=state)
+    return(pvt)
 
 # Compute an ephemeris table from an orbital state, assuming a
 # BoundedPropagator exists in the tree.

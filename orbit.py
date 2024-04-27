@@ -48,6 +48,10 @@ class PVT:
             self.ork = ork
     def __repr__(self):
         return f"<PVT position: {self.pvt['p'].value.tolist()} ({self.units[0].short_names[0]}) velocity:{self.pvt['v'].value.tolist()} ({self.units[0].short_names[0]}/s) epoch {self.time} (UTC)>"
+    def convert_units(self, length_unit=default_length_unit, velocity_unit=default_velocity_unit):
+        self.pvt = self.pvt.convert_units((length_unit,velocity_unit))
+        self.units = [length_unit, velocity_unit]
+        return self
 
 # .snl(): Convert PVT from Orekit to Python
 TimeStampedPVCoordinates.snl \
@@ -55,7 +59,7 @@ TimeStampedPVCoordinates.snl \
                        [self.velocity.x, self.velocity.y, self.velocity.z],
                        self.date.apt(),
                        self,
-                       [u.meter, u.meter/u.second])
+                       [u.meter, u.meter/u.second]).convert_units()
 
 Quantity.snl \
     = lambda self, date: PVT(self['p'].value.tolist(),
