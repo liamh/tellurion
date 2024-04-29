@@ -83,19 +83,39 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
 # reltimes: times (seconds) past the initial time; may be a number (seconds), Quantity with type 'time' or list of these
 #
 # Example
-# In [2]: prop(ex1,120.0)
-# Out[2]: <PVT position: [5354.637330991254, 3851.33092506453, 658.031753990879] (km) velocity:[-3.6635093933608296, 4.1751310121471175, 5.447524217328053] (km/s) epoch 2022-06-01 12:02:00 (UTC)>
-#
-# In [3]: ex1.prop120s.pvt
-# Out[3]: <PVT position: [5354.637330991254, 3851.33092506453, 658.031753990879] (km) velocity:[-3.6635093933608296, 4.1751310121471175, 5.447524217328053] (km/s) epoch 2022-06-01 12:02:00 (UTC)>
-#
-# In [4]: ex1.prop120s.orbit
-# Out[4]: <Orbit: Cartesian parameters: {P(5354637.330991254, 3851330.92506453, 658031.7539908789), V(-3663.5093933608296, 4175.131012147117, 5447.524217328053)}>
-def prop(orbit, reltimes, stopalt=125.0e3):
+# In [2]: prop(ex1,300.0,maximum_tof=86400.0)
+# Out[2]: <PVT position: [4581.814910467976, 4512.262287102674, 1616.8263139353987] (km) velocity:[-4.8914488794011595, 3.141592098656343, 5.166423005465441] (km/s) epoch 2022-06-01 12:05:00 (UTC)>
+
+# In [3]: prop(ex1,[1200.0,1500.0,1800.0])
+# Out[3]:
+# [<PVT position: [-1359.9602212056286, 4580.209288805089, 4646.557709357471] (km) velocity:[-7.074061594952203, -2.989070151590076, 0.948420112505302] (km/s) epoch 2022-06-01 12:20:00 (UTC)>,
+#  <PVT position: [-3358.332160090897, 3427.3199510360746, 4647.312224539923] (km) velocity:[-6.115173953646672, -4.617481772761261, -0.9412695398995137] (km/s) epoch 2022-06-01 12:25:00 (UTC)>,
+#  <PVT position: [-4956.791809682075, 1865.869024125194, 4094.2858798679345] (km) velocity:[-4.4362841450361055, -5.686777789101822, -2.7067519585212185] (km/s) epoch 2022-06-01 12:30:00 (UTC)>]
+
+# In [4]: prop(ex1,600.0)
+# Out[4]: <PVT position: [2865.4998895513913, 5161.045684511684, 3036.84672810346] (km) velocity:[-6.432386509240479, 1.1404155012024495, 4.2038220495311265] (km/s) epoch 2022-06-01 12:10:00 (UTC)>
+
+# In [5]: ex1.prop86400s.pvt
+# Out[5]:
+# [<PVT position: [4581.814910467976, 4512.262287102674, 1616.8263139353987] (km) velocity:[-4.8914488794011595, 3.141592098656343, 5.166423005465441] (km/s) epoch 2022-06-01 12:05:00 (UTC)>,
+#  <PVT position: [2865.4998895513913, 5161.045684511684, 3036.84672810346] (km) velocity:[-6.432386509240479, 1.1404155012024495, 4.2038220495311265] (km/s) epoch 2022-06-01 12:10:00 (UTC)>,
+#  <PVT position: [-1359.9602212056286, 4580.209288805089, 4646.557709357471] (km) velocity:[-7.074061594952203, -2.989070151590076, 0.948420112505302] (km/s) epoch 2022-06-01 12:20:00 (UTC)>,
+#  <PVT position: [-3358.332160090897, 3427.3199510360746, 4647.312224539923] (km) velocity:[-6.115173953646672, -4.617481772761261, -0.9412695398995137] (km/s) epoch 2022-06-01 12:25:00 (UTC)>,
+#  <PVT position: [-4956.791809682075, 1865.869024125194, 4094.2858798679345] (km) velocity:[-4.4362841450361055, -5.686777789101822, -2.7067519585212185] (km/s) epoch 2022-06-01 12:30:00 (UTC)>]
+
+# In [6]: ex1.prop86400s.orbit
+# Out[6]:
+# [<Orbit: Cartesian parameters: {P(4581814.910467976, 4512262.287102674, 1616826.3139353986), V(-4891.4488794011595, 3141.592098656343, 5166.423005465442)}>,
+#  <Orbit: Cartesian parameters: {P(2865499.8895513914, 5161045.684511684, 3036846.72810346), V(-6432.386509240479, 1140.4155012024494, 4203.822049531126)}>,
+#  <Orbit: Cartesian parameters: {P(-1359960.2212056285, 4580209.288805089, 4646557.709357471), V(-7074.061594952203, -2989.070151590076, 948.420112505302)}>,
+#  <Orbit: Cartesian parameters: {P(-3358332.160090897, 3427319.9510360747, 4647312.224539923), V(-6115.173953646672, -4617.481772761261, -941.2695398995137)}>,
+#  <Orbit: Cartesian parameters: {P(-4956791.809682075, 1865869.024125194, 4094285.879867934), V(-4436.284145036106, -5686.777789101822, -2706.7519585212185)}>]
+
+def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
     if isinstance(reltimes, collections.abc.Iterable):
-        maxtime = max(reltimes)
+        maxtime = max(max(reltimes), maximum_tof)
     else:
-        maxtime = reltimes
+        maxtime = max(reltimes, maximum_tof)
     [bp, tree] = ecis.thingofclass(orbit, BoundedPropagator)
     if tree is None:
         forceenv = None
@@ -106,11 +126,16 @@ def prop(orbit, reltimes, stopalt=125.0e3):
         [bp, tree] = ecis.thingofclass(orbit, BoundedPropagator)
     if isinstance(reltimes, collections.abc.Iterable):
         state = [bp.propagate(bp.getMinDate().shiftedBy(timesec(rt))).orbit for rt in reltimes]
+        pvt=[st.pVCoordinates.snl() for st in state]
     else:
         state = bp.propagate(bp.getMinDate().shiftedBy(timesec(reltimes))).orbit
-    pvt=state.pVCoordinates.snl()
-    tree.update(pvt=pvt)
-    tree.update(orbit=state)
+        pvt=state.pVCoordinates.snl()
+    pvts = ensurelist(tree.get('pvt')) + ensurelist(pvt)
+    pvts.sort(key = lambda s: s.time)
+    tree.update(pvt = pvts)
+    states = ensurelist(tree.get('orbit')) + ensurelist(state)
+    states.sort(key = lambda s: s.posveltime().time)
+    tree.update(orbit= states)
     return(pvt)
 
 # Compute an ephemeris table from an orbital state, assuming a

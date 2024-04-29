@@ -14,10 +14,11 @@ from random import shuffle
 ####### List and dict utilities
 
 def ensurelist(arg):
+    if arg is None:
+        return([])
     if type(arg) is list:
         return(arg)
-    else:
-        return([arg])
+    return([arg])
 
 def dictvals(dict):
     return list(dict.values())
@@ -47,19 +48,6 @@ def rangi(start, stop=None, step=1):
     else:
         rgs = rg
     return ([i for i in rgs])
-
-####### Utilities for lists and dictionaries
-
-# If argument is a list, return it; otherwise, make a singleton list
-def ensurelist(arg):
-    if type(arg) is list:
-        return(arg)
-    else:
-        return([arg])
-
-# Make a list of the dictionary values (no keys)
-def dictvals(dict):
-    return list(dict.values())
 
 ####### Outer product of lists with constraint
 
