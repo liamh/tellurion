@@ -72,7 +72,7 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
         orbit.update(prop=ecis.newtree('ephgen',ephgen))
         orbit.prop.maxtime = pt
         orbit.prop.forceenv = force
-        newname = f"prop{int(pt)}s"
+        newname = "prop" #f"prop{int(pt)}s"
         tree[newname] = orbit.pop('prop')
         return(tree[newname])
     else:
@@ -81,6 +81,15 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
 # Propagate the BoundedPropagator
 # orbit: tree with orbit in it
 # reltimes: times (seconds) past the initial time; may be a number (seconds), Quantity with type 'time' or list of these
+#
+# The set of propagated points can be added to at any time, but be sure to set maximum_tof
+# to the highest possible value when prop() is first called; otherwise, previously computed
+# values might be lost.
+# The class variable .pvt will have a list of pvts
+# The class variable .orbit will have a list of orbits
+# The class variable .ephem will have an AstroPy time series ephemeris table
+# Pure numpy (no AstroPy or Orekit) is obtained from the ephemeris table with .posveltime()
+#    note: this is potentially not a good choice of function name, as .posveltime() on an orbit gives a PVT.
 #
 # Example
 # In [2]: prop(ex1,300.0,maximum_tof=86400.0)
@@ -95,7 +104,7 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
 # In [4]: prop(ex1,600.0)
 # Out[4]: <PVT position: [2865.4998895513913, 5161.045684511684, 3036.84672810346] (km) velocity:[-6.432386509240479, 1.1404155012024495, 4.2038220495311265] (km/s) epoch 2022-06-01 12:10:00 (UTC)>
 
-# In [5]: ex1.prop86400s.pvt
+# In [5]: ex1.prop.pvt
 # Out[5]:
 # [<PVT position: [4581.814910467976, 4512.262287102674, 1616.8263139353987] (km) velocity:[-4.8914488794011595, 3.141592098656343, 5.166423005465441] (km/s) epoch 2022-06-01 12:05:00 (UTC)>,
 #  <PVT position: [2865.4998895513913, 5161.045684511684, 3036.84672810346] (km) velocity:[-6.432386509240479, 1.1404155012024495, 4.2038220495311265] (km/s) epoch 2022-06-01 12:10:00 (UTC)>,
@@ -103,13 +112,45 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
 #  <PVT position: [-3358.332160090897, 3427.3199510360746, 4647.312224539923] (km) velocity:[-6.115173953646672, -4.617481772761261, -0.9412695398995137] (km/s) epoch 2022-06-01 12:25:00 (UTC)>,
 #  <PVT position: [-4956.791809682075, 1865.869024125194, 4094.2858798679345] (km) velocity:[-4.4362841450361055, -5.686777789101822, -2.7067519585212185] (km/s) epoch 2022-06-01 12:30:00 (UTC)>]
 
-# In [6]: ex1.prop86400s.orbit
+# In [6]: ex1.prop.orbit
 # Out[6]:
 # [<Orbit: Cartesian parameters: {P(4581814.910467976, 4512262.287102674, 1616826.3139353986), V(-4891.4488794011595, 3141.592098656343, 5166.423005465442)}>,
 #  <Orbit: Cartesian parameters: {P(2865499.8895513914, 5161045.684511684, 3036846.72810346), V(-6432.386509240479, 1140.4155012024494, 4203.822049531126)}>,
 #  <Orbit: Cartesian parameters: {P(-1359960.2212056285, 4580209.288805089, 4646557.709357471), V(-7074.061594952203, -2989.070151590076, 948.420112505302)}>,
 #  <Orbit: Cartesian parameters: {P(-3358332.160090897, 3427319.9510360747, 4647312.224539923), V(-6115.173953646672, -4617.481772761261, -941.2695398995137)}>,
 #  <Orbit: Cartesian parameters: {P(-4956791.809682075, 1865869.024125194, 4094285.879867934), V(-4436.284145036106, -5686.777789101822, -2706.7519585212185)}>]
+
+# In [8]: ex1.prop.ephem
+# Out[8]:
+# <TimeSeries length=5>
+#         time               position               velocity
+#                               km                   km / s
+#         Time              float64[3]             float64[3]
+# ------------------- ---------------------- ----------------------
+# 2022-06-01 12:05:00  4581.815 ..  1616.826 -4.891449 ..  5.166423
+# 2022-06-01 12:10:00  2865.500 ..  3036.847 -6.432387 ..  4.203822
+# 2022-06-01 12:20:00 -1359.960 ..  4646.558 -7.074062 ..  0.948420
+# 2022-06-01 12:25:00 -3358.332 ..  4647.312 -6.115174 .. -0.941270
+# 2022-06-01 12:30:00 -4956.792 ..  4094.286 -4.436284 .. -2.706752
+
+# In [8]: ex1.prop.ephem.posveltime()
+# Out[8]:
+# [array([[ 4581.81491047,  4512.2622871 ,  1616.82631394],
+#         [ 2865.49988955,  5161.04568451,  3036.8467281 ],
+#         [-1359.96022121,  4580.20928881,  4646.55770936],
+#         [-3358.33216009,  3427.31995104,  4647.31222454],
+#         [-4956.79180968,  1865.86902413,  4094.28587987]]),
+#  array([[-4.89144888,  3.1415921 ,  5.16642301],
+#         [-6.43238651,  1.1404155 ,  4.20382205],
+#         [-7.07406159, -2.98907015,  0.94842011],
+#         [-6.11517395, -4.61748177, -0.94126954],
+#         [-4.43628415, -5.68677779, -2.70675196]]),
+#  array([datetime.datetime(2022, 6, 1, 12, 5),
+#         datetime.datetime(2022, 6, 1, 12, 10),
+#         datetime.datetime(2022, 6, 1, 12, 20),
+#         datetime.datetime(2022, 6, 1, 12, 25),
+#         datetime.datetime(2022, 6, 1, 12, 30)], dtype=object)]
+
 
 def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
     if isinstance(reltimes, collections.abc.Iterable):
@@ -135,28 +176,25 @@ def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
     tree.update(pvt = pvts)
     states = ensurelist(tree.get('orbit')) + ensurelist(state)
     states.sort(key = lambda s: s.posveltime().time)
-    tree.update(orbit= states)
+    tree.update(orbit=states)
+    tree.update(ephem=ephts(tree))
     return(pvt)
 
-# Compute an ephemeris table from an orbital state, assuming a
-# BoundedPropagator exists in the tree.
-def ephemeris(orbit, tstep, nsteps):
-    tss = int(timesec(tstep))
-    times = [timesec(dt) for dt in rangi(0,tss*nsteps,tss)]
-    pvts = [porb.posveltime().pvt for porb in prop(ex1,times)]
-    ts = TimeSeries(time=[pvt.time for pvt in pvts],
-               data={'position': [pvt['p'] for pvt in pvts],
-                     'velocity': [pvt['v'] for pvt in pvts]})
-    ts['position'].info.format = '7.0f'
-    ts['velocity'].info.format = '5.3f'
-    [bp, tree] = ecis.thingofclass(orbit, BoundedPropagator)
-    tree[f"ephem{tss}s{nsteps}"] = ts
+# Make a time series (ephemeris table) from the propagated ephemeris
+def ephts(prop):
+    ts = TimeSeries(time=[pvt.time for pvt in prop.pvt],
+                       data={'position': [pvt.pvt['p'] for pvt in prop.pvt],
+                             'velocity': [pvt.pvt['v'] for pvt in prop.pvt]})
+    ts['position'].info.format = '9.3f'
+    ts['velocity'].info.format = '9.6f'
     return ts
 
-TimeSeries.posveltime = lambda ts: [ts[row].posveltime() for row in range(0,len(ts))]
-astropy.table.row.Row.posveltime = \
-    lambda row: PVT(row['position'], row['velocity'],row['time'],
-                    units=[row.columns['position'].unit, row.columns['velocity'].unit])
+# Return a list of numpy arrays and Python datetimes from the
+# ephemeris table or a row of it.
+def tspvt(ts):
+    return [ts['position'].value, ts['velocity'].value, ts['time'].value]
+TimeSeries.posveltime = tspvt
+astropy.table.row.Row.posveltime = tspvt
 
 # Convert a Quantity to seconds as a Python float
 def timesec(t):
