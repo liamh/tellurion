@@ -145,12 +145,9 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
 #         [-7.07406159, -2.98907015,  0.94842011],
 #         [-6.11517395, -4.61748177, -0.94126954],
 #         [-4.43628415, -5.68677779, -2.70675196]]),
-#  array([datetime.datetime(2022, 6, 1, 12, 5),
-#         datetime.datetime(2022, 6, 1, 12, 10),
-#         datetime.datetime(2022, 6, 1, 12, 20),
-#         datetime.datetime(2022, 6, 1, 12, 25),
-#         datetime.datetime(2022, 6, 1, 12, 30)], dtype=object)]
-
+#  array(['2022-06-01T12:05:00.000000000', '2022-06-01T12:10:00.000000000',
+#         '2022-06-01T12:20:00.000000000', '2022-06-01T12:25:00.000000000',
+#         '2022-06-01T12:30:00.000000000'], dtype='datetime64[ns]')]
 
 def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
     if isinstance(reltimes, collections.abc.Iterable):
@@ -183,16 +180,16 @@ def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
 # Make a time series (ephemeris table) from the propagated ephemeris
 def ephts(prop):
     ts = TimeSeries(time=[pvt.pvtq.time for pvt in prop.pvt],
-                       data={'position': [pvt.pvtq['p'] for pvt in prop.pvt],
-                             'velocity': [pvt.pvtq['v'] for pvt in prop.pvt]})
+                    data={'position': [pvt.pvtq['p'] for pvt in prop.pvt],
+                          'velocity': [pvt.pvtq['v'] for pvt in prop.pvt]})
     ts['position'].info.format = '9.3f'
     ts['velocity'].info.format = '9.6f'
     return ts
 
-# Return a list of numpy arrays and Python datetimes from the
+# Return a list of numpy arrays and datetimes from the
 # ephemeris table or a row of it.
 def tspvt(ts):
-    return [ts['position'].value, ts['velocity'].value, ts['time'].value]
+    return [ts['position'].value, ts['velocity'].value, ts['time'].datetime64]
 TimeSeries.posveltime = tspvt
 astropy.table.row.Row.posveltime = tspvt
 
