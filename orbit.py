@@ -45,16 +45,18 @@ class PVT:
     def convert_units(self, length_unit=default_length_unit, velocity_unit=default_velocity_unit):
         self.pvtq = self.pvtq.convert_units((length_unit,velocity_unit))
         return self
+    def makenp(self):
+        return [self.pvtq.value[0], self.pvtq.value[1], self.pvtq.time.datetime64]
 
-# .snl(): Convert PVT from Orekit to Python
-TimeStampedPVCoordinates.snl \
+# .posveltime(): Make PVT from Orekit
+TimeStampedPVCoordinates.posveltime \
     = lambda self: PVT([self.position.x, self.position.y, self.position.z],
                        [self.velocity.x, self.velocity.y, self.velocity.z],
                        self.date.apt(),
                        self,
                        [u.meter, u.meter/u.second]).convert_units()
 
-Quantity.snl \
+Quantity.posveltime \
     = lambda self, date: PVT(self['p'].value.tolist(),
                              self['v'].value.tolist(),
                              date)
@@ -136,7 +138,7 @@ ecis.Ecis.posveltime = lambda tree: convert(tree, "pvt")
 
 # The position-velocity-time for the state
 # The inverse of .cartesian()
-Orbit.posveltime = lambda orbit: orbit.pVCoordinates.snl()
+Orbit.posveltime = lambda orbit: orbit.pVCoordinates.posveltime()
 
 # The geocentric distance of the orbit
 def posmag(orbit):
@@ -148,8 +150,7 @@ def period(orbit):
 ## Make a computation tree from position, velocity, and datetime
 
 def new_posveltime(pv, time, constants):
-    pvt = posvel(pv).snl(Time(time))
-    # pvt = posvel(pv, time)
+    pvt = PVT(pv[0:3], pv[3:6], time)
     ret = ecis.newtree('pvt', pvt, constants) # Create the tree and set the first component to the PVT
     ret.cartesian() # Convert the PVT to the Orekit CartesianOrbit and save that as the next component
     return(ret)
@@ -167,18 +168,12 @@ ex1 = new_posveltime([5740.13268349499, 3314.06715, 0.0,
                      Time('2022-06-01T12:00:00.000000'),
                      setgravity(0,0))
 ex1.pvtorbrec = ex1.cart.posveltime() # The PVT recalculated from the Cartesian orbit
-ex1.pvtorkrec = ex1.pvt.ork.snl() # The PVT recalculated from the Orekit representation
+ex1.pvtorkrec = ex1.pvt.ork.posveltime() # The PVT recalculated from the Orekit representation
 # ex1.keys()
 # In [3]: ex1.pvt
 # Out[3]: <PVT position: [5740.13268349499, 3314.06715, 0.0] (km) velocity:[-2.75082683526322, 4.7645718414998, 5.50165367052644] (km/s) epoch 2022-06-01T12:00:00.000 (UTC)>
-# In [4]: ex1.pvt.pvt
+# In [4]: ex1.pvt.pvtq
 # Out[4]: <TQuantity ([5740.13268349, 3314.06715   ,    0.        ], [-2.75082684,  4.76457184,  5.50165367]) (km, km / s), time=2022-06-01T12:00:00.000>
-# In [5]: ex1.pvt.position
-# Out[5]: [5740.13268349499, 3314.06715, 0.0]
-# In [6]: ex1.pvt.velocity
-# Out[6]: [-2.75082683526322, 4.7645718414998, 5.50165367052644]
-# In [7]: ex1.pvt.time
-# Out[7]: <Time object: scale='utc' format='isot' value=2022-06-01T12:00:00.000>
 # In [8]: ex1.pvt.ork
 # Out[8]: <TimeStampedPVCoordinates: {2022-06-01T12:00:00.000, P(5740132.68349499, 3314067.15, 0.0), V(-2750.82683526322, 4764.5718414998, 5501.65367052644), A(0.0, 0.0, 0.0)}>
 

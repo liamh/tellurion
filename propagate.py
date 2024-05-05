@@ -133,7 +133,7 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
 # 2022-06-01 12:25:00 -3358.332 ..  4647.312 -6.115174 .. -0.941270
 # 2022-06-01 12:30:00 -4956.792 ..  4094.286 -4.436284 .. -2.706752
 
-# In [8]: ex1.prop.ephem.posveltime()
+# In [8]: ex1.prop.ephem.makenp()
 # Out[8]:
 # [array([[ 4581.81491047,  4512.2622871 ,  1616.82631394],
 #         [ 2865.49988955,  5161.04568451,  3036.8467281 ],
@@ -164,10 +164,10 @@ def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
         [bp, tree] = ecis.thingofclass(orbit, BoundedPropagator)
     if isinstance(reltimes, collections.abc.Iterable):
         state = [bp.propagate(bp.getMinDate().shiftedBy(timesec(rt))).orbit for rt in reltimes]
-        pvt=[st.pVCoordinates.snl() for st in state]
+        pvt=[st.pVCoordinates.posveltime() for st in state]
     else:
         state = bp.propagate(bp.getMinDate().shiftedBy(timesec(reltimes))).orbit
-        pvt=state.pVCoordinates.snl()
+        pvt=state.pVCoordinates.posveltime()
     pvts = ensurelist(tree.get('pvt')) + ensurelist(pvt)
     pvts.sort(key = lambda s: s.pvtq.time)
     tree.update(pvt = pvts)
@@ -190,8 +190,9 @@ def ephts(prop):
 # ephemeris table or a row of it.
 def tspvt(ts):
     return [ts['position'].value, ts['velocity'].value, ts['time'].datetime64]
-TimeSeries.posveltime = tspvt
-astropy.table.row.Row.posveltime = tspvt
+# .makenp() convert to numpy; units are same as ephemeris table but not specified in the result
+TimeSeries.makenp = tspvt
+astropy.table.row.Row.makenp = tspvt
 
 # Convert a Quantity to seconds as a Python float
 def timesec(t):
