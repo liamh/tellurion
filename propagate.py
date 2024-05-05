@@ -172,19 +172,19 @@ def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
         state = bp.propagate(bp.getMinDate().shiftedBy(timesec(reltimes))).orbit
         pvt=state.pVCoordinates.snl()
     pvts = ensurelist(tree.get('pvt')) + ensurelist(pvt)
-    pvts.sort(key = lambda s: s.time)
+    pvts.sort(key = lambda s: s.pvtq.time)
     tree.update(pvt = pvts)
     states = ensurelist(tree.get('orbit')) + ensurelist(state)
-    states.sort(key = lambda s: s.posveltime().time)
+    states.sort(key = lambda s: s.posveltime().pvtq.time)
     tree.update(orbit=states)
     tree.update(ephem=ephts(tree))
     return(pvt)
 
 # Make a time series (ephemeris table) from the propagated ephemeris
 def ephts(prop):
-    ts = TimeSeries(time=[pvt.time for pvt in prop.pvt],
-                       data={'position': [pvt.pvt['p'] for pvt in prop.pvt],
-                             'velocity': [pvt.pvt['v'] for pvt in prop.pvt]})
+    ts = TimeSeries(time=[pvt.pvtq.time for pvt in prop.pvt],
+                       data={'position': [pvt.pvtq['p'] for pvt in prop.pvt],
+                             'velocity': [pvt.pvtq['v'] for pvt in prop.pvt]})
     ts['position'].info.format = '9.3f'
     ts['velocity'].info.format = '9.6f'
     return ts

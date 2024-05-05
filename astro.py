@@ -42,9 +42,11 @@ class TQuantity(Quantity):
 default_length_unit = u.km
 default_velocity_unit = u.km/u.second
 
-# Create a position-velocity as a TQuantity
+# Create a position-velocity as a TQuantity, call this a `pvtq`
 # ex1pv = [5740.13268349499, 3314.06715, 0.0, -2.75082683526322, 4.7645718414998, 5.50165367052644]
-# ex1pvt = posvel(ex1pv, Time('2023-09-14T08:30:00'))
+# ex1pvtq = posvel(ex1pv, Time('2023-09-14T08:30:00'))
+# ex1pvtq['p'] => <TQuantity [5740.13268349, 3314.06715   ,    0.        ] km, time not available>
+# ex1pvtq.value[0] => array([5740.13268349, 3314.06715   ,    0.        ])
 def posvel(pv, time=None, length_unit=default_length_unit, velocity_unit=default_velocity_unit):
     if type(pv) is list:
         if len(pv) == 6:

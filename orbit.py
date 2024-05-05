@@ -24,33 +24,26 @@ okc = {'cartesian': OrbitType.CARTESIAN}
 
 ######## Snaglab (Python) and Orekit representation of a postion-velocity-time (PVT)
 
-# PVT as Orekit arrays and AbsoluteDate
-# These are made with the `ork` variable set to a TimeStampedPVCoordinates instance
+# PVT as
+#  .ork:  TimeStampedPVCoordinates (Orekit)
+#  .pvtq: TQuantity (AstroPy)
 class PVT:
-    pvt: TQuantity
+    pvtq: TQuantity
     ork: TimeStampedPVCoordinates
-    position: list
-    velocity: list
-    time: Time
 
     def __init__(self, position, velocity, time, ork=None,
                  units=[default_length_unit, default_velocity_unit]):
-        self.pvt = posvel([position, velocity], time, length_unit=units[0], velocity_unit=units[1])
-        self.units = units
-        self.position = position
-        self.velocity = velocity
-        self.time = time
+        self.pvtq = posvel([position, velocity], time, length_unit=units[0], velocity_unit=units[1])
         if ork is None:
-            psi = self.pvt.si['p'].value.tolist()
-            vsi = self.pvt.si['v'].value.tolist()
-            self.ork = TimeStampedPVCoordinates(self.time.okad(), Vector3D(psi), Vector3D(vsi))
+            psi = self.pvtq.si['p'].value.tolist()
+            vsi = self.pvtq.si['v'].value.tolist()
+            self.ork = TimeStampedPVCoordinates(time.okad(), Vector3D(psi), Vector3D(vsi))
         else:
             self.ork = ork
     def __repr__(self):
-        return f"<PVT position: {self.pvt['p'].value.tolist()} ({self.units[0].short_names[0]}) velocity:{self.pvt['v'].value.tolist()} ({self.units[0].short_names[0]}/s) epoch {self.time} (UTC)>"
+        return f"<PVT position: {self.pvtq['p'].value.tolist()} ({self.pvtq.unit[0].to_string()}) velocity:{self.pvtq['v'].value.tolist()} ({self.pvtq.unit[1].to_string()}) epoch {self.pvtq.time} (UTC)>"
     def convert_units(self, length_unit=default_length_unit, velocity_unit=default_velocity_unit):
-        self.pvt = self.pvt.convert_units((length_unit,velocity_unit))
-        self.units = [length_unit, velocity_unit]
+        self.pvtq = self.pvtq.convert_units((length_unit,velocity_unit))
         return self
 
 # .snl(): Convert PVT from Orekit to Python
