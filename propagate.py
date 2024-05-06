@@ -1,15 +1,5 @@
 ##### Propagate orbits
-## Main function: ephemeris() will generate an ephemeris of uniform step times from an orbit
-##  ephemeris(orbit, tstep, nsteps):
-## Returns a TimeSeries
-##
-## Example propagate ex1 for 10 minutes from epoch to epoch + 2 hours inclusive
-##  ephemeris(ex1,10*u.min,12)
-## Returns the ephemeris TimeSeries and saves in ex1.prop7200s.ephem600s12
-## Get a single PVT from the sixth row
-##  ex1.prop7200s.ephem600s12[5].posveltime()
-## Get the whole time series as a list of PVTs
-##  ex1.prop7200s.ephem600s12.posveltime()
+## Main function: prop()
 
 from orbit import *
 from cartprodparam import *
@@ -88,8 +78,7 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
 # The class variable .pvt will have a list of pvts
 # The class variable .orbit will have a list of orbits
 # The class variable .ephem will have an AstroPy time series ephemeris table
-# Pure numpy (no AstroPy or Orekit) is obtained from the ephemeris table with .posveltime()
-#    note: this is potentially not a good choice of function name, as .posveltime() on an orbit gives a PVT.
+# Pure numpy (no AstroPy or Orekit) is obtained from the ephemeris table with .makenp()
 #
 # Example
 # In [2]: prop(ex1,300.0,maximum_tof=86400.0)
@@ -149,6 +138,14 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
 #         '2022-06-01T12:20:00.000000000', '2022-06-01T12:25:00.000000000',
 #         '2022-06-01T12:30:00.000000000'], dtype='datetime64[ns]')]
 
+# In [29]: pvts(ex1.prop.ephem) # same as ex1.prop.pvt
+# Out[29]:
+# [<PVT position: [4581.814910467976, 4512.262287102674, 1616.8263139353987] (km) velocity:[-4.8914488794011595, 3.141592098656343, 5.166423005465441] (km / s) epoch 2022-06-01 12:05:00 (UTC)>,
+#  <PVT position: [2865.4998895513913, 5161.045684511684, 3036.84672810346] (km) velocity:[-6.432386509240479, 1.1404155012024495, 4.2038220495311265] (km / s) epoch 2022-06-01 12:10:00 (UTC)>,
+#  <PVT position: [-1359.9602212056286, 4580.209288805089, 4646.557709357471] (km) velocity:[-7.074061594952203, -2.989070151590076, 0.948420112505302] (km / s) epoch 2022-06-01 12:20:00 (UTC)>,
+#  <PVT position: [-3358.332160090897, 3427.3199510360746, 4647.312224539923] (km) velocity:[-6.115173953646672, -4.617481772761261, -0.9412695398995137] (km / s) epoch 2022-06-01 12:25:00 (UTC)>,
+#  <PVT position: [-4956.791809682075, 1865.869024125194, 4094.2858798679345] (km) velocity:[-4.4362841450361055, -5.686777789101822, -2.7067519585212185] (km / s) epoch 2022-06-01 12:30:00 (UTC)>]
+
 def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
     if isinstance(reltimes, collections.abc.Iterable):
         maxtime = max(max(reltimes), maximum_tof)
@@ -164,15 +161,15 @@ def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
         [bp, tree] = ecis.thingofclass(orbit, BoundedPropagator)
     if isinstance(reltimes, collections.abc.Iterable):
         state = [bp.propagate(bp.getMinDate().shiftedBy(timesec(rt))).orbit for rt in reltimes]
-        pvt=[st.pVCoordinates.posveltime() for st in state]
+        pvt=[PVT(st) for st in state]
     else:
         state = bp.propagate(bp.getMinDate().shiftedBy(timesec(reltimes))).orbit
-        pvt=state.pVCoordinates.posveltime()
+        pvt=PVT(state)
     pvts = ensurelist(tree.get('pvt')) + ensurelist(pvt)
     pvts.sort(key = lambda s: s.pvtq.time)
     tree.update(pvt = pvts)
     states = ensurelist(tree.get('orbit')) + ensurelist(state)
-    states.sort(key = lambda s: s.posveltime().pvtq.time)
+    states.sort(key = lambda s: PVT(s).pvtq.time)
     tree.update(orbit=states)
     tree.update(ephem=ephts(tree))
     return(pvt)
@@ -186,13 +183,21 @@ def ephts(prop):
     ts['velocity'].info.format = '9.6f'
     return ts
 
+# Make a list or single PVTs from an ephemeris table
+# possibly add later optional mintime, maxtime arguments
+def pvts(ephem):
+    if type(ephem) == astropy.table.row.Row:
+        return PVT(ephem)
+    else:
+        return [PVT(row) for row in list(ephem.iterrows())]
+
 # Return a list of numpy arrays and datetimes from the
 # ephemeris table or a row of it.
-def tspvt(ts):
-    return [ts['position'].value, ts['velocity'].value, ts['time'].datetime64]
+def makenp(ts):
+    return (np.concatenate((ts['position'].value, ts['velocity'].value), axis=1), ts['time'].datetime64)
 # .makenp() convert to numpy; units are same as ephemeris table but not specified in the result
-TimeSeries.makenp = tspvt
-astropy.table.row.Row.makenp = tspvt
+TimeSeries.makenp = makenp
+astropy.table.row.Row.makenp = makenp
 
 # Convert a Quantity to seconds as a Python float
 def timesec(t):

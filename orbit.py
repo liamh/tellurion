@@ -21,7 +21,6 @@ ecis.ecisdefault='forceenv' # Forces and other environmental constants
 # Orekit configuration
 okc = {'cartesian': OrbitType.CARTESIAN}
 
-
 ######## Snaglab (Python) and Orekit representation of a postion-velocity-time (PVT)
 
 # PVT as
@@ -31,35 +30,44 @@ class PVT:
     pvtq: TQuantity
     ork: TimeStampedPVCoordinates
 
-    def __init__(self, position, velocity, time, ork=None,
+    def __init__(self, fromthing, time=None, ork=None,
                  units=[default_length_unit, default_velocity_unit]):
-        self.pvtq = posvel([position, velocity], time, length_unit=units[0], velocity_unit=units[1])
-        if ork is None:
-            psi = self.pvtq.si['p'].value.tolist()
-            vsi = self.pvtq.si['v'].value.tolist()
-            self.ork = TimeStampedPVCoordinates(time.okad(), Vector3D(psi), Vector3D(vsi))
-        else:
-            self.ork = ork
+        if type(fromthing)==list or type(fromthing) == np.ndarray:
+            self.pvtq = posvel([fromthing[0:3], fromthing[3:6]], time,
+                               length_unit=units[0], velocity_unit=units[1])
+            if ork is None:
+                psi = self.pvtq.si['p'].value.tolist()
+                vsi = self.pvtq.si['v'].value.tolist()
+                self.ork = TimeStampedPVCoordinates(to_okad(time), Vector3D(psi), Vector3D(vsi))
+            else:
+                self.ork = ork
+        elif type(fromthing) == TimeStampedPVCoordinates:
+            self.__init__([fromthing.position.x, fromthing.position.y, fromthing.position.z,
+                           fromthing.velocity.x, fromthing.velocity.y, fromthing.velocity.z],
+                          fromthing.date.apt(),
+                          fromthing,
+                          [u.meter, u.meter/u.second])
+            self.convert_units(units[0],units[1])
+        elif type(fromthing) == TQuantity:
+            self.pvtq = fromthing
+            psi = fromthing.si['p'].value.tolist()
+            vsi = fromthing.si['v'].value.tolist()
+            self.ork = TimeStampedPVCoordinates(datetime_to_absolutedate(fromthing.time.datetime),
+                                                Vector3D(psi), Vector3D(vsi))
+        elif type(fromthing) == astropy.table.row.Row:
+            self.__init__(posvel([fromthing['position'], fromthing['velocity']], fromthing['time']))
+        elif type(fromthing) == tuple and len(fromthing) == 3 and type(fromthing[0]) == Time \
+             and type(fromthing[1]) == TQuantity and type(fromthing[2]) == TQuantity:
+            self.__init__(posvel([fromthing[1], fromthing[2]], fromthing[0]))
+        elif type(fromthing) == Orbit: # The inverse of .cartesian()
+            self.__init__(fromthing.pVCoordinates)
     def __repr__(self):
         return f"<PVT position: {self.pvtq['p'].value.tolist()} ({self.pvtq.unit[0].to_string()}) velocity:{self.pvtq['v'].value.tolist()} ({self.pvtq.unit[1].to_string()}) epoch {self.pvtq.time} (UTC)>"
     def convert_units(self, length_unit=default_length_unit, velocity_unit=default_velocity_unit):
         self.pvtq = self.pvtq.convert_units((length_unit,velocity_unit))
         return self
     def makenp(self):
-        return [self.pvtq.value[0], self.pvtq.value[1], self.pvtq.time.datetime64]
-
-# .posveltime(): Make PVT from Orekit
-TimeStampedPVCoordinates.posveltime \
-    = lambda self: PVT([self.position.x, self.position.y, self.position.z],
-                       [self.velocity.x, self.velocity.y, self.velocity.z],
-                       self.date.apt(),
-                       self,
-                       [u.meter, u.meter/u.second]).convert_units()
-
-Quantity.posveltime \
-    = lambda self, date: PVT(self['p'].value.tolist(),
-                             self['v'].value.tolist(),
-                             date)
+        return (np.concatenate((self.pvtq.value[0], self.pvtq.value[1])), self.pvtq.time.datetime64)
 
 ######## Make orbits
 
@@ -96,7 +104,7 @@ def kepler(oes, epoch, constants):
                           radians(oes.get('timeelt_deg', 0.0)),  # Time element (deg)
                           timeelt_type,  # Sets which type of anomaly we use (true
                           constants['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                          epoch.okad(),   # Sets the date of the orbital parameters
+                          to_okad(epoch),   # Sets the date of the orbital parameters
                           constants['earthmu']))   # Sets the central attraction coefficient (m³/s²)
 
 ######## Convert orbits
@@ -121,9 +129,6 @@ def convert(tree, orbtype):
         case "equi":
             ret = OrbitType.EQUINOCTIAL.convertType(orbit)
             parent.update(equi = ret)
-        case "pvt":
-            ret = orbit.posveltime()
-            parent.update(pvt = ret)
         case _:
             raise ValueError("Type \"" + orbtype + "\" unknown")
     return(ret)
@@ -132,13 +137,8 @@ ecis.Ecis.cartesian = lambda tree: convert(tree, "cart")
 ecis.Ecis.kepler = lambda tree: convert(tree, "kep")
 ecis.Ecis.circular = lambda tree: convert(tree, "circ")
 ecis.Ecis.equinoctial = lambda tree: convert(tree, "equi")
-ecis.Ecis.posveltime = lambda tree: convert(tree, "pvt")
 
 ######## Properties of orbits
-
-# The position-velocity-time for the state
-# The inverse of .cartesian()
-Orbit.posveltime = lambda orbit: orbit.pVCoordinates.posveltime()
 
 # The geocentric distance of the orbit
 def posmag(orbit):
@@ -149,8 +149,8 @@ def period(orbit):
 
 ## Make a computation tree from position, velocity, and datetime
 
-def new_posveltime(pv, time, constants):
-    pvt = PVT(pv[0:3], pv[3:6], time)
+def new_cart(pv, time, constants):
+    pvt = PVT(pv, time)
     ret = ecis.newtree('pvt', pvt, constants) # Create the tree and set the first component to the PVT
     ret.cartesian() # Convert the PVT to the Orekit CartesianOrbit and save that as the next component
     return(ret)
@@ -159,17 +159,14 @@ def new_posveltime(pv, time, constants):
 
 def new_kepler(oes, epoch, constants):
     ret = ecis.newtree('kep', kepler(oes, epoch, constants), constants)
-    convert(ret, "pvt")
     return(ret)
 
 ## Example orbit
-ex1 = new_posveltime([5740.13268349499, 3314.06715, 0.0,
-                      -2.75082683526322, 4.7645718414998, 5.50165367052644],
-                     Time('2022-06-01T12:00:00.000000'),
-                     setgravity(0,0))
-ex1.pvtorbrec = ex1.cart.posveltime() # The PVT recalculated from the Cartesian orbit
-ex1.pvtorkrec = ex1.pvt.ork.posveltime() # The PVT recalculated from the Orekit representation
-# ex1.keys()
+ex1 = new_cart([5740.13268349499, 3314.06715, 0.0,
+                -2.75082683526322, 4.7645718414998, 5.50165367052644],
+               Time('2022-06-01T12:00:00.000000'),
+               setgravity(0,0))
+# All these are the same as ex1.pvt: PVT(ex1.cart), PVT(ex1.pvt.pvtq), PVT(ex1.pvt.ork), PVT(*ex1.pvt.makenp())
 # In [3]: ex1.pvt
 # Out[3]: <PVT position: [5740.13268349499, 3314.06715, 0.0] (km) velocity:[-2.75082683526322, 4.7645718414998, 5.50165367052644] (km/s) epoch 2022-06-01T12:00:00.000 (UTC)>
 # In [4]: ex1.pvt.pvtq

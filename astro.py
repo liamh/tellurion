@@ -48,7 +48,7 @@ default_velocity_unit = u.km/u.second
 # ex1pvtq['p'] => <TQuantity [5740.13268349, 3314.06715   ,    0.        ] km, time not available>
 # ex1pvtq.value[0] => array([5740.13268349, 3314.06715   ,    0.        ])
 def posvel(pv, time=None, length_unit=default_length_unit, velocity_unit=default_velocity_unit):
-    if type(pv) is list:
+    if type(pv) is list or type(pv) is np.ndarray:
         if len(pv) == 6:
             pos = pv[0:3]
             vel = pv[3:6]

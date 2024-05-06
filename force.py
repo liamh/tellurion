@@ -39,7 +39,7 @@ swdata = CssiSpaceWeatherData("SpaceWeather-All-v1.2.txt")
 # Returns three arrays: zonals (J2,...), Cnm, Snm
 def unnormcoef(degree, order, when = nowutc(True)):
     if type(when) is Quantity and get_physical_type(when) == 'time':
-        when = (nowutc() + when).okad()
+        when = to_okad(nowutc() + when)
     provider = GravityFieldFactory.getUnnormalizedProvider(degree, order)
     deg = provider.maxDegree
     ord = provider.maxOrder
