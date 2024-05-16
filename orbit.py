@@ -159,6 +159,7 @@ def new_cart(pv, time, constants):
 
 def new_kepler(oes, epoch, constants):
     ret = ecis.newtree('kep', kepler(oes, epoch, constants), constants)
+    ret.cartesian()
     return(ret)
 
 ## Example orbit
