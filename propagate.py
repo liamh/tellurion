@@ -109,20 +109,27 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
 #  <Orbit: Cartesian parameters: {P(-3358332.160090897, 3427319.9510360747, 4647312.224539923), V(-6115.173953646672, -4617.481772761261, -941.2695398995137)}>,
 #  <Orbit: Cartesian parameters: {P(-4956791.809682075, 1865869.024125194, 4094285.879867934), V(-4436.284145036106, -5686.777789101822, -2706.7519585212185)}>]
 
+# prop(ex1, np.linspace(2.0, 3.0, num=5, endpoint=True)*u.minute)
+
 # In [8]: ex1.prop.ephem
 # Out[8]:
-# <TimeSeries length=5>
+# <TimeSeries length=10>
 #         time               position               velocity
 #                               km                   km / s
 #         Time              float64[3]             float64[3]
 # ------------------- ---------------------- ----------------------
+# 2022-06-01 12:02:00  5354.637 ..   658.032 -3.663509 ..  5.447524
+# 2022-06-01 12:02:15  5298.863 ..   739.639 -3.772863 ..  5.433178
+# 2022-06-01 12:02:30  5241.457 ..   821.019 -3.881049 ..  5.417159
+# 2022-06-01 12:02:45  5182.438 ..   902.146 -3.988033 ..  5.399474
+# 2022-06-01 12:03:00  5121.822 ..   982.995 -4.093782 ..  5.380127
 # 2022-06-01 12:05:00  4581.815 ..  1616.826 -4.891449 ..  5.166423
 # 2022-06-01 12:10:00  2865.500 ..  3036.847 -6.432387 ..  4.203822
 # 2022-06-01 12:20:00 -1359.960 ..  4646.558 -7.074062 ..  0.948420
 # 2022-06-01 12:25:00 -3358.332 ..  4647.312 -6.115174 .. -0.941270
 # 2022-06-01 12:30:00 -4956.792 ..  4094.286 -4.436284 .. -2.706752
 
-# In [8]: ex1.prop.ephem.makenp()
+# In [8]: ex1.prop.ephem[5:end].makenp()
 # Out[8]:
 # [array([[ 4581.81491047,  4512.2622871 ,  1616.82631394],
 #         [ 2865.49988955,  5161.04568451,  3036.8467281 ],
@@ -147,16 +154,18 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
 #  <PVT position: [-4956.791809682075, 1865.869024125194, 4094.2858798679345] (km) velocity:[-4.4362841450361055, -5.686777789101822, -2.7067519585212185] (km / s) epoch 2022-06-01 12:30:00 (UTC)>]
 
 def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
+    reltimes = timearray(reltimes)
+    maxtof = timearray(maximum_tof)
     if isinstance(reltimes, collections.abc.Iterable):
-        maxtime = max(max(reltimes), maximum_tof)
+        maxtime = max(max(reltimes), maxtof)
     else:
-        maxtime = max(reltimes, maximum_tof)
+        maxtime = max(reltimes, maxtof)
     [bp, tree] = ecis.thingofclass(orbit, BoundedPropagator)
     if tree is None:
         forceenv = None
     else:
         forceenv = tree.forceenv
-    if bp is None or ("maxtime" in tree and type(tree.maxtime) is float and maxtime > tree.maxtime):
+    if bp is None or ("maxtime" in tree and type(tree.maxtime) is Quantity and maxtime > tree.maxtime):
         bp = mkephem(orbit, maxtime, forceenv, stopalt)
         [bp, tree] = ecis.thingofclass(orbit, BoundedPropagator)
     if isinstance(reltimes, collections.abc.Iterable):
@@ -173,6 +182,20 @@ def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
     tree.update(orbit=states)
     tree.update(ephem=ephts(tree))
     return(pvt)
+
+# Make a Quantity with array value and time unit
+def timearray(times):
+    if type(times) is Quantity:
+        # Weirdly, a scalar Quantity is iterable but you can't call max on it because it's not iterable
+        if times.isscalar:
+            return([times.value]*times.unit) # make it an array of one (singleton)
+        else:
+            return (times)
+    elif not isinstance(times, collections.abc.Iterable):
+        return([times]*u.second) # make it an array of one (singleton)
+    else:
+        return(times*u.second)
+
 
 # Make a time series (ephemeris table) from the propagated ephemeris
 def ephts(prop):
