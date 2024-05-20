@@ -24,7 +24,7 @@ def getobjs(tree, classtype):
 # Returns a list of [item, dict]
 def thingofclass(tree, classtype):
     if type(tree) is classtype:
-        ret = [tree, None]
+        thing = [tree, None]
     elif type(tree) is Ecis:
         objs = getobjs(tree, classtype)
         match len(objs):

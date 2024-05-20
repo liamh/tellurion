@@ -119,16 +119,20 @@ def convert(tree, orbtype):
     match orbtype:
         case "cart":
             ret = OrbitType.CARTESIAN.convertType(orbit)
-            parent.update(cart = ret)
+            if parent is not None:
+                parent.update(cart = ret)
         case "kep":
             ret = OrbitType.KEPLERIAN.convertType(orbit)
-            parent.update(kep = ret)
+            if parent is not None:
+                parent.update(kep = ret)
         case "circ":
             ret = OrbitType.CIRCULAR.convertType(orbit)
-            parent.update(circ = ret)
+            if parent is not None:
+                parent.update(circ = ret)
         case "equi":
             ret = OrbitType.EQUINOCTIAL.convertType(orbit)
-            parent.update(equi = ret)
+            if parent is not None:
+                parent.update(equi = ret)
         case _:
             raise ValueError("Type \"" + orbtype + "\" unknown")
     return(ret)
