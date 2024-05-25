@@ -12,6 +12,7 @@ from org.orekit.orbits import EquinoctialOrbit
 # Orbital elements and PVT
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.hipparchus.geometry.euclidean.threed import Vector3D
+import collections.abc
 # Representation using AstroPy
 from astro import *
 # ECIS - exploratory computation in stages
@@ -107,40 +108,6 @@ def kepler(oes, epoch, constants):
                           to_okad(epoch),   # Sets the date of the orbital parameters
                           constants['earthmu']))   # Sets the central attraction coefficient (m³/s²)
 
-######## Convert orbits
-
-# Convert to the requested orbit type "cart", "kep"
-def convert(tree, orbtype):
-    [orbit, parent] = ecis.thingofclass(tree, Orbit)
-    if orbit is None:
-        [orbit, parent] = ecis.thingofclass(tree, PVT)
-        parent.update(cart = parent.pvt.ork.cartesian(tree.forceenv))
-        orbit = parent.cart
-    match orbtype:
-        case "cart":
-            ret = OrbitType.CARTESIAN.convertType(orbit)
-            if parent is not None:
-                parent.update(cart = ret)
-        case "kep":
-            ret = OrbitType.KEPLERIAN.convertType(orbit)
-            if parent is not None:
-                parent.update(kep = ret)
-        case "circ":
-            ret = OrbitType.CIRCULAR.convertType(orbit)
-            if parent is not None:
-                parent.update(circ = ret)
-        case "equi":
-            ret = OrbitType.EQUINOCTIAL.convertType(orbit)
-            if parent is not None:
-                parent.update(equi = ret)
-        case _:
-            raise ValueError("Type \"" + orbtype + "\" unknown")
-    return(ret)
-
-ecis.Ecis.cartesian = lambda tree: convert(tree, "cart")
-ecis.Ecis.kepler = lambda tree: convert(tree, "kep")
-ecis.Ecis.circular = lambda tree: convert(tree, "circ")
-ecis.Ecis.equinoctial = lambda tree: convert(tree, "equi")
 
 ######## Properties of orbits
 
@@ -166,7 +133,109 @@ def new_kepler(oes, epoch, constants):
     ret.cartesian()
     return(ret)
 
-## Example orbit
+################################################################################
+## Conversion
+################################################################################
+
+# Convert to the requested orbit type "cart", "kep", "circ", "equi"
+def convert(tree, orbtype):
+    [orbit, parent] = ecis.thingofclass(tree, Orbit)
+    if orbit is None:
+        [orbit, parent] = ecis.thingofclass(tree, PVT)
+        parent.update(cart = parent.pvt.ork.cartesian(tree.forceenv))
+        orbit = parent.cart
+    match orbtype:
+        case "cart":
+            ret = OrbitType.CARTESIAN.convertType(orbit)
+            if parent is not None:
+                parent.update(cart = ret)
+        case "kep":
+            # Must cast; see https://forum.orekit.org/t/convert-orbit-to-keplerian/1441/2
+            ret = KeplerianOrbit.cast_(OrbitType.KEPLERIAN.convertType(orbit))
+            if parent is not None:
+                parent.update(kep = ret)
+        case "circ":
+            ret = CircularOrbit.cast_(OrbitType.CIRCULAR.convertType(orbit))
+            if parent is not None:
+                parent.update(circ = ret)
+        case "equi":
+            ret = EquinoctialOrbit.cast_(OrbitType.EQUINOCTIAL.convertType(orbit))
+            if parent is not None:
+                parent.update(equi = ret)
+        case _:
+            raise ValueError("Type \"" + orbtype + "\" unknown")
+    return(ret)
+
+ecis.Ecis.cartesian = lambda tree: convert(tree, "cart")
+ecis.Ecis.kepler = lambda tree: convert(tree, "kep")
+ecis.Ecis.circular = lambda tree: convert(tree, "circ")
+ecis.Ecis.equinoctial = lambda tree: convert(tree, "equi")
+
+## Convert to orbital elements
+# orbit:   orbit (of any type)
+# element: the orbital element desired
+#  "sma": semimajor axis
+#  "ecc": eccentricity
+#  "inc": inclination
+#  "argper": argument of perigee
+#  "raan": RAAN
+#  "ta": true anomaly
+#  "ma": mean anomaly
+#  "memo": mean motion
+#  "period": orbital period
+## Future: element can be a list e.g. ["sma", "ecc"], and produce a time series
+def element (orbit, element, length_unit=default_length_unit, angle_unit=default_angle_unit):
+    if element in {"sma"}:
+        orkunit = u.m
+        prefunit = length_unit
+    elif element in {"inc", "argper", "ta", "raan", "ma"}:
+        orkunit = u.radian
+        prefunit = angle_unit
+    elif element in {"memo"}:
+        orkunit = u.radian/u.second
+        prefunit = u.radian/u.second
+    elif element in {"period"}:
+        orkunit = u.second
+        prefunit = u.second
+    else:
+        prefunit = None
+    if isinstance(orbit, collections.abc.Iterable):
+        if prefunit is None:
+            return Quantity([elconv(orb, element) for orb in orbit])
+        else:
+            return Quantity([elconv(orb, element) for orb in orbit], orkunit).to(prefunit)
+    else:
+        if prefunit is None:
+            return Quantity(elconv(orbit, element))
+        else:
+            return Quantity(elconv(orbit, element), orkunit).to(prefunit)
+
+# Only for internal use by element()
+def elconv(orb, el):
+    match el:
+        case "sma":
+            return convert(orb,"kep").a
+        case "ecc":
+            return convert(orb,"kep").e
+        case "inc":
+            return convert(orb,"kep").i
+        case "argper":
+            return convert(orb,"kep").perigeeArgument
+        case "raan":
+            return convert(orb,"kep").rightAscensionOfAscendingNode
+        case "ta":
+            return convert(orb,"kep").trueAnomaly
+        case "ma":
+            return convert(orb,"kep").meanAnomaly
+        case "memo":
+            return convert(orb,"kep").keplerianMeanMotion
+        case "period":
+            return convert(orb,"kep").keplerianPeriod
+
+################################################################################
+## Examples
+################################################################################
+
 ex1 = new_cart([5740.13268349499, 3314.06715, 0.0,
                 -2.75082683526322, 4.7645718414998, 5.50165367052644],
                Time('2022-06-01T12:00:00.000000'),
@@ -178,6 +247,8 @@ ex1 = new_cart([5740.13268349499, 3314.06715, 0.0,
 # Out[4]: <TQuantity ([5740.13268349, 3314.06715   ,    0.        ], [-2.75082684,  4.76457184,  5.50165367]) (km, km / s), time=2022-06-01T12:00:00.000>
 # In [8]: ex1.pvt.ork
 # Out[8]: <TimeStampedPVCoordinates: {2022-06-01T12:00:00.000, P(5740132.68349499, 3314067.15, 0.0), V(-2750.82683526322, 4764.5718414998, 5501.65367052644), A(0.0, 0.0, 0.0)}>
+# element(ex1.cart, "sma")
+# Out[20]: <Quantity 6672.37441023 km>
 
 # ex1.cartesian()
 

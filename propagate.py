@@ -229,3 +229,6 @@ def timesec(t):
     else:
         pt = float(t) # assume seconds
     return(pt)
+
+## Example
+# prop(ex2, np.linspace(0, 24, num=5)*u.hour) # This gives a warning, can be ignored

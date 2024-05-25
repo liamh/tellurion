@@ -23,7 +23,7 @@ def getobjs(tree, classtype):
 # Performs a recursive search in branches (ecis instances).
 # Returns a list of [item, dict]
 def thingofclass(tree, classtype):
-    if type(tree) is classtype:
+    if issubclass(type(tree), classtype):
         thing = [tree, None]
     elif type(tree) is Ecis:
         objs = getobjs(tree, classtype)
@@ -43,7 +43,7 @@ def thingofclass(tree, classtype):
               thing = [tree[objs[-1]], tree]
               warnings.warn(f"Multiple `{classtype.__name__}` objects defined in tree, using `{objs[-1]}`")
     else:
-        thing=Nothing
+        thing=None
         raise ValueError(f"Not a `{classtype.__name__}` or tree")
     return(thing)
 
