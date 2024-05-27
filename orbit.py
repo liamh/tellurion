@@ -33,7 +33,7 @@ class PVT:
     ork: TimeStampedPVCoordinates
 
     def __init__(self, fromthing, time=None, ork=None,
-                 units=[default_length_unit, default_velocity_unit]):
+                 units=[prefunits["length"], prefunits["velocity"]]):
         if type(fromthing)==list or type(fromthing) == np.ndarray:
             self.pvtq = posvel([fromthing[0:3], fromthing[3:6]], time,
                                length_unit=units[0], velocity_unit=units[1])
@@ -65,7 +65,7 @@ class PVT:
             self.__init__(fromthing.pVCoordinates)
     def __repr__(self):
         return f"<PVT position: {self.pvtq['p'].value.tolist()} ({self.pvtq.unit[0].to_string()}) velocity:{self.pvtq['v'].value.tolist()} ({self.pvtq.unit[1].to_string()}) epoch {self.pvtq.time} (UTC)>"
-    def convert_units(self, length_unit=default_length_unit, velocity_unit=default_velocity_unit):
+    def convert_units(self, length_unit=prefunits["length"], velocity_unit=prefunits["velocity"]):
         self.pvtq = self.pvtq.convert_units((length_unit,velocity_unit))
         return self
     def makenp(self):
@@ -173,83 +173,48 @@ ecis.Ecis.kepler = lambda tree: convert(tree, "kep")
 ecis.Ecis.circular = lambda tree: convert(tree, "circ")
 ecis.Ecis.equinoctial = lambda tree: convert(tree, "equi")
 
-## Convert to orbital elements
+################################################################################
+## Get orbital elements
+################################################################################
+
 # Both `orbit` and `element` can be a lists e.g. ["sma", "ecc"]
-## future: and produce a time series
 # orbit:   orbit (of any type)
-# element: the orbital element desired
-#  "sma": semimajor axis
-#  "ecc": eccentricity
-#  "inc": inclination
-#  "argper": argument of perigee
-#  "raan": RAAN
-#  "ta": true anomaly
-#  "ma": mean anomaly
-#  "memo": mean motion
-#  "period": orbital period
-def elementval (orbit, element, length_unit=default_length_unit, angle_unit=default_angle_unit):
+# element: the orbital element desired, see list in elvals
+def elementval (orbit, element):
     if isinstance(orbit, collections.abc.Iterable):
-        return [elementval(orb, element, length_unit, angle_unit) for orb in orbit]
+        return [elementval(orb, element) for orb in orbit]
     else:
         if type(orbit) is KeplerianOrbit:
             orbkep = orbit
         else:
             orbkep = convert(orbit,"kep")
-        puou = elunit(element, length_unit, angle_unit)
-        ell = ensurelist(element)
-        return [elquan(orbkep, val, pu, ou) for val, (pu, ou) in zip(ell,puou)]
-
-# Only for internal use by elementval()
-def elquan(kepler, element, prefunit, orkunit):
-    if prefunit is None:
-        return Quantity(elconv(kepler, element))
-    else:
-        return Quantity(elconv(kepler, element), orkunit).to(prefunit)
-
-# Only for internal use by elementval()
-def elunit(element, length_unit=default_length_unit, angle_unit=default_angle_unit):
-    if isinstance(element, list):
-        puou = [elunit(el, length_unit, angle_unit)[0] for el in element]
-        return puou #[(pu, ou) for pu, ou in zip(puou[0], puou[1])]
-    else:
-        if element in {"sma"}:
-            orkunit = u.m
-            prefunit = length_unit
-        elif element in {"inc", "argper", "ta", "raan", "ma"}:
-            orkunit = u.radian
-            prefunit = angle_unit
-        elif element in {"memo"}:
-            orkunit = u.radian/u.second
-            prefunit = u.radian/u.second
-        elif element in {"period"}:
-            orkunit = u.second
-            prefunit = u.second
+        if isinstance(element, list):
+            return [elget(orbkep, el) for el in element]
         else:
-            orkunit = None
-            prefunit = None
-        return [(prefunit, orkunit)]
+            return elget(orbkep, element)
 
-# Only for internal use by elementval()
-def elconv(orbkep, el):
-    match el:
-        case "sma":
-            return orbkep.a
-        case "ecc":
-            return orbkep.e
-        case "inc":
-            return orbkep.i
-        case "argper":
-            return orbkep.perigeeArgument
-        case "raan":
-            return orbkep.rightAscensionOfAscendingNode
-        case "ta":
-            return orbkep.trueAnomaly
-        case "ma":
-            return orbkep.meanAnomaly
-        case "memo":
-            return orbkep.keplerianMeanMotion
-        case "period":
-            return orbkep.keplerianPeriod
+elkeys = ["name", "description", "phystype", "orkunit", "getter"]
+elvals = [["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],
+          ["ecc", "eccentricity", "dimensionless", None, KeplerianOrbit.getE],
+          ["inc", "inclination", "angle", u.radian, KeplerianOrbit.getI],
+          ["argper", "argument of perigee", "angle", u.radian, KeplerianOrbit.getPerigeeArgument],
+          ["raan", "right ascension of the ascending node", "angle", u.radian,
+           KeplerianOrbit.getRightAscensionOfAscendingNode],
+          ["ta", "true anomaly", "angle", u.radian, KeplerianOrbit.getTrueAnomaly],
+          ["ma", "mean anomaly", "angle", u.radian, KeplerianOrbit.getMeanAnomaly],
+          ["memo", "mean motion", "angular speed", u.radian/u.second, KeplerianOrbit.getKeplerianMeanMotion],
+          ["period", "orbital period", "time", u.second, KeplerianOrbit.getKeplerianPeriod]]
+eldict = dict(zip([ev[0] for ev in elvals], [dict(zip(elkeys,ev)) for ev in elvals]))
+
+def elget(orbkep, el):
+    lookup = eldict[el]
+    orkval = lookup["getter"](orbkep)
+    orkunit = lookup["orkunit"]
+    if orkunit is None:
+        return Quantity(orkval)
+    else:
+        return Quantity(orkval, orkunit).to(prefunits[lookup["phystype"]])
+
 
 ################################################################################
 ## Examples

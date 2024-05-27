@@ -231,9 +231,9 @@ def timesec(t):
     return(pt)
 
 ## Get time series of orbital elements
-def tselements(ephem, elements, length_unit=default_length_unit, angle_unit=default_angle_unit):
+def tselements(ephem, elements):
     return TimeSeries(time=[pvt.pvtq.time for pvt in ephem.pvt],
-                      data=[dict(zip(elements, elementval(orb, elements, length_unit, angle_unit)))
+                      data=[dict(zip(elements, elementval(orb, elements)))
                             for orb in ephem.orbit])
 
 
