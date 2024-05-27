@@ -230,5 +230,35 @@ def timesec(t):
         pt = float(t) # assume seconds
     return(pt)
 
+## Get time series of orbital elements
+def tselements(ephem, elements, length_unit=default_length_unit, angle_unit=default_angle_unit):
+    return TimeSeries(time=[pvt.pvtq.time for pvt in ephem.pvt],
+                      data=[dict(zip(elements, elementval(orb, elements, length_unit, angle_unit)))
+                            for orb in ephem.orbit])
+
+
 ## Example
 # prop(ex2, np.linspace(0, 24, num=5)*u.hour) # This gives a warning, can be ignored
+# ex2.prop.ephem
+# <TimeSeries length=5>
+#         time               position               velocity
+#                               km                   km / s
+#         Time              float64[3]             float64[3]
+# ------------------- ---------------------- ----------------------
+# 2023-09-14 08:30:00 -4100.052 .. -4764.959 -5.636147 ..  0.734345
+# 2023-09-14 14:30:00 -5300.257 .. -4452.057 -4.456035 ..  1.892044
+# 2023-09-14 20:30:00 -6192.600 .. -3879.939 -3.052240 ..  2.910624
+# 2023-09-15 02:30:00 -6737.221 .. -3089.289 -1.537353 ..  3.728167
+# 2023-09-15 08:30:00 -6920.676 .. -2132.309 -0.019043 ..  4.309723
+#
+# tselements(ex2.prop, ["sma","ecc","inc"])
+# TimeSeries length=5>
+#         time               sma                ecc                inc
+#                             km                                   deg
+#         Time             float64            float64            float64
+# ------------------- ----------------- ------------------- ------------------
+# 2023-09-14 08:30:00 8000.000000000001 0.10000000000000005               42.0
+# 2023-09-14 14:30:00 7999.984739653951 0.09999739630636867  41.99999999999989
+# 2023-09-14 20:30:00 7999.975777150673 0.09999489374642954 41.999999999999865
+# 2023-09-15 02:30:00 7999.961193141438 0.09999236890210698  42.00000000000003
+# 2023-09-15 08:30:00 7999.949375719636  0.0999895810073231 42.000000000000306

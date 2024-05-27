@@ -17,6 +17,7 @@ import collections.abc
 from astro import *
 # ECIS - exploratory computation in stages
 import ecis
+from cartprodparam import ensurelist
 ecis.ecisdefault='forceenv' # Forces and other environmental constants
 
 # Orekit configuration
@@ -124,6 +125,7 @@ def new_cart(pv, time, constants):
     pvt = PVT(pv, time)
     ret = ecis.newtree('pvt', pvt, constants) # Create the tree and set the first component to the PVT
     ret.cartesian() # Convert the PVT to the Orekit CartesianOrbit and save that as the next component
+    ret.kepler()
     return(ret)
 
 ## Make a computation tree from Kepler elements and datetime
@@ -138,8 +140,8 @@ def new_kepler(oes, epoch, constants):
 ################################################################################
 
 # Convert to the requested orbit type "cart", "kep", "circ", "equi"
-def convert(tree, orbtype):
-    [orbit, parent] = ecis.thingofclass(tree, Orbit)
+def convert(tree, orbtype, searchtype = Orbit):
+    [orbit, parent] = ecis.thingofclass(tree, searchtype)
     if orbit is None:
         [orbit, parent] = ecis.thingofclass(tree, PVT)
         parent.update(cart = parent.pvt.ork.cartesian(tree.forceenv))
@@ -172,6 +174,8 @@ ecis.Ecis.circular = lambda tree: convert(tree, "circ")
 ecis.Ecis.equinoctial = lambda tree: convert(tree, "equi")
 
 ## Convert to orbital elements
+# Both `orbit` and `element` can be a lists e.g. ["sma", "ecc"]
+## future: and produce a time series
 # orbit:   orbit (of any type)
 # element: the orbital element desired
 #  "sma": semimajor axis
@@ -183,54 +187,69 @@ ecis.Ecis.equinoctial = lambda tree: convert(tree, "equi")
 #  "ma": mean anomaly
 #  "memo": mean motion
 #  "period": orbital period
-## Future: element can be a list e.g. ["sma", "ecc"], and produce a time series
-def element (orbit, element, length_unit=default_length_unit, angle_unit=default_angle_unit):
-    if element in {"sma"}:
-        orkunit = u.m
-        prefunit = length_unit
-    elif element in {"inc", "argper", "ta", "raan", "ma"}:
-        orkunit = u.radian
-        prefunit = angle_unit
-    elif element in {"memo"}:
-        orkunit = u.radian/u.second
-        prefunit = u.radian/u.second
-    elif element in {"period"}:
-        orkunit = u.second
-        prefunit = u.second
-    else:
-        prefunit = None
+def elementval (orbit, element, length_unit=default_length_unit, angle_unit=default_angle_unit):
     if isinstance(orbit, collections.abc.Iterable):
-        if prefunit is None:
-            return Quantity([elconv(orb, element) for orb in orbit])
-        else:
-            return Quantity([elconv(orb, element) for orb in orbit], orkunit).to(prefunit)
+        return [elementval(orb, element, length_unit, angle_unit) for orb in orbit]
     else:
-        if prefunit is None:
-            return Quantity(elconv(orbit, element))
+        if type(orbit) is KeplerianOrbit:
+            orbkep = orbit
         else:
-            return Quantity(elconv(orbit, element), orkunit).to(prefunit)
+            orbkep = convert(orbit,"kep")
+        puou = elunit(element, length_unit, angle_unit)
+        ell = ensurelist(element)
+        return [elquan(orbkep, val, pu, ou) for val, (pu, ou) in zip(ell,puou)]
 
-# Only for internal use by element()
-def elconv(orb, el):
+# Only for internal use by elementval()
+def elquan(kepler, element, prefunit, orkunit):
+    if prefunit is None:
+        return Quantity(elconv(kepler, element))
+    else:
+        return Quantity(elconv(kepler, element), orkunit).to(prefunit)
+
+# Only for internal use by elementval()
+def elunit(element, length_unit=default_length_unit, angle_unit=default_angle_unit):
+    if isinstance(element, list):
+        puou = [elunit(el, length_unit, angle_unit)[0] for el in element]
+        return puou #[(pu, ou) for pu, ou in zip(puou[0], puou[1])]
+    else:
+        if element in {"sma"}:
+            orkunit = u.m
+            prefunit = length_unit
+        elif element in {"inc", "argper", "ta", "raan", "ma"}:
+            orkunit = u.radian
+            prefunit = angle_unit
+        elif element in {"memo"}:
+            orkunit = u.radian/u.second
+            prefunit = u.radian/u.second
+        elif element in {"period"}:
+            orkunit = u.second
+            prefunit = u.second
+        else:
+            orkunit = None
+            prefunit = None
+        return [(prefunit, orkunit)]
+
+# Only for internal use by elementval()
+def elconv(orbkep, el):
     match el:
         case "sma":
-            return convert(orb,"kep").a
+            return orbkep.a
         case "ecc":
-            return convert(orb,"kep").e
+            return orbkep.e
         case "inc":
-            return convert(orb,"kep").i
+            return orbkep.i
         case "argper":
-            return convert(orb,"kep").perigeeArgument
+            return orbkep.perigeeArgument
         case "raan":
-            return convert(orb,"kep").rightAscensionOfAscendingNode
+            return orbkep.rightAscensionOfAscendingNode
         case "ta":
-            return convert(orb,"kep").trueAnomaly
+            return orbkep.trueAnomaly
         case "ma":
-            return convert(orb,"kep").meanAnomaly
+            return orbkep.meanAnomaly
         case "memo":
-            return convert(orb,"kep").keplerianMeanMotion
+            return orbkep.keplerianMeanMotion
         case "period":
-            return convert(orb,"kep").keplerianPeriod
+            return orbkep.keplerianPeriod
 
 ################################################################################
 ## Examples
@@ -247,7 +266,7 @@ ex1 = new_cart([5740.13268349499, 3314.06715, 0.0,
 # Out[4]: <TQuantity ([5740.13268349, 3314.06715   ,    0.        ], [-2.75082684,  4.76457184,  5.50165367]) (km, km / s), time=2022-06-01T12:00:00.000>
 # In [8]: ex1.pvt.ork
 # Out[8]: <TimeStampedPVCoordinates: {2022-06-01T12:00:00.000, P(5740132.68349499, 3314067.15, 0.0), V(-2750.82683526322, 4764.5718414998, 5501.65367052644), A(0.0, 0.0, 0.0)}>
-# element(ex1.cart, "sma")
+# elementval(ex1.cart, "sma")
 # Out[20]: <Quantity 6672.37441023 km>
 
 # ex1.cartesian()
