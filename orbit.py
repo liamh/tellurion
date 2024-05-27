@@ -180,7 +180,7 @@ ecis.Ecis.equinoctial = lambda tree: convert(tree, "equi")
 # Both `orbit` and `element` can be a lists e.g. ["sma", "ecc"]
 # orbit:   orbit (of any type)
 # element: the orbital element desired, see list in elvals
-def elementval (orbit, element):
+def elementval (orbit, element, earthrad=None):
     if isinstance(orbit, collections.abc.Iterable):
         return [elementval(orb, element) for orb in orbit]
     else:
@@ -189,15 +189,23 @@ def elementval (orbit, element):
         else:
             orbkep = convert(orbit,"kep")
         if isinstance(element, list):
-            return [elget(orbkep, el) for el in element]
+            return [elget(orbkep, el, earthrad) for el in element]
         else:
-            return elget(orbkep, element)
+            return elget(orbkep, element, earthrad)
 
 elkeys = ["name", "description", "phystype", "orkunit", "getter"]
 elvals = [["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],
           ["ecc", "eccentricity", "dimensionless", None, KeplerianOrbit.getE],
           ["inc", "inclination", "angle", u.radian, KeplerianOrbit.getI],
           ["argper", "argument of perigee", "angle", u.radian, KeplerianOrbit.getPerigeeArgument],
+          ["radper", "radius of perigee", "length", u.meter,
+           lambda kep: kep.a*(1.0-kep.e)],
+          ["radapo", "radius of apogee", "length", u.meter,
+           lambda kep: kep.a*(1.0+kep.e)],
+          ["altper", "altitude of perigee", "length", u.meter,
+           lambda kep, earthrad: kep.a*(1.0-kep.e)-earthrad],
+          ["altapo", "altitude of apogee", "length", u.meter,
+           lambda kep, earthrad: kep.a*(1.0+kep.e)-earthrad],
           ["raan", "right ascension of the ascending node", "angle", u.radian,
            KeplerianOrbit.getRightAscensionOfAscendingNode],
           ["ta", "true anomaly", "angle", u.radian, KeplerianOrbit.getTrueAnomaly],
@@ -206,15 +214,19 @@ elvals = [["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],
           ["period", "orbital period", "time", u.second, KeplerianOrbit.getKeplerianPeriod]]
 eldict = dict(zip([ev[0] for ev in elvals], [dict(zip(elkeys,ev)) for ev in elvals]))
 
-def elget(orbkep, el):
+# Get altitude of perigee/apogee by subtracting ex2.prop.forceenv["earthrad"]
+def elget(orbkep, el, earthrad=None):
     lookup = eldict[el]
-    orkval = lookup["getter"](orbkep)
+    getter = lookup["getter"]
+    if len(getter.__code__.co_varnames) > 1:
+        orkval = getter(orbkep, earthrad)
+    else:
+        orkval = getter(orbkep)
     orkunit = lookup["orkunit"]
     if orkunit is None:
         return Quantity(orkval)
     else:
         return Quantity(orkval, orkunit).to(prefunits[lookup["phystype"]])
-
 
 ################################################################################
 ## Examples

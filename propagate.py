@@ -233,9 +233,10 @@ def timesec(t):
 ## Get time series of orbital elements
 def tselements(ephem, elements):
     return TimeSeries(time=[pvt.pvtq.time for pvt in ephem.pvt],
-                      data=[dict(zip(elements, elementval(orb, elements)))
+                      data=[dict(zip(elements,
+                                     elementval(orb, elements,
+                                                ephem.forceenv["earthrad"])))
                             for orb in ephem.orbit])
-
 
 ## Example
 # prop(ex2, np.linspace(0, 24, num=5)*u.hour) # This gives a warning, can be ignored
@@ -252,7 +253,7 @@ def tselements(ephem, elements):
 # 2023-09-15 08:30:00 -6920.676 .. -2132.309 -0.019043 ..  4.309723
 #
 # tselements(ex2.prop, ["sma","ecc","inc"])
-# TimeSeries length=5>
+# <TimeSeries length=5>
 #         time               sma                ecc                inc
 #                             km                                   deg
 #         Time             float64            float64            float64
@@ -262,3 +263,15 @@ def tselements(ephem, elements):
 # 2023-09-14 20:30:00 7999.975777150673 0.09999489374642954 41.999999999999865
 # 2023-09-15 02:30:00 7999.961193141438 0.09999236890210698  42.00000000000003
 # 2023-09-15 08:30:00 7999.949375719636  0.0999895810073231 42.000000000000306
+#
+# tselements(ex2.prop, ["altper","altapo"])
+# <TimeSeries length=5>
+#         time              altper            altapo
+#                             km                km
+#         Time             float64           float64
+# ------------------- ----------------- ------------------
+# 2023-09-14 08:30:00 821.8635400000001  2421.863540000002
+# 2023-09-14 14:30:00 821.8706351978723  2421.825924110028
+# 2023-09-14 20:30:00  821.882589340481  2421.796044960863
+# 2023-09-15 02:30:00 821.8896623142995  2421.759803968576
+# 2023-09-15 08:30:00  821.901329561633 2421.7245018776366
