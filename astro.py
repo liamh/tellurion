@@ -2,14 +2,22 @@
 import astropy
 import numpy as np
 from astropy.time import Time # "apt" = astropy Time
+
+#### Astropy units
 import astropy.units as u # Define time units, e.g. nowutc() + 5*day
 from astropy.units import second, minute, hour, day, Quantity, get_physical_type
 # Sidereal day in seconds: u.sday.to('s'), u.sday.to(u.second)
 
-# https://docs.astropy.org/en/stable/timeseries/times.html
-# from astropy.timeseries import TimeSeries
+# Define revolution as angle unit for two-line elements (mean motion
+# in rev/day)
+u.rev = u.revolution = u.def_unit('revolution', 2*np.pi*u.radian)
 
-######## TQuantity: Quantities with time
+# Preferred units for user
+prefunits = {"time": u.second, "length": u.km, "velocity": u.km/u.second,
+             "angle": u.degree, "angular speed": u.radian/u.second,
+             "dimensionless": u.dimensionless_unscaled}
+
+#### TQuantity: Quantities with time
 # The `time` argument may be anything, but is presumed to be one of:
 #   None, a Time, a number, a Quantity (with a time dimension)
 # How this time is used is up to the application.
@@ -37,10 +45,7 @@ class TQuantity(Quantity):
 #   Time('2023-09-14T08:31:00').isclose(Time('2023-09-14T08:31:00.00099999'), 1*u.ms)
 # tquantex1 = TQuantity(15, u.m / u.s, Time('2023-09-14T08:30:00'))
 
-######## PVT: Position, velocity, and time
-
-prefunits = {"time": u.second, "length": u.km, "velocity": u.km/u.second,
-             "angle": u.degree, "angular speed": u.radian/u.second}
+#### PVT: Position, velocity, and time
 
 # Create a position-velocity as a TQuantity, call this a `pvtq`
 # ex1pv = [5740.13268349499, 3314.06715, 0.0, -2.75082683526322, 4.7645718414998, 5.50165367052644]
