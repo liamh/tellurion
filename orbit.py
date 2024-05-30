@@ -213,7 +213,7 @@ eldict = dict(zip([ev[0] for ev in elvals], [dict(zip(elkeys,ev)) for ev in elva
 def elget(orbkep, el, earthrad=None):
     lookup = eldict[el]
     getter = lookup["getter"]
-    if len(getter.__code__.co_varnames) > 1:
+    if '__code__' in dir(getter) and len(getter.__code__.co_varnames) > 1:
         orkval = getter(orbkep, earthrad)
     else:
         orkval = getter(orbkep)
