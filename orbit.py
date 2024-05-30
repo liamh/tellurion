@@ -5,6 +5,7 @@
 ## propagated, so these are have different representation.
 
 from force import *
+from frames import *
 from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
 from org.orekit.orbits import KeplerianOrbit, PositionAngleType
 from org.orekit.orbits import CircularOrbit
@@ -70,6 +71,8 @@ class PVT:
         return self
     def makenp(self):
         return (np.concatenate((self.pvtq.value[0], self.pvtq.value[1])), self.pvtq.time.datetime64)
+    def lla(self, forceenv):
+        return lla(self.ork.getPosition(), self.ork.getDate(), forceenv)
 
 ######## Make orbits
 

@@ -31,7 +31,10 @@ def setgravity(degree, order, mass = 100.0):
              'earthmu': eg.mu,
              'mass': mass} # Needed by several forces but not gravity
     # Define spherical altitude for convience, not specifically force related, but uses the definitions
-    return celestdflt | force | {'sphalt': OneAxisEllipsoid(force['earthrad'], 0.0, celestdflt['earthframe'])}
+    return celestdflt | force | \
+        {'earth': OneAxisEllipsoid(force['earthrad'],
+                                   celestdflt['earthflat'],  celestdflt['earthframe']),
+         'sphalt': OneAxisEllipsoid(force['earthrad'], 0.0, celestdflt['earthframe'])}
 
 swdata = CssiSpaceWeatherData("SpaceWeather-All-v1.2.txt")
 
@@ -79,14 +82,13 @@ def unnormcoef(degree, order, when = nowutc(True)):
 # Default spacecraft parameters gives B = C_D A/m = 0.01 m^2/kg
 default_atmdens = 'hp'
 def dragforce(force, atmdensname = default_atmdens, dragcoef = 1.0, dragarea = 1.0):
-    earth = OneAxisEllipsoid(force['earthrad'], force['earthflat'],  force['earthframe'])
     match atmdensname:
         case 'hp': # Harris-Priester atmospheric density model
-            atmdens = HarrisPriester(force['sun'], earth)
+            atmdens = HarrisPriester(force['sun'], force['earth'])
         case 'dtm': # DTM2000 atmospheric density model
-            atmdens = DTM2000(swdata, force['sun'], earth)
+            atmdens = DTM2000(swdata, force['sun'], force['earth'])
         case 'msis':
-            atmdens = NRLMSISE00(swdata, force['sun'], earth)
+            atmdens = NRLMSISE00(swdata, force['sun'], force['earth'])
     mass = force['mass']  # The models need a spacecraft mass, unit kg.
     drforce = {'dragarea': dragarea, # Cross-sectional area perpendicular to atmosphere direction, m^2
                'dragcoef': dragcoef, # Coefficient of drag
