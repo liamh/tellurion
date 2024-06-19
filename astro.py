@@ -68,3 +68,37 @@ def posvel(pv, time=None, length_unit=prefunits["length"], velocity_unit=prefuni
 
 # Convert posvel units
 # ex1pvtsi = ex1pvt.convert_units((u.m, u.m/u.s))
+
+#### LLA: Geographic coordinates, longitude, latitude, altitude
+# Examples
+#   llatime = lonlatalt([-40.0, 0.1, 250.0], nowutc())
+#   llatime["lon"] # => <Quantity -40. deg>
+#   llanotime = lonlatalt([-40.0, 0.1, 250.0])
+#   llanotime["lon"].to(u.radian) # => <Quantity -0.6981317 rad>
+#   addtime = lonlatalt(llanotime,nowutc())
+#   remtime = lonlatalt(llatime)
+#   changetime = lonlatalt(llatime, nowutc())
+def lonlatalt(lla, time=None, length_unit=prefunits["length"], angle_unit=prefunits["angle"]):
+    if type(lla) is list or type(lla) is np.ndarray:
+        lon = lla[0]
+        lat = lla[1]
+        alt = lla[2]
+        llatype = [('lon', 'f8'), ('lat', 'f8'), ('alt', 'f8')]
+        npa = np.array((lon, lat, alt), dtype = llatype)
+        if time==None:
+            ret = Quantity(npa, u.StructuredUnit((angle_unit, angle_unit, length_unit)))
+        else:
+            ret = TQuantity(npa, u.StructuredUnit((angle_unit, angle_unit, length_unit)), time)
+    elif type(lla) is Quantity and time is not None: # Add time to an LLA that has none
+        ret = TQuantity(lla.value, lla.unit, time)
+    elif type(lla) is TQuantity:  # Change or remove the time
+        if time is None:
+            ret = Quantity(lla.value, lla.unit)
+        else:
+            ret = TQuantity(lla.value, lla.unit, time)
+    else:
+        ret = None
+    return(ret)
+
+def latlonalt(lla, time=None, length_unit=prefunits["length"], angle_unit=prefunits["angle"]):
+    return (lonlatalt([lla[1], lla[0], lla[2]], time, length_unit, angle_unit))
