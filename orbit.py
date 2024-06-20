@@ -14,8 +14,8 @@ from org.orekit.orbits import EquinoctialOrbit
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 import collections.abc
-# Representation using AstroPy
 from astro import *
+#from astropy.table.row import *
 # ECIS - exploratory computation in stages
 import ecis
 from cartprodparam import ensurelist
@@ -35,7 +35,7 @@ class PVT:
 
     def __init__(self, fromthing, time=None, ork=None,
                  units=[prefunits["length"], prefunits["velocity"]]):
-        if type(fromthing)==list or type(fromthing) == np.ndarray:
+        if listnpa(fromthing):
             self.pvtq = posvel([fromthing[0:3], fromthing[3:6]], time,
                                length_unit=units[0], velocity_unit=units[1])
             if ork is None:
@@ -70,9 +70,13 @@ class PVT:
         self.pvtq = self.pvtq.convert_units((length_unit,velocity_unit))
         return self
     def makenp(self):
-        return (np.concatenate((self.pvtq.value[0], self.pvtq.value[1])), self.pvtq.time.datetime64)
+        # Make a NumPy object
+        return np.concatenate((self.pvtq.value[0], self.pvtq.value[1])), self.pvtq.time.datetime64
     def lla(self, forceenv):
-        return lla(self.ork.getPosition(), self.ork.getDate(), forceenv)
+        # Convert to geographic coordinates
+        # ex1.pvt.lla(ex1.forceenv)
+        return LLA(llafrompt(self.ork.getPosition(), self.ork.getDate(), forceenv),
+                   self.pvtq.time)
 
 ######## Make orbits
 

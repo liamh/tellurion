@@ -17,6 +17,9 @@ prefunits = {"time": u.second, "length": u.km, "velocity": u.km/u.second,
              "angle": u.degree, "angular speed": u.radian/u.second,
              "dimensionless": u.dimensionless_unscaled}
 
+def listnpa(thing):
+    return type(thing) is list or type(thing) is np.ndarray
+
 #### TQuantity: Quantities with time
 # The `time` argument may be anything, but is presumed to be one of:
 #   None, a Time, a number, a Quantity (with a time dimension)
@@ -53,7 +56,7 @@ class TQuantity(Quantity):
 # ex1pvtq['p'] => <TQuantity [5740.13268349, 3314.06715   ,    0.        ] km, time not available>
 # ex1pvtq.value[0] => array([5740.13268349, 3314.06715   ,    0.        ])
 def posvel(pv, time=None, length_unit=prefunits["length"], velocity_unit=prefunits["velocity"]):
-    if type(pv) is list or type(pv) is np.ndarray:
+    if listnpa(pv):
         if len(pv) == 6:
             pos = pv[0:3]
             vel = pv[3:6]
@@ -79,16 +82,17 @@ def posvel(pv, time=None, length_unit=prefunits["length"], velocity_unit=prefuni
 #   remtime = lonlatalt(llatime)
 #   changetime = lonlatalt(llatime, nowutc())
 def lonlatalt(lla, time=None, length_unit=prefunits["length"], angle_unit=prefunits["angle"]):
-    if type(lla) is list or type(lla) is np.ndarray:
+    if listnpa(lla):
         lon = lla[0]
         lat = lla[1]
         alt = lla[2]
         llatype = [('lon', 'f8'), ('lat', 'f8'), ('alt', 'f8')]
         npa = np.array((lon, lat, alt), dtype = llatype)
+        strunit = u.StructuredUnit((angle_unit, angle_unit, length_unit))
         if time==None:
-            ret = Quantity(npa, u.StructuredUnit((angle_unit, angle_unit, length_unit)))
+            ret = Quantity(npa, strunit)
         else:
-            ret = TQuantity(npa, u.StructuredUnit((angle_unit, angle_unit, length_unit)), time)
+            ret = TQuantity(npa, strunit, time)
     elif type(lla) is Quantity and time is not None: # Add time to an LLA that has none
         ret = TQuantity(lla.value, lla.unit, time)
     elif type(lla) is TQuantity:  # Change or remove the time
