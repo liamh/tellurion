@@ -230,7 +230,7 @@ def timesec(t):
         pt = float(t) # assume seconds
     return(pt)
 
-## Get time series of orbital elements
+## Time series of orbital elements
 def tselements(ephem, elements):
     return TimeSeries(time=[pvt.pvtq.time for pvt in ephem.pvt],
                       data=[dict(zip(elements,

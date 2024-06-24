@@ -5,8 +5,26 @@
 from astro import *
 from org.orekit.bodies import GeodeticPoint
 
+# llafrompt(ex1.pvt.ork, ex1.pvt.ork.date, ex1.forceenv)
 def llafrompt(position, time, forceenv):
     return forceenv['earth'].transform(position, forceenv['celestialframe'], time);
+
+# This is completely wrong
+# ptfromlla(ex1.pvt.lla(ex1.forceenv),ex1.forceenv)
+def ptfromlla(lla, forceenv):
+    return forceenv['earth'].transform(lla.ork); # How is it that this does not use time?
+
+# Transform from ECI to ECEF
+# eci_to_ecef(ex1.pvt, ex1.forceenv)
+def eci_to_ecef(pvt, forceenv):
+    xf = forceenv['celestialframe'].getTransformTo(forceenv['earthframe'], pvt.ork.date)
+    ecef = xf.transformPVCoordinates(pvt.ork)
+    return ecef
+
+# Not tested
+def ecef_to_eci(ecef, forceenv):
+    xf = forceenv['earthframe'].getTransformTo(forceenv['celestialframe'],ecef.ork.date)
+    return xf.transformPVCoordinates(ecef.ork)
 
 # Class of gegraphic points (longitude, latitude, altitude)
 # LLA([-40.0, 0.1, 250.0], nowutc())
@@ -33,3 +51,7 @@ class LLA:
             return f"<LLA longitude: {self.llaq['lon'].value} ({self.llaq.unit[0].to_string()}) latitude: {self.llaq['lat'].value} ({self.llaq.unit[1].to_string()}) altitude: {self.llaq['alt'].value} ({self.llaq.unit[2].to_string()}) epoch {self.llaq.time} (UTC)>"
         else:
             return f"<LLA longitude: {self.llaq['lon'].value} ({self.llaq.unit[0].to_string()}) latitude: {self.llaq['lat'].value} ({self.llaq.unit[1].to_string()}) altitude: {self.llaq['alt'].value} ({self.llaq.unit[2].to_string()})>"
+
+# Time series of lla
+#def tslla(ephem, elements):
+#    return TimeSeries(time=[], data=[])
