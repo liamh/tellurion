@@ -3,16 +3,23 @@
 # ex1lla = ex1.pvt.lla(ex1.forceenv)
 
 from astro import *
-from org.orekit.bodies import GeodeticPoint
+from dttm import *
+from org.orekit.bodies import GeodeticPoint, FieldGeodeticPoint
+from org.orekit.frames import TopocentricFrame
 
+# Find the geographic (LLA) coordinates from the ECI position and time
+# Returns a FieldGeodeticPoint, should return an LLA
 # llafrompt(ex1.pvt.ork, ex1.pvt.ork.date, ex1.forceenv)
 def llafrompt(position, time, forceenv):
     return forceenv['earth'].transform(position, forceenv['celestialframe'], time);
 
-# This is completely wrong
+# Find the ECI position from the geographic (LLA) coordinates
+# Returns a Vector3D, should return a PVT
 # ptfromlla(ex1.pvt.lla(ex1.forceenv),ex1.forceenv)
 def ptfromlla(lla, forceenv):
-    return forceenv['earth'].transform(lla.ork); # How is it that this does not use time?
+    topoframe = TopocentricFrame(forceenv['earth'], lla.ork, "ptfromlla")
+    cart = topoframe.getPVCoordinates(to_okad(lla.llaq.time), forceenv['celestialframe']).getPosition()
+    return cart
 
 # Transform from ECI to ECEF
 # eci_to_ecef(ex1.pvt, ex1.forceenv)
@@ -34,7 +41,7 @@ class LLA:
 
     def __init__(self, fromthing, time=None,
                  length_unit=prefunits["length"], angle_unit=prefunits["angle"]):
-        if type(fromthing) == GeodeticPoint:
+        if type(fromthing) == GeodeticPoint or type(fromthing) == FieldGeodeticPoint:
             self.ork = fromthing
             lu = lonlatalt([fromthing.longitude, fromthing.latitude, fromthing.altitude],
                            time, length_unit=u.meter, angle_unit=u.radian)
