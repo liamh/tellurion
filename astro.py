@@ -2,6 +2,7 @@
 import astropy
 import numpy as np
 from astropy.time import Time # "apt" = astropy Time
+import copy
 
 #### Astropy units
 import astropy.units as u # Define time units, e.g. nowutc() + 5*day
@@ -38,6 +39,10 @@ class TQuantity(Quantity):
             return f"{super().__repr__()[:-1]}, time={self.time}>"
         else:
             return f"{super().__repr__()[:-1]}, time not available>"
+    def __copy__(self):
+        return TQuantity(self.value, unit=self.unit, time=self.time)
+    def __deepcopy__(self):
+        return TQuantity(copy.deepcopy(self.value), unit=copy.deepcopy(self.unit), time=copy.deepcopy(self.time))
     def convert_units(self, units):
         newobj = self.to(u.StructuredUnit(units))
         newobj.time = self.time
@@ -68,6 +73,13 @@ def posvel(pv, time=None, length_unit=prefunits["length"], velocity_unit=prefuni
     pv = np.array((pos, vel), dtype = pvtype)
     pv = TQuantity(pv, u.StructuredUnit((length_unit, velocity_unit)), time)
     return(pv)
+
+# Scale position and velocity separately
+# pv = posvel to scale
+# pvscale = list or vector of length 2 to scale position, velocity
+def scale_posvel(pv, pvscale):
+    return posvel([pv.value[0]*pvscale[0], pv.value[1]*pvscale[1]], time=pv.time,
+                  length_unit=pv.unit[0], velocity_unit=pv.unit[1])
 
 # Convert posvel units
 # ex1pvtsi = ex1pvt.convert_units((u.m, u.m/u.s))

@@ -66,6 +66,9 @@ class PVT:
             self.__init__(fromthing.pVCoordinates)
     def __repr__(self):
         return f"<PVT position: {self.pvtq['p'].value.tolist()} ({self.pvtq.unit[0].to_string()}) velocity:{self.pvtq['v'].value.tolist()} ({self.pvtq.unit[1].to_string()}) epoch {self.pvtq.time} (UTC)>"
+    def scale(self, pvscale):
+        # Multiple the position by a scalar (pvscale[0]) and velocity by another scalar (pvscale[1])
+        return PVT(scale_posvel(self.pvtq, pvscale))
     def convert_units(self, length_unit=prefunits["length"], velocity_unit=prefunits["velocity"]):
         self.pvtq = self.pvtq.convert_units((length_unit,velocity_unit))
         return self
