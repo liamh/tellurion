@@ -5,7 +5,7 @@
 # OKNOVERPRINT=1 ipython -m "orkinit" -i
 
 # General import
-import sys, os, astropy
+import sys, os, astropy, skyfield
 import numpy as np
 # Easy way to see what is defined for an object
 from inspect import getmembers
@@ -18,6 +18,7 @@ if 'OKNOVERPRINT' not in os.environ:  # To suppresss version printing: OKNOVERPR
     print ('Java version:',vm.java_version)
     print ('Numpy version:', np.__version__)
     print ('Astropy version:', astropy.__version__)
+    print ('Skyfield version:', skyfield.VERSION)
     print ('Orekit version:', orekit.VERSION)
 
 from orekit.pyhelpers import setup_orekit_curdir

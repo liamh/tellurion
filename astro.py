@@ -53,6 +53,9 @@ class TQuantity(Quantity):
 #   Time('2023-09-14T08:31:00').isclose(Time('2023-09-14T08:31:00.00099999'), 1*u.ms)
 # tquantex1 = TQuantity(15, u.m / u.s, Time('2023-09-14T08:30:00'))
 
+def quant(tquant):
+    return Quantity(tquant.value, tquant.unit)
+
 #### PVT: Position, velocity, and time
 
 # Create a position-velocity as a TQuantity, call this a `pvtq`
