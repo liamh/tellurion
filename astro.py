@@ -56,6 +56,9 @@ class TQuantity(Quantity):
 def quant(tquant):
     return Quantity(tquant.value, tquant.unit)
 
+def tquant(quant, time):
+    return TQuantity(quant.value, quant.unit, time)
+
 #### PVT: Position, velocity, and time
 
 # Create a position-velocity as a TQuantity, call this a `pvtq`

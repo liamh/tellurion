@@ -1,9 +1,46 @@
-# Longitude, latitude, altitude
-# Make an lla class that saves the ork as an attribute
+"""
+# Geographic points specified by latitude, longitude, altitude/elevation
+
+# Lookup geographic points by name; must set lookup.geonames_username first
+# See https://gitlab.com/-/snippets/3743091 to get a username
+## Example without time
+In [8]: angellhall = geopt('angell hall')
+In [10]: angellhall.llaq
+Out[10]: <Quantity (-83.74001, 42.2771, 281.) (deg, deg, m)>
+In [11]: angellhall.ork
+Out[11]: <GeodeticPoint: {lat: 42.2771 deg, lon: -83.74001 deg, alt: 281}>
+In [12]: angellhall.skf
+Out[12]: <GeographicPosition WGS84 latitude +42.2771 N longitude -83.7400 E elevation 281.0 m>
+
+## Add a time to it
+angellhall
+<Angell Hall, Michigan, United States; timeless>
+angellhallnow = LLA(angellhall, nowutc())
+<Angell Hall, Michigan, United States; epoch 2024-09-03 01:22:38.409828 (UTC)>
+
+## Example with time
+In [13]: mcdonald = geopt('mcdonald observatory', nowutc())
+In [14]: mcdonald
+Out[14]: <McDonald Observatory, Texas, United States; epoch 2024-09-02 23:14:39.293387 (UTC)>
+In [15]: mcdonald.llaq
+Out[15]: <TQuantity (-104.02158, 30.67154, 2050.) (deg, deg, m), time=2024-09-02 02:12:52.997075>
+In [16]: mcdonald.ork
+Out[16]: <GeodeticPoint: {lat: 30.67154 deg, lon: -104.02158 deg, alt: 2,050}>
+In [17]: mcdonald.skf
+Out[17]: <GeographicPosition WGS84 latitude +30.6715 N longitude -104.0216 E elevation 2050.0 m>
+
+# The old NAVSPASUR main transmitter
+# Coordinates from https://www.thelivingmoon.com/45jack_files/04images/Kickapoo/Kickapoo_001.png
+# klat = Angle('33°33′08.50″N').value
+# klon = Angle('98°45′49.82″W').value
+# kickapoo = LLA([klat, klon, elev(klat, klon), 'Historic NAVSPASUR transmitter', 'Texas', 'US'], latlon=True, length_unit=u.m)
+"""
+
 # ex1lla = ex1.pvt.lla(ex1.forceenv)
 
 from astro import *
 from dttm import *
+import lookup
 from astropy.coordinates import Angle
 from skyfield.api import wgs84
 from org.orekit.bodies import GeodeticPoint, FieldGeodeticPoint
@@ -42,7 +79,7 @@ class LLA:
     ork: GeodeticPoint
 
     def __init__(self, fromthing, time=None,
-                 length_unit=prefunits["length"], angle_unit=prefunits["angle"]):
+                 length_unit=prefunits["length"], angle_unit=prefunits["angle"], latlon=False):
         if type(fromthing) == GeodeticPoint or type(fromthing) == FieldGeodeticPoint:
             self.ork = fromthing
             lu = lonlatalt([fromthing.longitude, fromthing.latitude, fromthing.altitude],
@@ -50,20 +87,41 @@ class LLA:
             self.llaq = lu.convert_units((angle_unit,angle_unit,length_unit))
             # elif type(fromthing) == astropy.table.row.Row:
             # elif type(fromthing) == Orbit:
+        elif type(fromthing) == LLA:
+            self.llaq = tquant(quant(fromthing.llaq), time)
+            self.ork = fromthing.ork
+            self.skf = fromthing.skf
+            if hasattr(fromthing,"info"):
+                self.info = fromthing.info
         else:
-            q = lonlatalt(fromthing, time=time, length_unit=length_unit, angle_unit=angle_unit)
+            if latlon:
+                q = latlonalt(fromthing, time=time, length_unit=length_unit, angle_unit=angle_unit)
+            else:
+                q = lonlatalt(fromthing, time=time, length_unit=length_unit, angle_unit=angle_unit)
             self.llaq = q
             self.ork = GeodeticPoint(float(q["lat"].to(u.radian).value), float(q["lon"].to(u.radian).value),
                                      float(q["alt"].to(u.meter).value))
+            if len(fromthing) > 3:
+                self.info = ', '.join(fromthing[3:]) # other information, such as name and location
         q = self.llaq
         self.skf = wgs84.latlon(q["lat"].to(u.deg).value, q["lon"].to(u.deg).value, q["alt"].to(u.meter).value)
     def __repr__(self):
-        if hasattr(self,"time"):
-            return f"<LLA longitude: {self.llaq['lon'].value} ({self.llaq.unit[0].to_string()}) latitude: {self.llaq['lat'].value} ({self.llaq.unit[1].to_string()}) altitude: {self.llaq['alt'].value} ({self.llaq.unit[2].to_string()}) epoch {self.llaq.time} (UTC)>"
+        if hasattr(self.llaq,"time"):
+            if hasattr(self,"info"):
+                return f"<{self.info}; epoch {self.llaq.time} (UTC)>"
+            else:
+                return f"<LLA longitude: {self.llaq['lon'].value} ({self.llaq.unit[0].to_string()}) latitude: {self.llaq['lat'].value} ({self.llaq.unit[1].to_string()}) altitude: {self.llaq['alt'].value} ({self.llaq.unit[2].to_string()}) epoch {self.llaq.time} (UTC)>"
         else:
-            return f"<LLA longitude: {self.llaq['lon'].value} ({self.llaq.unit[0].to_string()}) latitude: {self.llaq['lat'].value} ({self.llaq.unit[1].to_string()}) altitude: {self.llaq['alt'].value} ({self.llaq.unit[2].to_string()})>"
+            if hasattr(self,"info"):
+                return f"<{self.info}; timeless>"
+            else:
+                return f"<LLA longitude: {self.llaq['lon'].value} ({self.llaq.unit[0].to_string()}) latitude: {self.llaq['lat'].value} ({self.llaq.unit[1].to_string()}) altitude: {self.llaq['alt'].value} ({self.llaq.unit[2].to_string()})>"
 
 nullisland = LLA([0.0, 0.0, 0.0])
+
+# Lookup geographic points by name; must set lookup.geonames_username first
+def geopt(name, time=None):
+    return LLA(lookup.location(name), time, length_unit=u.m, latlon=True)
 
 # Find the local sidereal time for the location
 # If time is supplied explicitly, it is used, if it's not, then the LLA's time is used.
