@@ -4,7 +4,6 @@
 # generates the combinations, calls the function, collects the
 # results in a data frame, and outputs to CSV.
 
-import io
 import itertools
 import io
 import pandas as pd

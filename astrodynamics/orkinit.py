@@ -12,6 +12,7 @@ from inspect import getmembers
 
 # Orekit import and setup
 import orekit
+import pathlib
 vm = orekit.initVM()
 if 'OKNOVERPRINT' not in os.environ:  # To suppresss version printing: OKNOVERPRINT=1 ipython
     print ('Python version:',sys.version)
@@ -25,8 +26,8 @@ from orekit.pyhelpers import setup_orekit_curdir
 # Load the Orekit data file
 if 'OREKITDATA' in os.environ:  # set in shell: export OREKITDATA=$(locate orekit-data.zip)
     setup_orekit_curdir(os.environ['OREKITDATA'])
-else: # Look in the current directory
-    setup_orekit_curdir()
+else: # Look in the project directory at the top level
+    setup_orekit_curdir(pathlib.Path("").parent.absolute().parent.absolute()._str)
 
 # General math and Orekit utilities
 from math import radians, degrees

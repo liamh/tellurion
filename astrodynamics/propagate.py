@@ -1,19 +1,25 @@
 ##### Propagate orbits
 ## Main function: prop()
 
-from orbit import *
-from cartprodparam import *
+import orbit as o
+import ecis
+import astropy.units as u
+import astropy.timeseries as apts
+import astropy.table as aptbl
+import orekit
+import numpy as np
+from cartprodparam import ensurelist
 import warnings
 import collections.abc
 
 # Propagation and ephemeris
-from org.orekit.orbits import CartesianOrbit, OrbitType
+from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit
 from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState, EphemerisGenerator
 from org.orekit.propagation.events import AltitudeDetector
+import org.orekit.forces.gravity as okgrav
 # Time series for ephemeris
-from astropy.timeseries import TimeSeries
 
 # Propagate from epoch for a specified time
 # mkephem creates a BoundedPropagator but computes no actual states (see prop())
@@ -35,18 +41,18 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
     integrator = DormandPrince853Integrator(
     	       minstep,
     	       maxstep,
-	       JArray_double.cast_(tolerances[0]),  # Double array of doubles needs to be casted in Python
-	       JArray_double.cast_(tolerances[1]))
+	       orekit.JArray_double.cast_(tolerances[0]),  # Double array of doubles needs to be cast in Python
+	       orekit.JArray_double.cast_(tolerances[1]))
     integrator.setInitialStepSize(initStep)
 
     initialState = SpacecraftState(orb, force['mass'])
     prop = NumericalPropagator(integrator)
-    prop.setOrbitType(okc['cartesian'])
+    prop.setOrbitType(o._okc['cartesian'])
     prop.setInitialState(initialState)
     generator = prop.getEphemerisGenerator()
 
     # Forces
-    prop.addForceModel(HolmesFeatherstoneAttractionModel(force['earthframe'], force['gravity']))
+    prop.addForceModel(okgrav.HolmesFeatherstoneAttractionModel(force['earthframe'], force['gravity']))
     if 'dragforce' in force:
         prop.addForceModel(force['dragforce'])
 
@@ -81,19 +87,19 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
 # Pure numpy (no AstroPy or Orekit) is obtained from the ephemeris table with .makenp()
 #
 # Example
-# In [2]: prop(ex1,300.0,maximum_tof=86400.0)
+# In [2]: prop(o.ex1,300.0,maximum_tof=86400.0)
 # Out[2]: <PVT position: [4581.814910467976, 4512.262287102674, 1616.8263139353987] (km) velocity:[-4.8914488794011595, 3.141592098656343, 5.166423005465441] (km/s) epoch 2022-06-01 12:05:00 (UTC)>
 
-# In [3]: prop(ex1,[1200.0,1500.0,1800.0])
+# In [3]: prop(o.ex1,[1200.0,1500.0,1800.0])
 # Out[3]:
 # [<PVT position: [-1359.9602212056286, 4580.209288805089, 4646.557709357471] (km) velocity:[-7.074061594952203, -2.989070151590076, 0.948420112505302] (km/s) epoch 2022-06-01 12:20:00 (UTC)>,
 #  <PVT position: [-3358.332160090897, 3427.3199510360746, 4647.312224539923] (km) velocity:[-6.115173953646672, -4.617481772761261, -0.9412695398995137] (km/s) epoch 2022-06-01 12:25:00 (UTC)>,
 #  <PVT position: [-4956.791809682075, 1865.869024125194, 4094.2858798679345] (km) velocity:[-4.4362841450361055, -5.686777789101822, -2.7067519585212185] (km/s) epoch 2022-06-01 12:30:00 (UTC)>]
 
-# In [4]: prop(ex1,600.0)
+# In [4]: prop(o.ex1,600.0)
 # Out[4]: <PVT position: [2865.4998895513913, 5161.045684511684, 3036.84672810346] (km) velocity:[-6.432386509240479, 1.1404155012024495, 4.2038220495311265] (km/s) epoch 2022-06-01 12:10:00 (UTC)>
 
-# In [5]: ex1.prop.pvt
+# In [5]: o.ex1.prop.pvt
 # Out[5]:
 # [<PVT position: [4581.814910467976, 4512.262287102674, 1616.8263139353987] (km) velocity:[-4.8914488794011595, 3.141592098656343, 5.166423005465441] (km/s) epoch 2022-06-01 12:05:00 (UTC)>,
 #  <PVT position: [2865.4998895513913, 5161.045684511684, 3036.84672810346] (km) velocity:[-6.432386509240479, 1.1404155012024495, 4.2038220495311265] (km/s) epoch 2022-06-01 12:10:00 (UTC)>,
@@ -101,7 +107,7 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
 #  <PVT position: [-3358.332160090897, 3427.3199510360746, 4647.312224539923] (km) velocity:[-6.115173953646672, -4.617481772761261, -0.9412695398995137] (km/s) epoch 2022-06-01 12:25:00 (UTC)>,
 #  <PVT position: [-4956.791809682075, 1865.869024125194, 4094.2858798679345] (km) velocity:[-4.4362841450361055, -5.686777789101822, -2.7067519585212185] (km/s) epoch 2022-06-01 12:30:00 (UTC)>]
 
-# In [6]: ex1.prop.orbit
+# In [6]: o.ex1.prop.orbit
 # Out[6]:
 # [<Orbit: Cartesian parameters: {P(4581814.910467976, 4512262.287102674, 1616826.3139353986), V(-4891.4488794011595, 3141.592098656343, 5166.423005465442)}>,
 #  <Orbit: Cartesian parameters: {P(2865499.8895513914, 5161045.684511684, 3036846.72810346), V(-6432.386509240479, 1140.4155012024494, 4203.822049531126)}>,
@@ -109,9 +115,9 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
 #  <Orbit: Cartesian parameters: {P(-3358332.160090897, 3427319.9510360747, 4647312.224539923), V(-6115.173953646672, -4617.481772761261, -941.2695398995137)}>,
 #  <Orbit: Cartesian parameters: {P(-4956791.809682075, 1865869.024125194, 4094285.879867934), V(-4436.284145036106, -5686.777789101822, -2706.7519585212185)}>]
 
-# prop(ex1, np.linspace(2.0, 3.0, num=5, endpoint=True)*u.minute)
+# prop(o.ex1, np.linspace(2.0, 3.0, num=5, endpoint=True)*u.minute)
 
-# In [8]: ex1.prop.ephem
+# In [8]: o.ex1.prop.ephem
 # Out[8]:
 # <TimeSeries length=10>
 #         time               position               velocity
@@ -129,23 +135,9 @@ def mkephem(orbit, proptime, force, stopalt=125.0e3):
 # 2022-06-01 12:25:00 -3358.332 ..  4647.312 -6.115174 .. -0.941270
 # 2022-06-01 12:30:00 -4956.792 ..  4094.286 -4.436284 .. -2.706752
 
-# In [8]: ex1.prop.ephem[5:end].makenp()
-# Out[8]:
-# [array([[ 4581.81491047,  4512.2622871 ,  1616.82631394],
-#         [ 2865.49988955,  5161.04568451,  3036.8467281 ],
-#         [-1359.96022121,  4580.20928881,  4646.55770936],
-#         [-3358.33216009,  3427.31995104,  4647.31222454],
-#         [-4956.79180968,  1865.86902413,  4094.28587987]]),
-#  array([[-4.89144888,  3.1415921 ,  5.16642301],
-#         [-6.43238651,  1.1404155 ,  4.20382205],
-#         [-7.07406159, -2.98907015,  0.94842011],
-#         [-6.11517395, -4.61748177, -0.94126954],
-#         [-4.43628415, -5.68677779, -2.70675196]]),
-#  array(['2022-06-01T12:05:00.000000000', '2022-06-01T12:10:00.000000000',
-#         '2022-06-01T12:20:00.000000000', '2022-06-01T12:25:00.000000000',
-#         '2022-06-01T12:30:00.000000000'], dtype='datetime64[ns]')]
+# In [8]: o.ex1.prop.ephem[5:10].makenp()
 
-# In [29]: pvts(ex1.prop.ephem) # same as ex1.prop.pvt
+# In [29]: pvts(o.ex1.prop.ephem) # same as o.ex1.prop.pvt
 # Out[29]:
 # [<PVT position: [4581.814910467976, 4512.262287102674, 1616.8263139353987] (km) velocity:[-4.8914488794011595, 3.141592098656343, 5.166423005465441] (km / s) epoch 2022-06-01 12:05:00 (UTC)>,
 #  <PVT position: [2865.4998895513913, 5161.045684511684, 3036.84672810346] (km) velocity:[-6.432386509240479, 1.1404155012024495, 4.2038220495311265] (km / s) epoch 2022-06-01 12:10:00 (UTC)>,
@@ -165,27 +157,27 @@ def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
         forceenv = None
     else:
         forceenv = tree.forceenv
-    if bp is None or ("maxtime" in tree and type(tree.maxtime) is Quantity and maxtime > tree.maxtime):
+    if bp is None or ("maxtime" in tree and type(tree.maxtime) is u.Quantity and maxtime > tree.maxtime):
         bp = mkephem(orbit, maxtime, forceenv, stopalt)
         [bp, tree] = ecis.thingofclass(orbit, BoundedPropagator)
     if isinstance(reltimes, collections.abc.Iterable):
         state = [bp.propagate(bp.getMinDate().shiftedBy(timesec(rt))).orbit for rt in reltimes]
-        pvt=[PVT(st) for st in state]
+        pvt=[o.PVT(st) for st in state]
     else:
         state = bp.propagate(bp.getMinDate().shiftedBy(timesec(reltimes))).orbit
-        pvt=PVT(state)
+        pvt=o.PVT(state)
     pvts = ensurelist(tree.get('pvt')) + ensurelist(pvt)
     pvts.sort(key = lambda s: s.pvtq.time)
     tree.update(pvt = pvts)
     states = ensurelist(tree.get('orbit')) + ensurelist(state)
-    states.sort(key = lambda s: PVT(s).pvtq.time)
+    states.sort(key = lambda s: o.PVT(s).pvtq.time)
     tree.update(orbit=states)
     tree.update(ephem=ephts(tree))
     return(pvt)
 
 # Make a Quantity with array value and time unit
 def timearray(times):
-    if type(times) is Quantity:
+    if type(times) is u.Quantity:
         # Weirdly, a scalar Quantity is iterable but you can't call max on it because it's not iterable
         if times.isscalar:
             return([times.value]*times.unit) # make it an array of one (singleton)
@@ -199,7 +191,7 @@ def timearray(times):
 
 # Make a time series (ephemeris table) from the propagated ephemeris
 def ephts(prop):
-    ts = TimeSeries(time=[pvt.pvtq.time for pvt in prop.pvt],
+    ts = apts.TimeSeries(time=[pvt.pvtq.time for pvt in prop.pvt],
                     data={'position': [pvt.pvtq['p'] for pvt in prop.pvt],
                           'velocity': [pvt.pvtq['v'] for pvt in prop.pvt]})
     ts['position'].info.format = '9.3f'
@@ -209,22 +201,22 @@ def ephts(prop):
 # Make a list or single PVTs from an ephemeris table
 # possibly add later optional mintime, maxtime arguments
 def pvts(ephem):
-    if type(ephem) == astropy.table.row.Row:
-        return PVT(ephem)
+    if type(ephem) == aptbl.row.Row:
+        return o.PVT(ephem)
     else:
-        return [PVT(row) for row in list(ephem.iterrows())]
+        return [o.PVT(row) for row in list(ephem.iterrows())]
 
 # Return a list of numpy arrays and datetimes from the
 # ephemeris table or a row of it.
 def makenp(ts):
     return (np.concatenate((ts['position'].value, ts['velocity'].value), axis=1), ts['time'].datetime64)
 # .makenp() convert to numpy; units are same as ephemeris table but not specified in the result
-TimeSeries.makenp = makenp
-astropy.table.row.Row.makenp = makenp
+apts.TimeSeries.makenp = makenp
+aptbl.row.Row.makenp = makenp
 
 # Convert a Quantity to seconds as a Python float
 def timesec(t):
-    if type(t) is Quantity and get_physical_type(t) == 'time':
+    if type(t) is u.Quantity and u.get_physical_type(t) == 'time':
         pt = float(t.si.value) # convert to seconds and get the value_unit
     else:
         pt = float(t) # assume seconds
@@ -232,15 +224,15 @@ def timesec(t):
 
 ## Time series of orbital elements
 def tselements(ephem, elements):
-    return TimeSeries(time=[pvt.pvtq.time for pvt in ephem.pvt],
+    return apts.TimeSeries(time=[pvt.pvtq.time for pvt in ephem.pvt],
                       data=[dict(zip(elements,
-                                     elementval(orb, elements,
+                                     o.elementval(orb, elements,
                                                 ephem.forceenv["earthrad"])))
                             for orb in ephem.orbit])
 
 ## Example
-# prop(ex2, np.linspace(0, 24, num=5)*u.hour) # This gives a warning, can be ignored
-# ex2.prop.ephem
+# prop(o.ex2, np.linspace(0, 24, num=5)*u.hour) # This gives a warning, can be ignored
+# o.ex2.prop.ephem
 # <TimeSeries length=5>
 #         time               position               velocity
 #                               km                   km / s
@@ -252,7 +244,7 @@ def tselements(ephem, elements):
 # 2023-09-15 02:30:00 -6737.221 .. -3089.289 -1.537353 ..  3.728167
 # 2023-09-15 08:30:00 -6920.676 .. -2132.309 -0.019043 ..  4.309723
 #
-# tselements(ex2.prop, ["sma","ecc","inc"])
+# tselements(o.ex2.prop, ["sma","ecc","inc"])
 # <TimeSeries length=5>
 #         time               sma                ecc                inc
 #                             km                                   deg
@@ -264,7 +256,7 @@ def tselements(ephem, elements):
 # 2023-09-15 02:30:00 7999.961193141438 0.09999236890210698  42.00000000000003
 # 2023-09-15 08:30:00 7999.949375719636  0.0999895810073231 42.000000000000306
 #
-# tselements(ex2.prop, ["altper","altapo"])
+# tselements(o.ex2.prop, ["altper","altapo"])
 # <TimeSeries length=5>
 #         time              altper            altapo
 #                             km                km

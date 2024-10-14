@@ -1,5 +1,5 @@
 # Astropy definitions of time; see https://docs.astropy.org/en/stable/time/index.html
-import astropy
+import astropy.units as u
 import numpy as np
 from astropy.time import Time # "apt" = astropy Time
 import copy
@@ -26,7 +26,7 @@ def listnpa(thing):
 #   None, a Time, a number, a Quantity (with a time dimension)
 # How this time is used is up to the application.
 
-class TQuantity(Quantity):
+class TQuantity(u.Quantity):
     # See https://stackoverflow.com/a/28236682/238405
     def __new__(cls, value, unit=None, time=None):
         self = super().__new__(cls, value, unit)
@@ -54,7 +54,7 @@ class TQuantity(Quantity):
 # tquantex1 = TQuantity(15, u.m / u.s, Time('2023-09-14T08:30:00'))
 
 def quant(tquant):
-    return Quantity(tquant.value, tquant.unit)
+    return u.Quantity(tquant.value, tquant.unit)
 
 def tquant(quant, time):
     return TQuantity(quant.value, quant.unit, time)
@@ -108,14 +108,14 @@ def lonlatalt(lla, time=None, length_unit=prefunits["length"], angle_unit=prefun
         npa = np.array((lon, lat, alt), dtype = llatype)
         strunit = u.StructuredUnit((angle_unit, angle_unit, length_unit))
         if time==None:
-            ret = Quantity(npa, strunit)
+            ret = u.Quantity(npa, strunit)
         else:
             ret = TQuantity(npa, strunit, time)
-    elif type(lla) is Quantity and time is not None: # Add time to an LLA that has none
+    elif type(lla) is u.Quantity and time is not None: # Add time to an LLA that has none
         ret = TQuantity(lla.value, lla.unit, time)
     elif type(lla) is TQuantity:  # Change or remove the time
         if time is None:
-            ret = Quantity(lla.value, lla.unit)
+            ret = u.Quantity(lla.value, lla.unit)
         else:
             ret = TQuantity(lla.value, lla.unit, time)
     else:

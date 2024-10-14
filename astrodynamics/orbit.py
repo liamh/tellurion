@@ -1,11 +1,13 @@
-######### Representation of state as Cartesian, Kepleran, Circular, Equinoctial
+""""
+Representation of state as Cartesian, Kepleran, Circular, Equinoctial
 
-## A position-velocity-time PVT is a Cartesian state, but
-## Orekit has a separate class of CartesianOrbit that can be
-## propagated, so these are have different representation.
+Exported: PVT, posmag, new_cart, elementval, kepler, new_kepler
+Examples: ex1, ex2
+"""
 
 from force import *
 from frames import *
+import orbit
 from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
 from org.orekit.orbits import KeplerianOrbit, PositionAngleType
 from org.orekit.orbits import CircularOrbit
@@ -22,7 +24,7 @@ from cartprodparam import ensurelist
 ecis.ecisdefault='forceenv' # Forces and other environmental constants
 
 # Orekit configuration
-okc = {'cartesian': OrbitType.CARTESIAN}
+_okc = {'cartesian': OrbitType.CARTESIAN}
 
 ######## Snaglab (Python) and Orekit representation of a postion-velocity-time (PVT)
 
@@ -30,6 +32,22 @@ okc = {'cartesian': OrbitType.CARTESIAN}
 #  .ork:  TimeStampedPVCoordinates (Orekit)
 #  .pvtq: TQuantity (AstroPy)
 class PVT:
+    """A position-value-time, represented in two ways,
+       pvtq as a TQuantity (based on AstroPy's Quantity)
+       ork  as an Orekit TimeStampedPVCoordinates
+
+    They can be made from a
+    * list or numpy ndarray of 6 components (position and velocity), and an absolute time specification
+    * TQuantity
+    * TimeStampedPVCoordinates
+    * astropy.table.row.Row
+    * tuple in order (astropy.time.Time, Quantity (position), Quantity (velocity))
+    * Orbit
+
+    If the units are not in the input, they may be specified in the
+    units argument, which defaults to [prefunits["length"],
+    prefunits["velocity"]]
+    """
     pvtq: TQuantity
     ork: TimeStampedPVCoordinates
 
@@ -81,57 +99,23 @@ class PVT:
         return LLA(llafrompt(self.ork.getPosition(), self.ork.getDate(), forceenv),
                    self.pvtq.time)
 
+######## Properties of orbits
+
+def posmag(orbit):
+    """The geocentric distance of the orbit"""
+    return(orbit.pVCoordinates.position.norm)
+
 ######## Make orbits
 
 # Make a Cartesian orbit from Orekit PVT
 TimeStampedPVCoordinates.cartesian = lambda self, gravity: CartesianOrbit(self, gravity['celestialframe'], gravity['earthmu'])
 
-# Make a Kepler orbital element set
-# `oes` is the orbital element set as a dictionary with the following elements
-# zapo_m and zper_m or sma_m and ecc
-# 'inc_deg' (default 0)
-# 'argper_deg' (default -90.0)    Perigee argument (deg)
-# 'raan_deg' (default 0.0)        Right ascension of ascending node (degrees)
-# 'timeelt_deg' (default 0.0)     Time element (deg)
-# 'mean_timeelt' True or False (default)  Whether time element is true or mean anomaly
-def keplerold(oes, epoch, constants):
-    zapo = oes.get('zapo_m')
-    zper = oes.get('zper_m')
-    sma = oes.get('sma_m')
-    ecc = oes.get('ecc')
-    if zapo is not None and zper is not None:
-        rapo = constants['earthrad'] + zapo
-        rper = constants['earthrad'] + zper
-        sma = (rapo+rper)/2.0
-        ecc = (rapo-rper)/(2.0*sma)
-    if oes.get('mean_timeelt', False):
-        timeelt_type = PositionAngleType.MEAN
-    else:
-        timeelt_type = PositionAngleType.TRUE
-    return(KeplerianOrbit(sma, # Semimajor Axis (m)
-                          ecc,    # Eccentricity
-                          radians(oes.get('inc_deg', 0.0)),  # Inclination (deg)
-                          radians(oes.get('argper_deg', -90.0)),   # Perigee argument (deg)
-                          radians(oes.get('raan_deg', 0.0)),   # Right ascension of ascending node (degrees)
-                          radians(oes.get('timeelt_deg', 0.0)),  # Time element (deg)
-                          timeelt_type,  # Sets which type of anomaly we use (true
-                          constants['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                          to_okad(epoch),   # Sets the date of the orbital parameters
-                          constants['earthmu']))   # Sets the central attraction coefficient (m³/s²)
-
-
-
-
-
-######## Properties of orbits
-
-# The geocentric distance of the orbit
-def posmag(orbit):
-    return(orbit.pVCoordinates.position.norm)
-
-## Make a computation tree from position, velocity, and datetime
-
 def new_cart(pv, time, constants):
+    """
+    Create a new computation tree based on the Cartesian
+    position-velocity and time, and constants (output from
+    `setgravity()`) to be used in the computation.
+    """
     pvt = PVT(pv, time)
     ret = ecis.newtree('pvt', pvt, constants) # Create the tree and set the first component to the PVT
     ret.cartesian() # Convert the PVT to the Orekit CartesianOrbit and save that as the next component
@@ -143,7 +127,7 @@ def new_cart(pv, time, constants):
 ################################################################################
 
 # Convert to the requested orbit type "cart", "kep", "circ", "equi"
-def convert(tree, orbtype, searchtype = Orbit):
+def _convert(tree, orbtype, searchtype = Orbit):
     [orbit, parent] = ecis.thingofclass(tree, searchtype)
     if orbit is None:
         [orbit, parent] = ecis.thingofclass(tree, PVT)
@@ -171,35 +155,37 @@ def convert(tree, orbtype, searchtype = Orbit):
             raise ValueError("Type \"" + orbtype + "\" unknown")
     return(ret)
 
-ecis.Ecis.cartesian = lambda tree: convert(tree, "cart")
-ecis.Ecis.kepler = lambda tree: convert(tree, "kep")
-ecis.Ecis.circular = lambda tree: convert(tree, "circ")
-ecis.Ecis.equinoctial = lambda tree: convert(tree, "equi")
+ecis.Ecis.cartesian = lambda tree: _convert(tree, "cart")
+ecis.Ecis.kepler = lambda tree: _convert(tree, "kep")
+ecis.Ecis.circular = lambda tree: _convert(tree, "circ")
+ecis.Ecis.equinoctial = lambda tree: _convert(tree, "equi")
 
 ################################################################################
 ## Orbital elements
 ################################################################################
 
-# Get the value of an orbital element from the orbit
-# Arguments
-#  orbit:   orbit (of any type), may be a list
-#  element: the orbital element desired, see list eldict.keys(); may be a list, e.g. ["sma", "ecc"]
-#  earthrad: necessary to provide for altitudes of perigee and apogee
 def elementval (orbit, element, earthrad=None):
+    """
+    Compute the orbital element from the orbit
+    Arguments
+      orbit:    orbit (of any type), may be a list
+      element:  the orbital element desired, see list eldict.keys(); may be a list, e.g. ["sma", "ecc"]
+      earthrad: the radius of the earth, necessary to provide for altitudes of perigee and apogee
+    """
     if isinstance(orbit, collections.abc.Iterable):
         return [elementval(orb, element) for orb in orbit]
     else:
         if type(orbit) is KeplerianOrbit:
             orbkep = orbit
         else:
-            orbkep = convert(orbit,"kep")
+            orbkep = _convert(orbit,"kep")
         if isinstance(element, list):
-            return [elget(orbkep, el, earthrad) for el in element]
+            return [_elget(orbkep, el, earthrad) for el in element]
         else:
-            return elget(orbkep, element, earthrad)
+            return _elget(orbkep, element, earthrad)
 
-elkeys = ["name", "description", "phystype", "orkunit", "getter"]
-elvals = [["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],
+_elkeys = ["name", "description", "phystype", "orkunit", "getter"]
+_elvals = [["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],
           ["ecc", "eccentricity", "dimensionless", u.dimensionless_unscaled, KeplerianOrbit.getE],
           ["inc", "inclination", "angle", u.radian, KeplerianOrbit.getI],
           ["argper", "argument of perigee", "angle", u.radian, KeplerianOrbit.getPerigeeArgument],
@@ -217,11 +203,11 @@ elvals = [["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],
           ["ma", "mean anomaly", "angle", u.radian, KeplerianOrbit.getMeanAnomaly],
           ["memo", "mean motion", "angular speed", u.radian/u.second, KeplerianOrbit.getKeplerianMeanMotion],
           ["period", "orbital period", "time", u.second, KeplerianOrbit.getKeplerianPeriod]]
-eldict = dict(zip([ev[0] for ev in elvals], [dict(zip(elkeys,ev)) for ev in elvals]))
+_eldict = dict(zip([ev[0] for ev in _elvals], [dict(zip(_elkeys,ev)) for ev in _elvals]))
 
 # Get altitude of perigee/apogee by subtracting ex2.prop.forceenv["earthrad"]
-def elget(orbkep, el, earthrad=None):
-    lookup = eldict[el]
+def _elget(orbkep, el, earthrad=None):
+    lookup = _eldict[el]
     getter = lookup["getter"]
     if '__code__' in dir(getter) and len(getter.__code__.co_varnames) > 1:
         orkval = getter(orbkep, earthrad)
@@ -230,37 +216,40 @@ def elget(orbkep, el, earthrad=None):
     orkunit = lookup["orkunit"]
     return Quantity(orkval, orkunit).to(prefunits[lookup["phystype"]])
 
-def elmake(el, value):
-    return Quantity(value, prefunits[eldict[el]["phystype"]])
+def _elmake(el, value):
+    return Quantity(value, prefunits[_eldict[el]["phystype"]])
 
-def orkkep(el, oes):
-    return float(oes[el].to(eldict[el]['orkunit']).value)
+def _orkkep(el, oes):
+    return float(oes[el].to(_eldict[el]['orkunit']).value)
 
-def makekep(elvald):
-    return {e: elmake(e, elvald[e]) for e in elvald}
+def _makekep(elvald):
+    return {e: _elmake(e, elvald[e]) for e in elvald}
 
 def kepler(oes, epoch, constants):
-    foes = makekep({"ecc":0.0, "inc":38.0, "raan":0.0, "argper":-90.0, "ma":0}) | makekep(oes)
+    foes = _makekep({"ecc":0.0, "inc":38.0, "raan":0.0, "argper":-90.0, "ma":0}) | _makekep(oes)
     if 'ma' in foes:
         timeelt_type = PositionAngleType.MEAN
-        timeelt = orkkep('ma',foes)
+        timeelt = _orkkep('ma',foes)
     else:
         timeelt_type = PositionAngleType.TRUE
-        timeelt = orkkep('ta',foes)
-    return KeplerianOrbit(orkkep('sma',foes),
-                          orkkep('ecc',foes),
-                          orkkep('inc',foes),
-                          orkkep('argper',foes),
-                          orkkep('raan',foes),
+        timeelt = _orkkep('ta',foes)
+    return KeplerianOrbit(_orkkep('sma',foes),
+                          _orkkep('ecc',foes),
+                          _orkkep('inc',foes),
+                          _orkkep('argper',foes),
+                          _orkkep('raan',foes),
                           timeelt,
                           timeelt_type,  # Sets which type of anomaly we use (true
                           constants['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
                           to_okad(epoch),   # Sets the date of the orbital parameters
                           constants['earthmu'])   # Sets the central attraction coefficient (m³/s²)
 
-## Make a computation tree from Kepler elements and datetime
-
 def new_kepler(oes, epoch, constants):
+    """
+    Create a new computation tree based on the Keplerian
+    (classical) orbital elements and time, and constants (output from
+    `setgravity()`) to be used in the computation.
+    """
     ret = ecis.newtree('kep', kepler(oes, epoch, constants), constants)
     ret.cartesian()
     return(ret)
