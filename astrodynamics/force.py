@@ -1,6 +1,7 @@
-from orkinit import *
-from dttm import *
+import orkinit
+import dttm
 
+from org.orekit.utils import Constants
 from org.orekit.forces.gravity.potential import GravityFieldFactory
 from org.orekit.forces.gravity import HolmesFeatherstoneAttractionModel
 from orekit import JArray_double
@@ -40,9 +41,9 @@ swdata = CssiSpaceWeatherData("SpaceWeather-All-v1.2.txt")
 
 # This will find the unnormalized coefficients independent of any simulation.
 # Returns three arrays: zonals (J2,...), Cnm, Snm
-def unnormcoef(degree, order, when = nowutc(True)):
+def unnormcoef(degree, order, when = dttm.nowutc(True)):
     if type(when) is Quantity and get_physical_type(when) == 'time':
-        when = to_okad(nowutc() + when)
+        when = dttm.to_okad(dttm.nowutc() + when)
     provider = GravityFieldFactory.getUnnormalizedProvider(degree, order)
     deg = provider.maxDegree
     ord = provider.maxOrder

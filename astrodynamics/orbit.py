@@ -8,6 +8,9 @@ Examples: ex1, ex2
 from force import *
 from frames import *
 import orbit
+import dttm
+import astropy
+import orekit.pyhelpers as pyhelp
 from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
 from org.orekit.orbits import KeplerianOrbit, PositionAngleType
 from org.orekit.orbits import CircularOrbit
@@ -59,7 +62,7 @@ class PVT:
             if ork is None:
                 psi = self.pvtq.si['p'].value.tolist()
                 vsi = self.pvtq.si['v'].value.tolist()
-                self.ork = TimeStampedPVCoordinates(to_okad(time), Vector3D(psi), Vector3D(vsi))
+                self.ork = TimeStampedPVCoordinates(dttm.to_okad(time), Vector3D(psi), Vector3D(vsi))
             else:
                 self.ork = ork
         elif type(fromthing) == TimeStampedPVCoordinates:
@@ -73,7 +76,7 @@ class PVT:
             self.pvtq = fromthing
             psi = fromthing.si['p'].value.tolist()
             vsi = fromthing.si['v'].value.tolist()
-            self.ork = TimeStampedPVCoordinates(datetime_to_absolutedate(fromthing.time.datetime),
+            self.ork = TimeStampedPVCoordinates(pyhelp.datetime_to_absolutedate(fromthing.time.datetime),
                                                 Vector3D(psi), Vector3D(vsi))
         elif type(fromthing) == astropy.table.row.Row:
             self.__init__(posvel([fromthing['position'], fromthing['velocity']], fromthing['time']))
@@ -241,7 +244,7 @@ def kepler(oes, epoch, constants):
                           timeelt,
                           timeelt_type,  # Sets which type of anomaly we use (true
                           constants['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                          to_okad(epoch),   # Sets the date of the orbital parameters
+                          dttm.to_okad(epoch),   # Sets the date of the orbital parameters
                           constants['earthmu'])   # Sets the central attraction coefficient (m³/s²)
 
 def new_kepler(oes, epoch, constants):

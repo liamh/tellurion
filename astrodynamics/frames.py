@@ -15,11 +15,11 @@ Out[12]: <GeographicPosition WGS84 latitude +42.2771 N longitude -83.7400 E elev
 ## Add a time to it
 angellhall
 <Angell Hall, Michigan, United States; timeless>
-angellhallnow = LLA(angellhall, nowutc())
+angellhallnow = LLA(angellhall, dttm.nowutc())
 <Angell Hall, Michigan, United States; epoch 2024-09-03 01:22:38.409828 (UTC)>
 
 ## Example with time
-In [13]: mcdonald = geopt('mcdonald observatory', nowutc())
+In [13]: mcdonald = geopt('mcdonald observatory', dttm.nowutc())
 In [14]: mcdonald
 Out[14]: <McDonald Observatory, Texas, United States; epoch 2024-09-02 23:14:39.293387 (UTC)>
 In [15]: mcdonald.llaq
@@ -39,7 +39,7 @@ Out[17]: <GeographicPosition WGS84 latitude +30.6715 N longitude -104.0216 E ele
 # ex1lla = ex1.pvt.lla(ex1.forceenv)
 
 from astro import *
-from dttm import *
+import dttm
 import lookup
 from astropy.coordinates import Angle
 from skyfield.api import wgs84
@@ -57,7 +57,7 @@ def llafrompt(position, time, forceenv):
 # ptfromlla(ex1.pvt.lla(ex1.forceenv),ex1.forceenv)
 def ptfromlla(lla, forceenv):
     topoframe = TopocentricFrame(forceenv['earth'], lla.ork, "ptfromlla")
-    cart = topoframe.getPVCoordinates(to_okad(lla.llaq.time), forceenv['celestialframe']).getPosition()
+    cart = topoframe.getPVCoordinates(dttm.to_okad(lla.llaq.time), forceenv['celestialframe']).getPosition()
     return cart
 
 # Transform from ECI to ECEF
@@ -73,7 +73,7 @@ def ecef_to_eci(ecef, forceenv):
     return xf.transformPVCoordinates(ecef.ork)
 
 # Class of gegraphic points (longitude, latitude, altitude)
-# exg = LLA([-40.0, 0.1, 250.0], nowutc())
+# exg = LLA([-40.0, 0.1, 250.0], dttm.nowutc())
 class LLA:
     llaq: TQuantity
     ork: GeodeticPoint
@@ -137,8 +137,8 @@ def siderealtime(lla=None, time=None):
     elif hasattr(lla.llaq, 'time'):
         tm = lla.llaq.time
     else:
-        tm= nowutc()
-    return Angle(lla.skf.lst_hours_at(to_skftime(tm)), u.hour).to(u.deg)
+        tm= dttm.nowutc()
+    return Angle(lla.skf.lst_hours_at(dttm.to_skftime(tm)), u.hour).to(u.deg)
 
 # Time series of lla
 #def tslla(ephem, elements):
