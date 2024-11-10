@@ -1,12 +1,9 @@
 # Astropy definitions of time; see https://docs.astropy.org/en/stable/time/index.html
 import astropy.units as u
 import numpy as np
-from astropy.time import Time # "apt" = astropy Time
 import copy
 
 #### Astropy units
-import astropy.units as u # Define time units, e.g. nowutc() + 5*day
-from astropy.units import second, minute, hour, day, Quantity, get_physical_type
 # Sidereal day in seconds: u.sday.to('s'), u.sday.to(u.second)
 
 # Define revolution as angle unit for two-line elements (mean motion
@@ -50,8 +47,8 @@ class TQuantity(u.Quantity):
 
 # Add a method for equality, subtraction etc. that checks time to be within some specified difference
 # Apply isclose
-#   Time('2023-09-14T08:31:00').isclose(Time('2023-09-14T08:31:00.00099999'), 1*u.ms)
-# tquantex1 = TQuantity(15, u.m / u.s, Time('2023-09-14T08:30:00'))
+#   astropy.time.Time('2023-09-14T08:31:00').isclose(astropy.time.Time('2023-09-14T08:31:00.00099999'), 1*u.ms)
+# tquantex1 = TQuantity(15, u.m / u.s, astropy.time..Time('2023-09-14T08:30:00'))
 
 def quant(tquant):
     return u.Quantity(tquant.value, tquant.unit)
@@ -63,7 +60,7 @@ def tquant(quant, time):
 
 # Create a position-velocity as a TQuantity, call this a `pvtq`
 # ex1pv = [5740.13268349499, 3314.06715, 0.0, -2.75082683526322, 4.7645718414998, 5.50165367052644]
-# ex1pvtq = posvel(ex1pv, Time('2023-09-14T08:30:00'))
+# ex1pvtq = posvel(ex1pv, astropy.time.Time('2023-09-14T08:30:00'))
 # ex1pvtq['p'] => <TQuantity [5740.13268349, 3314.06715   ,    0.        ] km, time not available>
 # ex1pvtq.value[0] => array([5740.13268349, 3314.06715   ,    0.        ])
 def posvel(pv, time=None, length_unit=prefunits["length"], velocity_unit=prefunits["velocity"]):

@@ -12,7 +12,7 @@ import numpy as np
 import orekit
 import orekit.pyhelpers as pyhelpers
 import pathlib
-from inspect import getmembers # Easy way to see what is defined for an object
+# from inspect import getmembers # Easy way to see what is defined for an object
 
 # Start Java VM
 _vm = orekit.initVM()

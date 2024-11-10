@@ -38,11 +38,10 @@ Out[17]: <GeographicPosition WGS84 latitude +30.6715 N longitude -104.0216 E ele
 
 # ex1lla = ex1.pvt.lla(ex1.forceenv)
 
-from astro import *
 import dttm
 import lookup
-from astropy.coordinates import Angle
-from skyfield.api import wgs84
+import astropy.coordinates
+import skyfield.api
 from org.orekit.bodies import GeodeticPoint, FieldGeodeticPoint
 from org.orekit.frames import TopocentricFrame
 
@@ -104,7 +103,7 @@ class LLA:
             if len(fromthing) > 3:
                 self.info = ', '.join(fromthing[3:]) # other information, such as name and location
         q = self.llaq
-        self.skf = wgs84.latlon(q["lat"].to(u.deg).value, q["lon"].to(u.deg).value, q["alt"].to(u.meter).value)
+        self.skf = skyfield.api.wgs84.latlon(q["lat"].to(u.deg).value, q["lon"].to(u.deg).value, q["alt"].to(u.meter).value)
     def __repr__(self):
         if hasattr(self.llaq,"time"):
             if hasattr(self,"info"):
@@ -138,7 +137,7 @@ def siderealtime(lla=None, time=None):
         tm = lla.llaq.time
     else:
         tm= dttm.nowutc()
-    return Angle(lla.skf.lst_hours_at(dttm.to_skftime(tm)), u.hour).to(u.deg)
+    return astropy.coordinates.Angle(lla.skf.lst_hours_at(dttm.to_skftime(tm)), u.hour).to(u.deg)
 
 # Time series of lla
 #def tslla(ephem, elements):

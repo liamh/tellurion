@@ -1,11 +1,11 @@
 # ECIS exploratory computation in stages
-from munch import *
+import munch
 import warnings
 import collections.abc
 
 ecisdefault = 'ecdefault'
 
-class Ecis(Munch):
+class Ecis(munch.Munch):
     def __init__(self, defaultdict=None):
         if defaultdict is not None:
             self.update({ecisdefault: defaultdict})

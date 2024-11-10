@@ -5,25 +5,27 @@ Exported: PVT, posmag, new_cart, elementval, kepler, new_kepler
 Examples: ex1, ex2
 """
 
-from force import *
-from frames import *
-import orbit
-import dttm
 import astropy
+import astropy.time # For ex1, ex2
+import astropy.units as u
 import orekit.pyhelpers as pyhelp
 from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
 from org.orekit.orbits import KeplerianOrbit, PositionAngleType
 from org.orekit.orbits import CircularOrbit
 from org.orekit.orbits import EquinoctialOrbit
+from org.orekit.utils import Constants
 # Orbital elements and PVT
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 import collections.abc
-from astro import *
 #from astropy.table.row import *
-# ECIS - exploratory computation in stages
+
+import astro
+import force
 import ecis
-from cartprodparam import ensurelist
+import orbit
+import dttm
+# ECIS - exploratory computation in stages
 ecis.ecisdefault='forceenv' # Forces and other environmental constants
 
 # Orekit configuration
@@ -33,31 +35,31 @@ _okc = {'cartesian': OrbitType.CARTESIAN}
 
 # PVT as
 #  .ork:  TimeStampedPVCoordinates (Orekit)
-#  .pvtq: TQuantity (AstroPy)
+#  .pvtq: astro.TQuantity (AstroPy)
 class PVT:
     """A position-value-time, represented in two ways,
-       pvtq as a TQuantity (based on AstroPy's Quantity)
+       pvtq as a astro.TQuantity (based on AstroPy's u.Quantity)
        ork  as an Orekit TimeStampedPVCoordinates
 
     They can be made from a
     * list or numpy ndarray of 6 components (position and velocity), and an absolute time specification
-    * TQuantity
+    * astro.TQuantity
     * TimeStampedPVCoordinates
     * astropy.table.row.Row
-    * tuple in order (astropy.time.Time, Quantity (position), Quantity (velocity))
+    * tuple in order (astropy.time.Time, u.Quantity (position), u.Quantity (velocity))
     * Orbit
 
     If the units are not in the input, they may be specified in the
     units argument, which defaults to [prefunits["length"],
     prefunits["velocity"]]
     """
-    pvtq: TQuantity
+    pvtq: astro.TQuantity
     ork: TimeStampedPVCoordinates
 
     def __init__(self, fromthing, time=None, ork=None,
-                 units=[prefunits["length"], prefunits["velocity"]]):
-        if listnpa(fromthing):
-            self.pvtq = posvel([fromthing[0:3], fromthing[3:6]], time,
+                 units=[astro.prefunits["length"], astro.prefunits["velocity"]]):
+        if astro.listnpa(fromthing):
+            self.pvtq = astro.posvel([fromthing[0:3], fromthing[3:6]], time,
                                length_unit=units[0], velocity_unit=units[1])
             if ork is None:
                 psi = self.pvtq.si['p'].value.tolist()
@@ -72,25 +74,25 @@ class PVT:
                           fromthing,
                           [u.meter, u.meter/u.second])
             self.convert_units(units[0],units[1])
-        elif type(fromthing) == TQuantity:
+        elif type(fromthing) == astro.TQuantity:
             self.pvtq = fromthing
             psi = fromthing.si['p'].value.tolist()
             vsi = fromthing.si['v'].value.tolist()
             self.ork = TimeStampedPVCoordinates(pyhelp.datetime_to_absolutedate(fromthing.time.datetime),
                                                 Vector3D(psi), Vector3D(vsi))
         elif type(fromthing) == astropy.table.row.Row:
-            self.__init__(posvel([fromthing['position'], fromthing['velocity']], fromthing['time']))
-        elif type(fromthing) == tuple and len(fromthing) == 3 and type(fromthing[0]) == Time \
-             and type(fromthing[1]) == TQuantity and type(fromthing[2]) == TQuantity:
-            self.__init__(posvel([fromthing[1], fromthing[2]], fromthing[0]))
+            self.__init__(astro.posvel([fromthing['position'], fromthing['velocity']], fromthing['time']))
+        elif type(fromthing) == tuple and len(fromthing) == 3 and type(fromthing[0]) == astropy.time.Time \
+             and type(fromthing[1]) == astro.TQuantity and type(fromthing[2]) == astro.TQuantity:
+            self.__init__(astro.posvel([fromthing[1], fromthing[2]], fromthing[0]))
         elif type(fromthing) == Orbit: # The inverse of .cartesian()
             self.__init__(fromthing.pVCoordinates)
     def __repr__(self):
         return f"<PVT position: {self.pvtq['p'].value.tolist()} ({self.pvtq.unit[0].to_string()}) velocity:{self.pvtq['v'].value.tolist()} ({self.pvtq.unit[1].to_string()}) epoch {self.pvtq.time} (UTC)>"
     def scale(self, pvscale):
         # Multiple the position by a scalar (pvscale[0]) and velocity by another scalar (pvscale[1])
-        return PVT(scale_posvel(self.pvtq, pvscale))
-    def convert_units(self, length_unit=prefunits["length"], velocity_unit=prefunits["velocity"]):
+        return PVT(astro.scale_posvel(self.pvtq, pvscale))
+    def convert_units(self, length_unit=astro.prefunits["length"], velocity_unit=astro.prefunits["velocity"]):
         self.pvtq = self.pvtq.convert_units((length_unit,velocity_unit))
         return self
     def makenp(self):
@@ -217,10 +219,10 @@ def _elget(orbkep, el, earthrad=None):
     else:
         orkval = getter(orbkep)
     orkunit = lookup["orkunit"]
-    return Quantity(orkval, orkunit).to(prefunits[lookup["phystype"]])
+    return u.Quantity(orkval, orkunit).to(astro.prefunits[lookup["phystype"]])
 
 def _elmake(el, value):
-    return Quantity(value, prefunits[_eldict[el]["phystype"]])
+    return u.Quantity(value, astro.prefunits[_eldict[el]["phystype"]])
 
 def _orkkep(el, oes):
     return float(oes[el].to(_eldict[el]['orkunit']).value)
@@ -263,8 +265,8 @@ def new_kepler(oes, epoch, constants):
 
 ex1 = new_cart([5740.13268349499, 3314.06715, 0.0,
                 -2.75082683526322, 4.7645718414998, 5.50165367052644],
-               Time('2022-06-01T12:00:00.000000'),
-               setgravity(0,0))
+               astropy.time.Time('2022-06-01T12:00:00.000000'),
+               force.setgravity(0,0))
 # All these are the same as ex1.pvt: PVT(ex1.cart), PVT(ex1.pvt.pvtq), PVT(ex1.pvt.ork), PVT(*ex1.pvt.makenp())
 # In [3]: ex1.pvt
 # Out[3]: <PVT position: [5740.13268349499, 3314.06715, 0.0] (km) velocity:[-2.75082683526322, 4.7645718414998, 5.50165367052644] (km/s) epoch 2022-06-01T12:00:00.000 (UTC)>
@@ -282,8 +284,8 @@ ex1 = new_cart([5740.13268349499, 3314.06715, 0.0,
 #                   'raan_deg':217.4, 'argper_deg':-90.0,
 #                   'timeelt_deg':7.25, 'mean_timeelt':True},
 #                  Time('2023-09-14T08:30:00'),
-#                  setgravity(0, 0))
+#                  force.setgravity(0, 0))
 
 ex2 = new_kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "raan":217.4, "ma":7.25},
-                 Time('2023-09-14T08:30:00'),
-                 setgravity(0, 0))
+                 astropy.time.Time('2023-09-14T08:30:00'),
+                 force.setgravity(0, 0))

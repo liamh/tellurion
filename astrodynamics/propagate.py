@@ -1,16 +1,16 @@
 ##### Propagate orbits
 ## Main function: prop()
 
-import orbit as o
-import ecis
 import astropy.units as u
 import astropy.timeseries as apts
 import astropy.table as aptbl
 import orekit
 import numpy as np
-from cartprodparam import ensurelist
 import warnings
 import collections.abc
+import cartprodparam
+import ecis
+import orbit as o
 
 # Propagation and ephemeris
 from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit
@@ -166,10 +166,10 @@ def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
     else:
         state = bp.propagate(bp.getMinDate().shiftedBy(timesec(reltimes))).orbit
         pvt=o.PVT(state)
-    pvts = ensurelist(tree.get('pvt')) + ensurelist(pvt)
+    pvts = cartprodparam.ensurelist(tree.get('pvt')) + cartprodparam.ensurelist(pvt)
     pvts.sort(key = lambda s: s.pvtq.time)
     tree.update(pvt = pvts)
-    states = ensurelist(tree.get('orbit')) + ensurelist(state)
+    states = cartprodparam.ensurelist(tree.get('orbit')) + cartprodparam.ensurelist(state)
     states.sort(key = lambda s: o.PVT(s).pvtq.time)
     tree.update(orbit=states)
     tree.update(ephem=ephts(tree))

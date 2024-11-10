@@ -6,7 +6,7 @@ import astro
 import numpy as np
 import pandas as pd
 import skyfield.api
-import astropy.time as aptime
+import astropy.time
 import datetime
 import orekit.pyhelpers as pyhelp
 import org.orekit.time as oktime
@@ -15,7 +15,7 @@ def to_okad(t):
     """
     Convert time in any form to Orekit AbsoluteDate (okad)
     """
-    if type(t)==aptime.Time: # AstroPy
+    if type(t)==astropy.time.Time: # AstroPy
         return pyhelp.datetime_to_absolutedate(t.datetime)
     elif type(t) == np.datetime64: # NumPy
         return pyhelp.datetime_to_absolutedate(pd.Timestamp(t).to_pydatetime())
@@ -27,14 +27,14 @@ def to_okad(t):
 """
 Convert Orekit AbsoluteDate to AstroPy Time
 """
-oktime.AbsoluteDate.apt = lambda t: aptime.Time(pyhelp.absolutedate_to_datetime(t))
+oktime.AbsoluteDate.apt = lambda t: astropy.time.Time(pyhelp.absolutedate_to_datetime(t))
 
 skfts = skyfield.api.load.timescale()
 def to_skftime(t):
     """
     Convert time from AstroPy to Skyfield Time
     """
-    if type(t)==aptime.Time: # AstroPy
+    if type(t)==astropy.time.Time: # AstroPy
         return skfts.from_astropy(t)
 
 # Create the UTC apt at this instant: nowutc()
@@ -46,7 +46,7 @@ def nowutc(as_okad=False):
     if as_okad:
         return to_okad(nowutc(False))
     else:
-        return aptime.Time(datetime.datetime.now(datetime.UTC), scale='utc')
+        return astropy.time.Time(datetime.datetime.now(datetime.UTC), scale='utc')
 
 # To add timezone to datetime
 #import pytz

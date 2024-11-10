@@ -7,8 +7,8 @@
 import itertools
 import io
 import pandas as pd
-from joblib import Parallel, delayed
-from random import shuffle
+import joblib
+import random
 
 ####### List and dict utilities
 
@@ -85,9 +85,9 @@ def nospaces(*objects):
 # should return a dict with the same keys regardless of the arguments.
 def callparamset(args, fn, constraint=None, numjobs=-1):
     arglists = cartprodrange(args, constraint)
-    shuffle(arglists)
+    random.shuffle(arglists)
     print ("Will start", len(arglists)," jobs")
-    resultsll = Parallel(n_jobs=numjobs)(delayed(fn)(*args) for args in arglists)
+    resultsll = joblib.Parallel(n_jobs=numjobs)(joblib.delayed(fn)(*args) for args in arglists)
     df = pd.DataFrame(resultsll)
     filename = nospaces(fn.__name__,"-",args,".csv")
     df.to_csv(filename)
