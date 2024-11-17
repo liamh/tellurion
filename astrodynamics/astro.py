@@ -1,29 +1,47 @@
-# Astropy definitions of time; see https://docs.astropy.org/en/stable/time/index.html
+"""
+Use AstroPy definitions of time and units to define Quantity with time
+(TQuantity). Make TQuanity of posvel, lonlatalt; these functions are
+called by user-facing modules.
+"""
+
 import astropy.units as u
 import numpy as np
 import copy
 
-#### Astropy units
-# Sidereal day in seconds: u.sday.to('s'), u.sday.to(u.second)
+################################################################################
+## Units
+################################################################################
 
-# Define revolution as angle unit for two-line elements (mean motion
-# in rev/day)
+"""A revolution (full circle), useful for two-line elements (mean motion in rev/day)"""
 u.rev = u.revolution = u.def_unit('revolution', 2*np.pi*u.radian)
 
-# Preferred units for user
+"""User's preferred units"""
 prefunits = {"time": u.second, "length": u.km, "velocity": u.km/u.second,
              "angle": u.degree, "angular speed": u.radian/u.second,
              "dimensionless": u.dimensionless_unscaled}
 
+# Sidereal day in seconds: u.sday.to('s'), u.sday.to(u.second)
+
+################################################################################
+## Utility
+################################################################################
+
 def listnpa(thing):
+    """The argument is a list or numpy ndarray."""
     return type(thing) is list or type(thing) is np.ndarray
 
-#### TQuantity: Quantities with time
+################################################################################
+## TQuantity: Quantities with time
+################################################################################
+
 # The `time` argument may be anything, but is presumed to be one of:
 #   None, a Time, a number, a Quantity (with a time dimension)
 # How this time is used is up to the application.
 
 class TQuantity(u.Quantity):
+    """
+    An AstroPy Quantity (with possible physical dimension) and an associated time stamp.
+    """
     # See https://stackoverflow.com/a/28236682/238405
     def __new__(cls, value, unit=None, time=None):
         self = super().__new__(cls, value, unit)
@@ -51,12 +69,16 @@ class TQuantity(u.Quantity):
 # tquantex1 = TQuantity(15, u.m / u.s, astropy.time..Time('2023-09-14T08:30:00'))
 
 def quant(tquant):
+    "Return the AstroPy Quantity from the TQuantity"
     return u.Quantity(tquant.value, tquant.unit)
 
 def tquant(quant, time):
+    "Make a TQuantity from the AstroPy Quantity and Time"
     return TQuantity(quant.value, quant.unit, time)
 
+################################################################################
 #### PVT: Position, velocity, and time
+################################################################################
 
 # Create a position-velocity as a TQuantity, call this a `pvtq`
 # ex1pv = [5740.13268349499, 3314.06715, 0.0, -2.75082683526322, 4.7645718414998, 5.50165367052644]
@@ -87,7 +109,10 @@ def scale_posvel(pv, pvscale):
 # Convert posvel units
 # ex1pvtsi = ex1pvt.convert_units((u.m, u.m/u.s))
 
+################################################################################
 #### LLA: Geographic coordinates, longitude, latitude, altitude
+################################################################################
+
 # Examples
 #   llatime = lonlatalt([-40.0, 0.1, 250.0], nowutc())
 #   llatime["lon"] # => <Quantity -40. deg>

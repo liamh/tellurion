@@ -17,7 +17,10 @@ OneAxisEllipsoid.__repr__ = \
     lambda self: f"<Near-spherical body equatorial radius {self.equatorialRadius}m, polar radius difference {-self.equatorialRadius*self.flattening}m >"
 
 def setgravity(degree, order, mass = 100.0):
-    # Default celestial environment constants
+    """Set the environmental constants such as reference frame and
+    planeatry properties.  Arguments are the degree and order of the
+    gravitational model to use, and the mass of the spacecraft.
+    """
     celestdflt = {
         'earthframe': FramesFactory.getITRF(IERSConventions.IERS_2010, True),
         'celestialframe': FramesFactory.getEME2000(),
@@ -37,7 +40,7 @@ def setgravity(degree, order, mass = 100.0):
                                    celestdflt['earthflat'],  celestdflt['earthframe']),
          'sphalt': OneAxisEllipsoid(force['earthrad'], 0.0, celestdflt['earthframe'])}
 
-swdata = CssiSpaceWeatherData("SpaceWeather-All-v1.2.txt")
+_swdata = CssiSpaceWeatherData("SpaceWeather-All-v1.2.txt")
 
 # This will find the unnormalized coefficients independent of any simulation.
 # Returns three arrays: zonals (J2,...), Cnm, Snm
@@ -79,17 +82,19 @@ def unnormcoef(degree, order, when = dttm.nowutc(True)):
         snm = None
     return (znl, cnm, snm)
 
-# Optionally add a drag force
-# Default spacecraft parameters gives B = C_D A/m = 0.01 m^2/kg
-default_atmdens = 'hp'
+default_atmdens = 'hp' # Harris-Priester
 def dragforce(force, atmdensname = default_atmdens, dragcoef = 1.0, dragarea = 1.0):
+    """Add atmospheric drag force to the force model. Default
+    spacecraft parameters gives B = C_D A/m = 0.01 m^2/kg
+    `atmdens` is one of `'hp'` for Harris-Priester (default), `'dtm'` for DTM2000, or `'msis'` for NRLMSIS.
+    """
     match atmdensname:
         case 'hp': # Harris-Priester atmospheric density model
             atmdens = HarrisPriester(force['sun'], force['earth'])
         case 'dtm': # DTM2000 atmospheric density model
-            atmdens = DTM2000(swdata, force['sun'], force['earth'])
+            atmdens = DTM2000(_swdata, force['sun'], force['earth'])
         case 'msis':
-            atmdens = NRLMSISE00(swdata, force['sun'], force['earth'])
+            atmdens = NRLMSISE00(_swdata, force['sun'], force['earth'])
     mass = force['mass']  # The models need a spacecraft mass, unit kg.
     drforce = {'dragarea': dragarea, # Cross-sectional area perpendicular to atmosphere direction, m^2
                'dragcoef': dragcoef, # Coefficient of drag

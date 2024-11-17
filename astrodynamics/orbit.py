@@ -50,8 +50,8 @@ class PVT:
     * Orbit
 
     If the units are not in the input, they may be specified in the
-    units argument, which defaults to [prefunits["length"],
-    prefunits["velocity"]]
+    units argument, which defaults to `[prefunits["length"],
+    prefunits["velocity"]]`
     """
     pvtq: astro.TQuantity
     ork: TimeStampedPVCoordinates
