@@ -2,7 +2,7 @@
 Define dates and times and conversions in various packages: Orekit, AstroPy, NumPy, Python
 """
 
-import astro
+from . import astro
 import numpy as np
 import pandas as pd
 import skyfield.api

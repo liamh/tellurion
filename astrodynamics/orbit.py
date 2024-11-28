@@ -20,11 +20,11 @@ from org.hipparchus.geometry.euclidean.threed import Vector3D
 import collections.abc
 #from astropy.table.row import *
 
-import astro
-import force
-import ecis
-import orbit
-import dttm
+from . import astro
+from . import force
+from . import ecis
+from . import orbit
+from . import dttm
 # ECIS - exploratory computation in stages
 ecis.ecisdefault='forceenv' # Forces and other environmental constants
 
@@ -258,34 +258,3 @@ def new_kepler(oes, epoch, constants):
     ret = ecis.newtree('kep', kepler(oes, epoch, constants), constants)
     ret.cartesian()
     return(ret)
-
-################################################################################
-## Examples
-################################################################################
-
-ex1 = new_cart([5740.13268349499, 3314.06715, 0.0,
-                -2.75082683526322, 4.7645718414998, 5.50165367052644],
-               astropy.time.Time('2022-06-01T12:00:00.000000'),
-               force.setgravity(0,0))
-# All these are the same as ex1.pvt: PVT(ex1.cart), PVT(ex1.pvt.pvtq), PVT(ex1.pvt.ork), PVT(*ex1.pvt.makenp())
-# In [3]: ex1.pvt
-# Out[3]: <PVT position: [5740.13268349499, 3314.06715, 0.0] (km) velocity:[-2.75082683526322, 4.7645718414998, 5.50165367052644] (km/s) epoch 2022-06-01T12:00:00.000 (UTC)>
-# In [4]: ex1.pvt.pvtq
-# Out[4]: <TQuantity ([5740.13268349, 3314.06715   ,    0.        ], [-2.75082684,  4.76457184,  5.50165367]) (km, km / s), time=2022-06-01T12:00:00.000>
-# In [8]: ex1.pvt.ork
-# Out[8]: <TimeStampedPVCoordinates: {2022-06-01T12:00:00.000, P(5740132.68349499, 3314067.15, 0.0), V(-2750.82683526322, 4764.5718414998, 5501.65367052644), A(0.0, 0.0, 0.0)}>
-# elementval(ex1.cart, "sma")
-# Out[20]: <Quantity 6672.37441023 km>
-
-# ex1.cartesian()
-
-# Build and convert a Kepler
-# ex2 = new_kepler({'sma_m': 8.0e6, 'ecc': 0.1, 'inc_deg':42.0,
-#                   'raan_deg':217.4, 'argper_deg':-90.0,
-#                   'timeelt_deg':7.25, 'mean_timeelt':True},
-#                  Time('2023-09-14T08:30:00'),
-#                  force.setgravity(0, 0))
-
-ex2 = new_kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "raan":217.4, "ma":7.25},
-                 astropy.time.Time('2023-09-14T08:30:00'),
-                 force.setgravity(0, 0))

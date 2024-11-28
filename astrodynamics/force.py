@@ -1,5 +1,5 @@
-import orkinit
-import dttm
+from . import orkinit
+from . import dttm
 
 from org.orekit.utils import Constants
 from org.orekit.forces.gravity.potential import GravityFieldFactory

@@ -1,5 +1,4 @@
-##### Propagate orbits
-## Main function: prop()
+"""Propagate orbits; main function: prop()"""
 
 import astropy.units as u
 import astropy.timeseries as apts
@@ -8,9 +7,10 @@ import orekit
 import numpy as np
 import warnings
 import collections.abc
-import cartprodparam
-import ecis
-import orbit as o
+
+from . import cartprodparam
+from . import ecis
+from . import orbit as o
 
 # Propagation and ephemeris
 from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit
@@ -19,133 +19,79 @@ from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState, EphemerisGenerator
 from org.orekit.propagation.events import AltitudeDetector
 import org.orekit.forces.gravity as okgrav
-# Time series for ephemeris
 
-# Propagate from epoch for a specified time
-# mkephem creates a BoundedPropagator but computes no actual states (see prop())
-#  orbit:    the initial state
-#  proptime: the maximum time (s) to propagate
-#  force:    forces to use
-#  stopalt:  lowest altitude above spherical earth (m) to propagate
-def mkephem(orbit, proptime, force, stopalt=125.0e3):
-    [orb, tree] = ecis.thingofclass(orbit, Orbit)
-
-    # Set parameters
-    minstep = 0.001
-    maxstep = 1000.0
-    initStep = 60.0
-    positionTolerance = 1.0
-    tolerances = NumericalPropagator.tolerances(positionTolerance, orb, orb.getType())
-
-    # Initialize the integrator
-    integrator = DormandPrince853Integrator(
-    	       minstep,
-    	       maxstep,
-	       orekit.JArray_double.cast_(tolerances[0]),  # Double array of doubles needs to be cast in Python
-	       orekit.JArray_double.cast_(tolerances[1]))
-    integrator.setInitialStepSize(initStep)
-
-    initialState = SpacecraftState(orb, force['mass'])
-    prop = NumericalPropagator(integrator)
-    prop.setOrbitType(o._okc['cartesian'])
-    prop.setInitialState(initialState)
-    generator = prop.getEphemerisGenerator()
-
-    # Forces
-    prop.addForceModel(okgrav.HolmesFeatherstoneAttractionModel(force['earthframe'], force['gravity']))
-    if 'dragforce' in force:
-        prop.addForceModel(force['dragforce'])
-
-    # Events
-    prop.addEventDetector(AltitudeDetector(stopalt, force['sphalt']))
-
-    # Propagate
-    pt = timesec(proptime)
-    propagated = prop.propagate(orb.date, orb.date.shiftedBy(pt))
-    ephgen = generator.getGeneratedEphemeris();
-
-    if type(orbit) is ecis.Ecis:
-        orbit.update(prop=ecis.newtree('ephgen',ephgen))
-        orbit.prop.maxtime = pt
-        orbit.prop.forceenv = force
-        newname = "prop" #f"prop{int(pt)}s"
-        tree[newname] = orbit.pop('prop')
-        return(tree[newname])
-    else:
-        return(ephgen)
-
-# Propagate the BoundedPropagator
-# orbit: tree with orbit in it
-# reltimes: times (seconds) past the initial time; may be a number (seconds), Quantity with type 'time' or list of these
-#
-# The set of propagated points can be added to at any time, but be sure to set maximum_tof
-# to the highest possible value when prop() is first called; otherwise, previously computed
-# values might be lost.
-# The class variable .pvt will have a list of pvts
-# The class variable .orbit will have a list of orbits
-# The class variable .ephem will have an AstroPy time series ephemeris table
-# Pure numpy (no AstroPy or Orekit) is obtained from the ephemeris table with .makenp()
-#
-# Example
-# In [2]: prop(o.ex1,300.0,maximum_tof=86400.0)
-# Out[2]: <PVT position: [4581.814910467976, 4512.262287102674, 1616.8263139353987] (km) velocity:[-4.8914488794011595, 3.141592098656343, 5.166423005465441] (km/s) epoch 2022-06-01 12:05:00 (UTC)>
-
-# In [3]: prop(o.ex1,[1200.0,1500.0,1800.0])
-# Out[3]:
-# [<PVT position: [-1359.9602212056286, 4580.209288805089, 4646.557709357471] (km) velocity:[-7.074061594952203, -2.989070151590076, 0.948420112505302] (km/s) epoch 2022-06-01 12:20:00 (UTC)>,
-#  <PVT position: [-3358.332160090897, 3427.3199510360746, 4647.312224539923] (km) velocity:[-6.115173953646672, -4.617481772761261, -0.9412695398995137] (km/s) epoch 2022-06-01 12:25:00 (UTC)>,
-#  <PVT position: [-4956.791809682075, 1865.869024125194, 4094.2858798679345] (km) velocity:[-4.4362841450361055, -5.686777789101822, -2.7067519585212185] (km/s) epoch 2022-06-01 12:30:00 (UTC)>]
-
-# In [4]: prop(o.ex1,600.0)
-# Out[4]: <PVT position: [2865.4998895513913, 5161.045684511684, 3036.84672810346] (km) velocity:[-6.432386509240479, 1.1404155012024495, 4.2038220495311265] (km/s) epoch 2022-06-01 12:10:00 (UTC)>
-
-# In [5]: o.ex1.prop.pvt
-# Out[5]:
-# [<PVT position: [4581.814910467976, 4512.262287102674, 1616.8263139353987] (km) velocity:[-4.8914488794011595, 3.141592098656343, 5.166423005465441] (km/s) epoch 2022-06-01 12:05:00 (UTC)>,
-#  <PVT position: [2865.4998895513913, 5161.045684511684, 3036.84672810346] (km) velocity:[-6.432386509240479, 1.1404155012024495, 4.2038220495311265] (km/s) epoch 2022-06-01 12:10:00 (UTC)>,
-#  <PVT position: [-1359.9602212056286, 4580.209288805089, 4646.557709357471] (km) velocity:[-7.074061594952203, -2.989070151590076, 0.948420112505302] (km/s) epoch 2022-06-01 12:20:00 (UTC)>,
-#  <PVT position: [-3358.332160090897, 3427.3199510360746, 4647.312224539923] (km) velocity:[-6.115173953646672, -4.617481772761261, -0.9412695398995137] (km/s) epoch 2022-06-01 12:25:00 (UTC)>,
-#  <PVT position: [-4956.791809682075, 1865.869024125194, 4094.2858798679345] (km) velocity:[-4.4362841450361055, -5.686777789101822, -2.7067519585212185] (km/s) epoch 2022-06-01 12:30:00 (UTC)>]
-
-# In [6]: o.ex1.prop.orbit
-# Out[6]:
-# [<Orbit: Cartesian parameters: {P(4581814.910467976, 4512262.287102674, 1616826.3139353986), V(-4891.4488794011595, 3141.592098656343, 5166.423005465442)}>,
-#  <Orbit: Cartesian parameters: {P(2865499.8895513914, 5161045.684511684, 3036846.72810346), V(-6432.386509240479, 1140.4155012024494, 4203.822049531126)}>,
-#  <Orbit: Cartesian parameters: {P(-1359960.2212056285, 4580209.288805089, 4646557.709357471), V(-7074.061594952203, -2989.070151590076, 948.420112505302)}>,
-#  <Orbit: Cartesian parameters: {P(-3358332.160090897, 3427319.9510360747, 4647312.224539923), V(-6115.173953646672, -4617.481772761261, -941.2695398995137)}>,
-#  <Orbit: Cartesian parameters: {P(-4956791.809682075, 1865869.024125194, 4094285.879867934), V(-4436.284145036106, -5686.777789101822, -2706.7519585212185)}>]
-
-# prop(o.ex1, np.linspace(2.0, 3.0, num=5, endpoint=True)*u.minute)
-
-# In [8]: o.ex1.prop.ephem
-# Out[8]:
-# <TimeSeries length=10>
-#         time               position               velocity
-#                               km                   km / s
-#         Time              float64[3]             float64[3]
-# ------------------- ---------------------- ----------------------
-# 2022-06-01 12:02:00  5354.637 ..   658.032 -3.663509 ..  5.447524
-# 2022-06-01 12:02:15  5298.863 ..   739.639 -3.772863 ..  5.433178
-# 2022-06-01 12:02:30  5241.457 ..   821.019 -3.881049 ..  5.417159
-# 2022-06-01 12:02:45  5182.438 ..   902.146 -3.988033 ..  5.399474
-# 2022-06-01 12:03:00  5121.822 ..   982.995 -4.093782 ..  5.380127
-# 2022-06-01 12:05:00  4581.815 ..  1616.826 -4.891449 ..  5.166423
-# 2022-06-01 12:10:00  2865.500 ..  3036.847 -6.432387 ..  4.203822
-# 2022-06-01 12:20:00 -1359.960 ..  4646.558 -7.074062 ..  0.948420
-# 2022-06-01 12:25:00 -3358.332 ..  4647.312 -6.115174 .. -0.941270
-# 2022-06-01 12:30:00 -4956.792 ..  4094.286 -4.436284 .. -2.706752
-
-# In [8]: o.ex1.prop.ephem[5:10].makenp()
-
-# In [29]: pvts(o.ex1.prop.ephem) # same as o.ex1.prop.pvt
-# Out[29]:
-# [<PVT position: [4581.814910467976, 4512.262287102674, 1616.8263139353987] (km) velocity:[-4.8914488794011595, 3.141592098656343, 5.166423005465441] (km / s) epoch 2022-06-01 12:05:00 (UTC)>,
-#  <PVT position: [2865.4998895513913, 5161.045684511684, 3036.84672810346] (km) velocity:[-6.432386509240479, 1.1404155012024495, 4.2038220495311265] (km / s) epoch 2022-06-01 12:10:00 (UTC)>,
-#  <PVT position: [-1359.9602212056286, 4580.209288805089, 4646.557709357471] (km) velocity:[-7.074061594952203, -2.989070151590076, 0.948420112505302] (km / s) epoch 2022-06-01 12:20:00 (UTC)>,
-#  <PVT position: [-3358.332160090897, 3427.3199510360746, 4647.312224539923] (km) velocity:[-6.115173953646672, -4.617481772761261, -0.9412695398995137] (km / s) epoch 2022-06-01 12:25:00 (UTC)>,
-#  <PVT position: [-4956.791809682075, 1865.869024125194, 4094.2858798679345] (km) velocity:[-4.4362841450361055, -5.686777789101822, -2.7067519585212185] (km / s) epoch 2022-06-01 12:30:00 (UTC)>]
 
 def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
+    """Propagate an orbit
+    orbit: tree with orbit in it
+    reltimes: times (seconds) past the initial time; may be a number (seconds), Quantity with type 'time' or list of these
+
+      The set of propagated points can be added to at any time, but be sure to set maximum_tof
+      to the highest possible value when prop() is first called; otherwise, previously computed
+      values might be lost. See example.propdemo().
+      The class variable .pvt will have a list of pvts
+      The class variable .orbit will have a list of orbits
+      The class variable .ephem will have an AstroPy time series ephemeris table
+      Pure numpy (no AstroPy or Orekit) is obtained from the ephemeris table with .makenp()
+    """
+    def mkephem(orbit, proptime, force, stopalt=125.0e3):
+        """
+        Time series for ephemeris
+
+        Propagate from epoch for a specified time
+        mkephem creates a BoundedPropagator but computes no actual states (see prop())
+        orbit:    the initial state
+        proptime: the maximum time (s) to propagate
+        force:    forces to use
+        stopalt:  lowest altitude above spherical earth (m) to propagate
+        """
+        [orb, tree] = ecis.thingofclass(orbit, Orbit)
+
+        # Set parameters
+        minstep = 0.001
+        maxstep = 1000.0
+        initStep = 60.0
+        positionTolerance = 1.0
+        tolerances = NumericalPropagator.tolerances(positionTolerance, orb, orb.getType())
+
+        # Initialize the integrator
+        integrator = DormandPrince853Integrator(
+        	       minstep,
+        	       maxstep,
+    	       orekit.JArray_double.cast_(tolerances[0]),  # Double array of doubles needs to be cast in Python
+    	       orekit.JArray_double.cast_(tolerances[1]))
+        integrator.setInitialStepSize(initStep)
+
+        initialState = SpacecraftState(orb, force['mass'])
+        prop = NumericalPropagator(integrator)
+        prop.setOrbitType(o._okc['cartesian'])
+        prop.setInitialState(initialState)
+        generator = prop.getEphemerisGenerator()
+
+        # Forces
+        prop.addForceModel(okgrav.HolmesFeatherstoneAttractionModel(force['earthframe'], force['gravity']))
+        if 'dragforce' in force:
+            prop.addForceModel(force['dragforce'])
+
+        # Events
+        prop.addEventDetector(AltitudeDetector(stopalt, force['sphalt']))
+
+        # Propagate
+        pt = timesec(proptime)
+        propagated = prop.propagate(orb.date, orb.date.shiftedBy(pt))
+        ephgen = generator.getGeneratedEphemeris();
+
+        if type(orbit) is ecis.Ecis:
+            orbit.update(prop=ecis.newtree('ephgen',ephgen))
+            orbit.prop.maxtime = pt
+            orbit.prop.forceenv = force
+            newname = "prop" #f"prop{int(pt)}s"
+            tree[newname] = orbit.pop('prop')
+            return(tree[newname])
+        else:
+            return(ephgen)
+    # end mkephem
+
     reltimes = timearray(reltimes)
     maxtof = timearray(maximum_tof)
     if isinstance(reltimes, collections.abc.Iterable):
@@ -229,41 +175,3 @@ def tselements(ephem, elements):
                                      o.elementval(orb, elements,
                                                 ephem.forceenv["earthrad"])))
                             for orb in ephem.orbit])
-
-## Example
-# prop(o.ex2, np.linspace(0, 24, num=5)*u.hour) # This gives a warning, can be ignored
-# o.ex2.prop.ephem
-# <TimeSeries length=5>
-#         time               position               velocity
-#                               km                   km / s
-#         Time              float64[3]             float64[3]
-# ------------------- ---------------------- ----------------------
-# 2023-09-14 08:30:00 -4100.052 .. -4764.959 -5.636147 ..  0.734345
-# 2023-09-14 14:30:00 -5300.257 .. -4452.057 -4.456035 ..  1.892044
-# 2023-09-14 20:30:00 -6192.600 .. -3879.939 -3.052240 ..  2.910624
-# 2023-09-15 02:30:00 -6737.221 .. -3089.289 -1.537353 ..  3.728167
-# 2023-09-15 08:30:00 -6920.676 .. -2132.309 -0.019043 ..  4.309723
-#
-# tselements(o.ex2.prop, ["sma","ecc","inc"])
-# <TimeSeries length=5>
-#         time               sma                ecc                inc
-#                             km                                   deg
-#         Time             float64            float64            float64
-# ------------------- ----------------- ------------------- ------------------
-# 2023-09-14 08:30:00 8000.000000000001 0.10000000000000005               42.0
-# 2023-09-14 14:30:00 7999.984739653951 0.09999739630636867  41.99999999999989
-# 2023-09-14 20:30:00 7999.975777150673 0.09999489374642954 41.999999999999865
-# 2023-09-15 02:30:00 7999.961193141438 0.09999236890210698  42.00000000000003
-# 2023-09-15 08:30:00 7999.949375719636  0.0999895810073231 42.000000000000306
-#
-# tselements(o.ex2.prop, ["altper","altapo"])
-# <TimeSeries length=5>
-#         time              altper            altapo
-#                             km                km
-#         Time             float64           float64
-# ------------------- ----------------- ------------------
-# 2023-09-14 08:30:00 821.8635400000001  2421.863540000002
-# 2023-09-14 14:30:00 821.8706351978723  2421.825924110028
-# 2023-09-14 20:30:00  821.882589340481  2421.796044960863
-# 2023-09-15 02:30:00 821.8896623142995  2421.759803968576
-# 2023-09-15 08:30:00  821.901329561633 2421.7245018776366
