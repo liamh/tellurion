@@ -1,60 +1,17 @@
 """
-# Geographic points specified by latitude, longitude, altitude/elevation
-
-# Lookup geographic points by name; must set lookup.geonames_userid first
-# See https://gitlab.com/-/snippets/3743091 to get a username
-
-## Example without time
- import orbit as o
- import lookup
- import frames
- lookup.geonames_userid = 'myusername'
- angellhall = frames.geopt('angell hall')
- angellhall.ork
- angellhall.llaq
- angellhall.skf
-
-## Add a time to it
- import dttm
- angellhallnow = frames.LLA(angellhall, dttm.nowutc())
-
-## Example with time
-In [13]: mcdonald = frames.geopt('mcdonald observatory', dttm.nowutc())
-In [14]: mcdonald
-Out[14]: <McDonald Observatory, Texas, United States; epoch 2024-09-02 23:14:39.293387 (UTC)>
-In [15]: mcdonald.llaq
-Out[15]: <TQuantity (-104.02158, 30.67154, 2050.) (deg, deg, m), time=2024-09-02 02:12:52.997075>
-In [16]: mcdonald.ork
-Out[16]: <GeodeticPoint: {lat: 30.67154 deg, lon: -104.02158 deg, alt: 2,050}>
-In [17]: mcdonald.skf
-Out[17]: <GeographicPosition WGS84 latitude +30.6715 N longitude -104.0216 E elevation 2050.0 m>
-
-# The old NAVSPASUR main transmitter
-# Coordinates from https://www.thelivingmoon.com/45jack_files/04images/Kickapoo/Kickapoo_001.png
-   import astropy.coordinates as apc
-   import lookup
-   import frames
-   import astropy.units as u
-   klat = apc.Angle('33°33′08.50″N').value
-   klon = apc.Angle('98°45′49.82″W').value
-   kickapoo = frames.LLA([klat, klon, lookup.elev(klat, klon), 'Historic NAVSPASUR transmitter', 'Texas', 'US'], latlon=True, length_unit=u.m)
-
-   In [7]: kickapoo.info
-   Out[7]: 'Historic NAVSPASUR transmitter, Texas, US'
-   In [8]: kickapoo.llaq
-   Out[8]: <Quantity (-98.76383889, 33.55236111, 339.) (deg, deg, m)>
-   In [9]: kickapoo.ork
-   Out[9]: <GeodeticPoint: {lat: 33.5523611111 deg, lon: -98.7638388889 deg, alt: 339}>
-   In [10]: kickapoo.skf
-   Out[10]: <GeographicPosition WGS84 latitude +33.5524 N longitude -98.7638 E elevation 339.0 m>
+Geographic points specified by latitude, longitude, altitude/elevation
+Lookup geographic points by name; must set geonames.geonames_userid first
+See https://gitlab.com/-/snippets/3743091 to get a username
+For examples, see observersite.py
 """
 
 # ex1lla = ex1.pvt.lla(ex1.forceenv)
 
-import dttm
-import lookup
-import astro
+from . import dttm
+from . import geonames
+from . import astro
 import astropy.units as u
+import astropy.time
 import skyfield.api
 from org.orekit.bodies import GeodeticPoint, FieldGeodeticPoint
 from org.orekit.frames import TopocentricFrame
@@ -134,9 +91,9 @@ class LLA:
 
 nullisland = LLA([0.0, 0.0, 0.0])
 
-# Lookup geographic points by name; must set lookup.geonames_userid first
+# Lookup geographic points by name; must set geonames.geonames_userid first
 def geopt(name, time=None):
-    return LLA(lookup.location(name), time, length_unit=u.m, latlon=True)
+    return LLA(geonames.location(name), time, length_unit=u.m, latlon=True)
 
 # Find the local sidereal time for the location
 # If time is supplied explicitly, it is used, if it's not, then the LLA's time is used.
@@ -147,7 +104,7 @@ def geopt(name, time=None):
 def siderealtime(lla=None, time=None):
     if lla is None:
        lla = nullisland
-    if type(time)==Time:
+    if type(time)==astropy.time.Time:
         tm = time
     elif hasattr(lla.llaq, 'time'):
         tm = lla.llaq.time

@@ -9,5 +9,5 @@
 # __all__ = ["propagate", "orbit", "frames"]
 
 # Import the submodules
-from . import orbit
-from . import propagate
+from . import orbit # imports from here: astro, force, ecis, orbit, dttm
+from . import propagate # cartprodparam, ecis, orbit

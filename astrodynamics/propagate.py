@@ -10,7 +10,7 @@ import collections.abc
 
 from . import cartprodparam
 from . import ecis
-from . import orbit as o
+from . import orbit
 
 # Propagation and ephemeris
 from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit
@@ -21,9 +21,9 @@ from org.orekit.propagation.events import AltitudeDetector
 import org.orekit.forces.gravity as okgrav
 
 
-def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
+def prop(orbitinit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
     """Propagate an orbit
-    orbit: tree with orbit in it
+    orbitinit: tree with orbit in it
     reltimes: times (seconds) past the initial time; may be a number (seconds), Quantity with type 'time' or list of these
 
       The set of propagated points can be added to at any time, but be sure to set maximum_tof
@@ -34,18 +34,18 @@ def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
       The class variable .ephem will have an AstroPy time series ephemeris table
       Pure numpy (no AstroPy or Orekit) is obtained from the ephemeris table with .makenp()
     """
-    def mkephem(orbit, proptime, force, stopalt=125.0e3):
+    def mkephem(orbitinit, proptime, force, stopalt=125.0e3):
         """
         Time series for ephemeris
 
         Propagate from epoch for a specified time
         mkephem creates a BoundedPropagator but computes no actual states (see prop())
-        orbit:    the initial state
+        orbitinit:    the initial state
         proptime: the maximum time (s) to propagate
         force:    forces to use
         stopalt:  lowest altitude above spherical earth (m) to propagate
         """
-        [orb, tree] = ecis.thingofclass(orbit, Orbit)
+        [orb, tree] = ecis.thingofclass(orbitinit, Orbit)
 
         # Set parameters
         minstep = 0.001
@@ -64,7 +64,7 @@ def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
 
         initialState = SpacecraftState(orb, force['mass'])
         prop = NumericalPropagator(integrator)
-        prop.setOrbitType(o._okc['cartesian'])
+        prop.setOrbitType(orbit._okc['cartesian'])
         prop.setInitialState(initialState)
         generator = prop.getEphemerisGenerator()
 
@@ -81,12 +81,12 @@ def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
         propagated = prop.propagate(orb.date, orb.date.shiftedBy(pt))
         ephgen = generator.getGeneratedEphemeris();
 
-        if type(orbit) is ecis.Ecis:
-            orbit.update(prop=ecis.newtree('ephgen',ephgen))
-            orbit.prop.maxtime = pt
-            orbit.prop.forceenv = force
+        if type(orbitinit) is ecis.Ecis:
+            orbitinit.update(prop=ecis.newtree('ephgen',ephgen))
+            orbitinit.prop.maxtime = pt
+            orbitinit.prop.forceenv = force
             newname = "prop" #f"prop{int(pt)}s"
-            tree[newname] = orbit.pop('prop')
+            tree[newname] = orbitinit.pop('prop')
             return(tree[newname])
         else:
             return(ephgen)
@@ -98,25 +98,25 @@ def prop(orbit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
         maxtime = max(max(reltimes), maxtof)
     else:
         maxtime = max(reltimes, maxtof)
-    [bp, tree] = ecis.thingofclass(orbit, BoundedPropagator)
+    [bp, tree] = ecis.thingofclass(orbitinit, BoundedPropagator)
     if tree is None:
         forceenv = None
     else:
         forceenv = tree.forceenv
     if bp is None or ("maxtime" in tree and type(tree.maxtime) is u.Quantity and maxtime > tree.maxtime):
-        bp = mkephem(orbit, maxtime, forceenv, stopalt)
-        [bp, tree] = ecis.thingofclass(orbit, BoundedPropagator)
+        bp = mkephem(orbitinit, maxtime, forceenv, stopalt)
+        [bp, tree] = ecis.thingofclass(orbitinit, BoundedPropagator)
     if isinstance(reltimes, collections.abc.Iterable):
         state = [bp.propagate(bp.getMinDate().shiftedBy(timesec(rt))).orbit for rt in reltimes]
-        pvt=[o.PVT(st) for st in state]
+        pvt=[orbit.PVT(st) for st in state]
     else:
         state = bp.propagate(bp.getMinDate().shiftedBy(timesec(reltimes))).orbit
-        pvt=o.PVT(state)
+        pvt=orbit.PVT(state)
     pvts = cartprodparam.ensurelist(tree.get('pvt')) + cartprodparam.ensurelist(pvt)
     pvts.sort(key = lambda s: s.pvtq.time)
     tree.update(pvt = pvts)
     states = cartprodparam.ensurelist(tree.get('orbit')) + cartprodparam.ensurelist(state)
-    states.sort(key = lambda s: o.PVT(s).pvtq.time)
+    states.sort(key = lambda s: orbit.PVT(s).pvtq.time)
     tree.update(orbit=states)
     tree.update(ephem=ephts(tree))
     return(pvt)
@@ -148,9 +148,9 @@ def ephts(prop):
 # possibly add later optional mintime, maxtime arguments
 def pvts(ephem):
     if type(ephem) == aptbl.row.Row:
-        return o.PVT(ephem)
+        return orbit.PVT(ephem)
     else:
-        return [o.PVT(row) for row in list(ephem.iterrows())]
+        return [orbit.PVT(row) for row in list(ephem.iterrows())]
 
 # Return a list of numpy arrays and datetimes from the
 # ephemeris table or a row of it.
@@ -172,6 +172,6 @@ def timesec(t):
 def tselements(ephem, elements):
     return apts.TimeSeries(time=[pvt.pvtq.time for pvt in ephem.pvt],
                       data=[dict(zip(elements,
-                                     o.elementval(orb, elements,
+                                     orbit.elementval(orb, elements,
                                                 ephem.forceenv["earthrad"])))
                             for orb in ephem.orbit])

@@ -2,16 +2,22 @@
 Find lat, lon, elev of places by name; see
 https://gitlab.com/-/snippets/3743091 for info on how to get a
 geonames id.
- import lookup
- lookup.geonames_userid = 'myusername'
- utspaceeng = lookup.location('speedway parking garage')
+ from astrodynamics import geonames
+ utspaceeng = geonames.location('speedway parking garage')
 """
 
 import geocoder
 import requests
+
+userid = ''
+def gnuserid():
+    global userid
+    if userid=='':
+        userid = input("Enter your geonames userid: ")
+    return userid
+
 def location(place):
-    global geonames_userid
-    resp = geocoder.geonames(place, key=geonames_userid)
+    resp = geocoder.geonames(place, key=gnuserid())
     props = resp.geojson['features'][0]['properties']
     lat = float(props['lat'])
     lon = float(props['lng'])
