@@ -4,10 +4,17 @@ from . import propagate
 import astropy.time
 import astropy.units as u
 import numpy as np
+import warnings
 
 ################################################################################
 ## Cartesian
 ################################################################################
+
+# import astrodynamics.example as exmp
+# from astrodynamics import propagate
+# exmp.propdemo()
+# exmp.ex1.prop.ephem
+# propagate.tselements(exmp.ex1.prop, ["sma","ecc","inc"])
 
 # Cartesian propagation
 ex1 = orbit.new_cart([5740.13268349499, 3314.06715, 0.0,
@@ -55,13 +62,12 @@ def propdemo():
     From ephem, use makenp() to turn into numpy arrays,
     ex1.prop.ephem[5:10].makenp()
     propagate.pvts(ex1.prop.ephem) # same as ex1.prop.pvt
-
-    This function will show a warning which should be ignored.
     """
-    propagate.prop(ex1,300.0,maximum_tof=86400.0)
-    propagate.prop(ex1,[1200.0,1500.0,1800.0])
-    propagate.prop(ex1,600.0)
-    propagate.prop(ex1, np.linspace(2.0, 3.0, num=5, endpoint=True)*u.minute)
+    with warnings.catch_warnings(action="ignore"):
+        propagate.prop(ex1,300.0,maximum_tof=86400.0)
+        propagate.prop(ex1,[1200.0,1500.0,1800.0])
+        propagate.prop(ex1,600.0)
+        propagate.prop(ex1, np.linspace(2.0, 3.0, num=5, endpoint=True)*u.minute)
 
 ################################################################################
 ## Kepler elements

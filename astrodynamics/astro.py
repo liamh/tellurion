@@ -146,3 +146,20 @@ def lonlatalt(lla, time=None, length_unit=prefunits["length"], angle_unit=prefun
 
 def latlonalt(lla, time=None, length_unit=prefunits["length"], angle_unit=prefunits["angle"]):
     return (lonlatalt([lla[1], lla[0], lla[2]], time, length_unit, angle_unit))
+
+################################################################################
+#### Timeseries (or ephemeris)
+################################################################################
+
+"""
+Create a list of TQuantities from a column of a time series
+
+     import astrodynamics.example as exmp
+     from astrodynamics import astro
+     exmp.propdemo()
+     postime = astro.tscolumn(exmp.ex1.prop.ephem, "position")
+     postime[2]
+        <TQuantity [5241.45723203, 3974.18748273,  821.01870343] km, time=2022-06-01 12:02:30>
+"""
+def tscolumn(timeseries,column):
+    return([tquant(row[column],row["time"]) for row in timeseries])
