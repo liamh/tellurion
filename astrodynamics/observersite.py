@@ -17,7 +17,7 @@ General information is in .info.
  mcdonaldnow = frames.LLA(observersite.mcdonald, time=dttm.nowutc())
 
 # Site vectors
-import astrodynamics.cartprodparam as util
+import astrodynamics.util as util
 import astrodynamics.dttm as dttm
 import astrodynamics.frames as frames
 import astrodynamics.observersite as obsite

@@ -9,44 +9,7 @@ import io
 import pandas as pd
 import joblib
 import random
-
-####### List and dict utilities
-
-def ensurelist(arg):
-    if arg is None:
-        return([])
-    if type(arg) is list:
-        return(arg)
-    return([arg])
-
-def dictvals(dict):
-    return list(dict.values())
-
-####### Inclusive range
-
-# Inclusive range
-# In [29]: rangi(45)
-# Out[29]: [45]
-
-# In [30]: rangi(45,50)
-# Out[30]: [45, 46, 47, 48, 49, 50]
-
-# In [31]: rangi(45,50,5)
-# Out[31]: [45, 50]
-
-# In [32]: rangi(45,50,6)
-# Out[32]: [45]
-def rangi(start, stop=None, step=1):
-    if (stop==None): # Return a singleton
-        return ([start])
-    # Find semi-exclusive range
-    rg = range(start, stop, step)
-    # Add the endpoint if it is not after the range
-    if rg[-1]+step == stop:
-        rgs = itertools.chain(rg, (stop,))
-    else:
-        rgs = rg
-    return ([i for i in rgs])
+from . import util
 
 ####### Outer product of lists with constraint
 
@@ -55,7 +18,7 @@ def rangi(start, stop=None, step=1):
 # cartprodrange([[250,325,25],[275],[45],[2021,2022],[1,12,3]])
 # cartprodrange([[250,325,25],275,45,[2021,2022],[1,12,3]], lambda l: l[0] <= l[1])
 def cartprodrange (ranges, constraint=None):
-    return(cartprod(list(map(lambda range: rangi(*ensurelist(range)), ranges)), constraint))
+    return(cartprod(list(map(lambda range: util.rangi(*util.ensurelist(range)), ranges)), constraint))
 
 # Cartesian products of sets
 def cartprod (paramsets, constraint=None):

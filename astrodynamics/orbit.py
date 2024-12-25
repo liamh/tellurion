@@ -26,6 +26,8 @@ from . import dttm   # Dates and times and conversions in various packages: Orek
 from . import force
 from . import ecis
 from . import orbit
+from . import util
+
 # ECIS - exploratory computation in stages
 ecis.ecisdefault='forceenv' # Forces and other environmental constants
 
@@ -59,7 +61,7 @@ class PVT:
 
     def __init__(self, fromthing, time=None, ork=None,
                  units=[astro.prefunits["length"], astro.prefunits["velocity"]]):
-        if astro.listnpa(fromthing):
+        if util.listnpa(fromthing):
             self.pvtq = posvel.posvel([fromthing[0:3], fromthing[3:6]], time,
                                length_unit=units[0], velocity_unit=units[1])
             if ork is None:

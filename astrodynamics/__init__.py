@@ -10,4 +10,4 @@
 
 # Import the submodules
 from . import orbit # imports from here: astro, force, ecis, orbit, dttm
-from . import propagate # cartprodparam, ecis, orbit
+from . import propagate # util, ecis, orbit

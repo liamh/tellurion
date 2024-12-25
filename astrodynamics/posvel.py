@@ -8,6 +8,7 @@ import astropy.units as u
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from . import astro
+from . import util
 from . import dttm
 
 def v3d(arg):
@@ -36,7 +37,7 @@ def orkpvt(pos, vel, time=None):
 # ex1pvtq['p'] => <TQuantity [5740.13268349, 3314.06715   ,    0.        ] km, time not available>
 # ex1pvtq.value[0] => array([5740.13268349, 3314.06715   ,    0.        ])
 def posvel(pv, time=None, length_unit=astro.prefunits["length"], velocity_unit=astro.prefunits["velocity"]):
-    if astro.listnpa(pv):
+    if util.listnpa(pv):
         if len(pv) == 6:
             pos = pv[0:3]
             vel = pv[3:6]

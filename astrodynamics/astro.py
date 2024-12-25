@@ -7,6 +7,7 @@ called by user-facing modules.
 import astropy.units as u
 import numpy as np
 import copy
+from . import util
 
 ################################################################################
 ## Units
@@ -21,14 +22,6 @@ prefunits = {"time": u.second, "length": u.km, "velocity": u.km/u.second,
              "dimensionless": u.dimensionless_unscaled}
 
 # Sidereal day in seconds: u.sday.to('s'), u.sday.to(u.second)
-
-################################################################################
-## Utility
-################################################################################
-
-def listnpa(thing):
-    """The argument is a list or numpy ndarray."""
-    return type(thing) is list or type(thing) is np.ndarray
 
 ################################################################################
 ## TQuantity: Quantities with time
@@ -89,7 +82,7 @@ def tquant(quant, time):
 #   remtime = lonlatalt(llatime)
 #   changetime = lonlatalt(llatime, nowutc())
 def lonlatalt(lla, time=None, length_unit=prefunits["length"], angle_unit=prefunits["angle"]):
-    if listnpa(lla):
+    if util.listnpa(lla):
         lon = lla[0]
         lat = lla[1]
         alt = lla[2]

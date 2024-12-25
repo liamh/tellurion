@@ -8,7 +8,7 @@ import numpy as np
 import warnings
 import collections.abc
 
-from . import cartprodparam
+from . import util
 from . import ecis
 from . import orbit
 
@@ -112,10 +112,10 @@ def prop(orbitinit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
     else:
         state = bp.propagate(bp.getMinDate().shiftedBy(timesec(reltimes))).orbit
         pvt=orbit.PVT(state)
-    pvts = cartprodparam.ensurelist(tree.get('pvt')) + cartprodparam.ensurelist(pvt)
+    pvts = util.ensurelist(tree.get('pvt')) + util.ensurelist(pvt)
     pvts.sort(key = lambda s: s.pvtq.time)
     tree.update(pvt = pvts)
-    states = cartprodparam.ensurelist(tree.get('orbit')) + cartprodparam.ensurelist(state)
+    states = util.ensurelist(tree.get('orbit')) + util.ensurelist(state)
     states.sort(key = lambda s: orbit.PVT(s).pvtq.time)
     tree.update(orbit=states)
     tree.update(ephem=ephts(tree))
