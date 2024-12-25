@@ -15,16 +15,17 @@ from org.orekit.orbits import CircularOrbit
 from org.orekit.orbits import EquinoctialOrbit
 from org.orekit.utils import Constants
 # Orbital elements and PVT
-from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
+from org.orekit.utils import TimeStampedPVCoordinates
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 import collections.abc
 #from astropy.table.row import *
 
-from . import astro
+from . import astro  # AstroPy and TQuantity
+from . import posvel # Vectors and PVT (position, velocity, time) sets in Orekit and AstroPy
+from . import dttm   # Dates and times and conversions in various packages: Orekit, AstroPy, NumPy, Python
 from . import force
 from . import ecis
 from . import orbit
-from . import dttm
 # ECIS - exploratory computation in stages
 ecis.ecisdefault='forceenv' # Forces and other environmental constants
 
@@ -59,12 +60,12 @@ class PVT:
     def __init__(self, fromthing, time=None, ork=None,
                  units=[astro.prefunits["length"], astro.prefunits["velocity"]]):
         if astro.listnpa(fromthing):
-            self.pvtq = astro.posvel([fromthing[0:3], fromthing[3:6]], time,
+            self.pvtq = posvel.posvel([fromthing[0:3], fromthing[3:6]], time,
                                length_unit=units[0], velocity_unit=units[1])
             if ork is None:
                 psi = self.pvtq.si['p'].value.tolist()
                 vsi = self.pvtq.si['v'].value.tolist()
-                self.ork = TimeStampedPVCoordinates(dttm.to_okad(time), Vector3D(psi), Vector3D(vsi))
+                self.ork = posvel.orkpvt(psi,vsi,time)
             else:
                 self.ork = ork
         elif type(fromthing) == TimeStampedPVCoordinates:
@@ -78,10 +79,9 @@ class PVT:
             self.pvtq = fromthing
             psi = fromthing.si['p'].value.tolist()
             vsi = fromthing.si['v'].value.tolist()
-            self.ork = TimeStampedPVCoordinates(pyhelp.datetime_to_absolutedate(fromthing.time.datetime),
-                                                Vector3D(psi), Vector3D(vsi))
+            self.ork = posvel.orkpvt(psi, vsi, fromthing.time.datetime)
         elif type(fromthing) == astropy.table.row.Row:
-            self.__init__(astro.posvel([fromthing['position'], fromthing['velocity']], fromthing['time']))
+            self.__init__(posvel.posvel([fromthing['position'], fromthing['velocity']], fromthing['time']))
         elif type(fromthing) == tuple and len(fromthing) == 3 and type(fromthing[0]) == astropy.time.Time \
              and type(fromthing[1]) == astro.TQuantity and type(fromthing[2]) == astro.TQuantity:
             self.__init__(astro.posvel([fromthing[1], fromthing[2]], fromthing[0]))
@@ -91,7 +91,7 @@ class PVT:
         return f"<PVT position: {self.pvtq['p'].value.tolist()} ({self.pvtq.unit[0].to_string()}) velocity:{self.pvtq['v'].value.tolist()} ({self.pvtq.unit[1].to_string()}) epoch {self.pvtq.time} (UTC)>"
     def scale(self, pvscale):
         # Multiple the position by a scalar (pvscale[0]) and velocity by another scalar (pvscale[1])
-        return PVT(astro.scale_posvel(self.pvtq, pvscale))
+        return PVT(posvel._scale_posvel(self.pvtq, pvscale))
     def convert_units(self, length_unit=astro.prefunits["length"], velocity_unit=astro.prefunits["velocity"]):
         self.pvtq = self.pvtq.convert_units((length_unit,velocity_unit))
         return self

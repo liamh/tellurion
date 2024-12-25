@@ -12,6 +12,8 @@ from . import geonames
 from . import astro
 import astropy.units as u
 import astropy.time
+import astropy.timeseries as apts
+import astropy.table as aptbl
 import skyfield.api
 from org.orekit.bodies import GeodeticPoint, FieldGeodeticPoint
 from org.orekit.frames import TopocentricFrame
@@ -44,14 +46,26 @@ def ecef_to_eci(ecef, forceenv):
     xf = forceenv['earthframe'].getTransformTo(forceenv['celestialframe'],ecef.ork.date)
     return xf.transformPVCoordinates(ecef.ork)
 
-# Class of gegraphic points (longitude, latitude, altitude)
-# exg = LLA([-40.0, 0.1, 250.0], dttm.nowutc())
+"""
+Class of gegraphic points (longitude, latitude, altitude) with or without a timestamp
+
+To make without a timestamp, call with `time` argument empty or
+`None`. To make with a timestamp, give the time as the `time`
+argument, or `True` to make it now.
+
+import astrodynamics.frames as frames
+import astrodynamics.observersite as obsite
+kickapoonow = frames.LLA(obsite.kickapoo, True)
+
+"""
 class LLA:
     llaq: astro.TQuantity
     ork: GeodeticPoint
 
     def __init__(self, fromthing, time=None,
                  length_unit=astro.prefunits["length"], angle_unit=astro.prefunits["angle"], latlon=False):
+        if time==True:
+            time = dttm.nowutc()
         if type(fromthing) == GeodeticPoint or type(fromthing) == FieldGeodeticPoint:
             self.ork = fromthing
             lu = astro.lonlatalt([fromthing.longitude, fromthing.latitude, fromthing.altitude],
@@ -113,5 +127,11 @@ def siderealtime(lla=None, time=None):
     return astropy.coordinates.Angle(lla.skf.lst_hours_at(dttm.to_skftime(tm)), u.hour).to(u.deg)
 
 # Time series of lla
-#def tslla(ephem, elements):
-#    return TimeSeries(time=[], data=[])
+def tslla(ephem, elements):
+    return apts.TimeSeries(time=[], data=[])
+
+## Time series of orbital elements
+def tselements(ephem, elements):
+    return apts.TimeSeries(time=[pvt.pvtq.time for pvt in ephem.pvt],
+                      data=[dict(zip(elements, ))
+                            for orb in ephem.orbit])

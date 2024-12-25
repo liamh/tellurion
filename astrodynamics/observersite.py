@@ -16,6 +16,14 @@ General information is in .info.
  from astrodynamics import frames
  mcdonaldnow = frames.LLA(observersite.mcdonald, time=dttm.nowutc())
 
+# Site vectors
+import astrodynamics.cartprodparam as util
+import astrodynamics.dttm as dttm
+import astrodynamics.frames as frames
+import astrodynamics.observersite as obsite
+now = dttm.nowutc()
+kickapoots = [frames.LLA(obsite.kickapoo, time=now + util.rangi(0,25,5)*u.min)]
+frames.LLA(obsite.kickapoo, time=now)
 """
 
 
