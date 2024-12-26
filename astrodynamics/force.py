@@ -1,4 +1,3 @@
-from . import orkinit
 from . import dttm
 
 from org.orekit.utils import Constants

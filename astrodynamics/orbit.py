@@ -8,6 +8,7 @@ Examples: ex1, ex2
 import astropy
 import astropy.time # For ex1, ex2
 import astropy.units as u
+import numpy as np
 import orekit.pyhelpers as pyhelp
 from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
 from org.orekit.orbits import KeplerianOrbit, PositionAngleType
@@ -24,6 +25,7 @@ from . import astro  # AstroPy and TQuantity
 from . import posvel # Vectors and PVT (position, velocity, time) sets in Orekit and AstroPy
 from . import dttm   # Dates and times and conversions in various packages: Orekit, AstroPy, NumPy, Python
 from . import force
+from . import frames
 from . import ecis
 from . import orbit
 from . import util
@@ -60,51 +62,68 @@ class PVT:
     ork: TimeStampedPVCoordinates
 
     def __init__(self, fromthing, time=None, ork=None,
-                 units=[astro.prefunits["length"], astro.prefunits["velocity"]]):
-        if util.listnpa(fromthing):
-            self.pvtq = posvel.posvel([fromthing[0:3], fromthing[3:6]], time,
-                               length_unit=units[0], velocity_unit=units[1])
+                 units=(astro.prefunits["length"], astro.prefunits["velocity"])):
+        (pos, vel) = posvel.pvsplit(fromthing)
+        if pos is not None:
+            self.pvtq = posvel.pvatq(pos, vel, time, units=units)
             if ork is None:
                 psi = self.pvtq.si['p'].value.tolist()
-                vsi = self.pvtq.si['v'].value.tolist()
+                if vel is None:
+                    vsi = None
+                else:
+                    vsi = self.pvtq.si['v'].value.tolist()
                 self.ork = posvel.orkpvt(psi,vsi,time)
             else:
                 self.ork = ork
         elif type(fromthing) == TimeStampedPVCoordinates:
-            self.__init__([fromthing.position.x, fromthing.position.y, fromthing.position.z,
-                           fromthing.velocity.x, fromthing.velocity.y, fromthing.velocity.z],
-                          fromthing.date.apt(),
-                          fromthing,
-                          [u.meter, u.meter/u.second])
-            self.convert_units(units[0],units[1])
+            if np.isnan(fromthing.velocity.x):
+                self.__init__([fromthing.position.x, fromthing.position.y, fromthing.position.z],
+                              fromthing.date.apt(),
+                              fromthing,
+                              [u.meter])
+                self.convert_units(units[0])
+            else:
+                self.__init__([fromthing.position.x, fromthing.position.y, fromthing.position.z,
+                               fromthing.velocity.x, fromthing.velocity.y, fromthing.velocity.z],
+                              fromthing.date.apt(),
+                              fromthing,
+                              [u.meter, u.meter/u.second])
+                self.convert_units(units)
         elif type(fromthing) == astro.TQuantity:
             self.pvtq = fromthing
             psi = fromthing.si['p'].value.tolist()
             vsi = fromthing.si['v'].value.tolist()
             self.ork = posvel.orkpvt(psi, vsi, fromthing.time.datetime)
         elif type(fromthing) == astropy.table.row.Row:
-            self.__init__(posvel.posvel([fromthing['position'], fromthing['velocity']], fromthing['time']))
+            self.__init__(posvel.pvatq([fromthing['position'], fromthing['velocity']], fromthing['time'], \
+                                       units=units))
         elif type(fromthing) == tuple and len(fromthing) == 3 and type(fromthing[0]) == astropy.time.Time \
              and type(fromthing[1]) == astro.TQuantity and type(fromthing[2]) == astro.TQuantity:
             self.__init__(astro.posvel([fromthing[1], fromthing[2]], fromthing[0]))
         elif type(fromthing) == Orbit: # The inverse of .cartesian()
             self.__init__(fromthing.pVCoordinates)
     def __repr__(self):
-        return f"<PVT position: {self.pvtq['p'].value.tolist()} ({self.pvtq.unit[0].to_string()}) velocity:{self.pvtq['v'].value.tolist()} ({self.pvtq.unit[1].to_string()}) epoch {self.pvtq.time} (UTC)>"
+        if 'v' in self.pvtq.dtype.names:
+            return f"<PT position: {self.pvtq['p'].value.tolist()} ({self.pvtq.unit[0].to_string()}) " \
+                f"velocity:{self.pvtq['v'].value.tolist()} ({self.pvtq.unit[1].to_string()}) " \
+                f"epoch {self.pvtq.time} (UTC)>"
+        else:
+            return f"<PVT position: {self.pvtq['p'].value.tolist()} ({self.pvtq.unit[0].to_string()}) " \
+                f"epoch {self.pvtq.time} (UTC)>"
     def scale(self, pvscale):
         # Multiple the position by a scalar (pvscale[0]) and velocity by another scalar (pvscale[1])
         return PVT(posvel._scale_posvel(self.pvtq, pvscale))
-    def convert_units(self, length_unit=astro.prefunits["length"], velocity_unit=astro.prefunits["velocity"]):
-        self.pvtq = self.pvtq.convert_units((length_unit,velocity_unit))
+    def convert_units(self, units=(astro.prefunits["length"], astro.prefunits["velocity"])):
+        self.pvtq = self.pvtq.convert_units(units)
         return self
     def makenp(self):
         # Make a NumPy object
         return np.concatenate((self.pvtq.value[0], self.pvtq.value[1])), self.pvtq.time.datetime64
-    def lla(self, forceenv):
-        # Convert to geographic coordinates
-        # ex1.pvt.lla(ex1.forceenv)
-        return LLA(llafrompt(self.ork.getPosition(), self.ork.getDate(), forceenv),
-                   self.pvtq.time)
+    def lla(self, forceenv=force.setgravity(0,0)):
+        '''Convert to geographic coordinates'''
+        return frames.llafrompt(self.ork.getPosition(), self.ork.getDate(), forceenv)
+        #return frames.LLA(forceenv['earth'].transform(self.ork.getPosition(), \
+        #                                              forceenv['celestialframe'], self.ork.getDate()))
 
 ######## Properties of orbits
 

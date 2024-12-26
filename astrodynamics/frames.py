@@ -10,6 +10,9 @@ For examples, see observersite.py
 from . import dttm
 from . import geonames
 from . import astro
+from . import posvel
+from . import orbit
+from . import force
 import astropy.units as u
 import astropy.time
 import astropy.timeseries as apts
@@ -17,34 +20,8 @@ import astropy.table as aptbl
 import skyfield.api
 from org.orekit.bodies import GeodeticPoint, FieldGeodeticPoint
 from org.orekit.frames import TopocentricFrame
+from org.orekit.utils import TimeStampedPVCoordinates
 
-# Find the geographic (LLA) coordinates from the ECI position and time
-# Returns a FieldGeodeticPoint, should return an LLA
-# llafrompt(ex1.pvt.ork, ex1.pvt.ork.date, ex1.forceenv)
-def llafrompt(position, time, forceenv):
-    return forceenv['earth'].transform(position, forceenv['celestialframe'], time);
-
-def ptfromlla(lla, forceenv):
-    """
-    Find the ECI position from the geographic (LLA) coordinates
-    Returns a Vector3D, should return a PVT
-    ptfromlla(ex1.pvt.lla(ex1.forceenv),ex1.forceenv)
-    """
-    topoframe = TopocentricFrame(forceenv['earth'], lla.ork, "ptfromlla")
-    cart = topoframe.getPVCoordinates(dttm.to_okad(lla.llaq.time), forceenv['celestialframe']).getPosition()
-    return cart
-
-# Transform from ECI to ECEF
-# eci_to_ecef(ex1.pvt, ex1.forceenv)
-def eci_to_ecef(pvt, forceenv):
-    xf = forceenv['celestialframe'].getTransformTo(forceenv['earthframe'], pvt.ork.date)
-    ecef = xf.transformPVCoordinates(pvt.ork)
-    return ecef
-
-# Not tested
-def ecef_to_eci(ecef, forceenv):
-    xf = forceenv['earthframe'].getTransformTo(forceenv['celestialframe'],ecef.ork.date)
-    return xf.transformPVCoordinates(ecef.ork)
 
 """
 Class of gegraphic points (longitude, latitude, altitude) with or without a timestamp
@@ -56,7 +33,12 @@ argument, or `True` to make it now.
 import astrodynamics.frames as frames
 import astrodynamics.observersite as obsite
 kickapoonow = frames.LLA(obsite.kickapoo, True)
-
+# Convert to ECI
+kneci = kickapoonow.eci() # Gives the Kickapoo site vector at the current time
+# Convert back to LLA
+knecilla = kneci.lla().llaq
+# Same as the original
+knlla = kickapoonow.llaq
 """
 class LLA:
     llaq: astro.TQuantity
@@ -79,6 +61,8 @@ class LLA:
             self.skf = fromthing.skf
             if hasattr(fromthing,"info"):
                 self.info = fromthing.info
+        elif type(fromthing) == TimeStampedPVCoordinates:
+            self.__init__(fromthing.getPosition(), fromthing.getDate())
         else:
             if latlon:
                 q = astro.latlonalt(fromthing, time=time, length_unit=length_unit, angle_unit=angle_unit)
@@ -96,12 +80,40 @@ class LLA:
             if hasattr(self,"info"):
                 return f"<{self.info}; epoch {self.llaq.time} (UTC)>"
             else:
-                return f"<LLA longitude: {self.llaq['lon'].value} ({self.llaq.unit[0].to_string()}) latitude: {self.llaq['lat'].value} ({self.llaq.unit[1].to_string()}) altitude: {self.llaq['alt'].value} ({self.llaq.unit[2].to_string()}) epoch {self.llaq.time} (UTC)>"
+                return f"<LLA longitude: {self.llaq['lon'].value} ({self.llaq.unit[0].to_string()}) " \
+                    f"latitude: {self.llaq['lat'].value} ({self.llaq.unit[1].to_string()}) " \
+                    f"altitude: {self.llaq['alt'].value} ({self.llaq.unit[2].to_string()}) epoch {self.llaq.time} (UTC)>"
         else:
             if hasattr(self,"info"):
                 return f"<{self.info}; timeless>"
             else:
-                return f"<LLA longitude: {self.llaq['lon'].value} ({self.llaq.unit[0].to_string()}) latitude: {self.llaq['lat'].value} ({self.llaq.unit[1].to_string()}) altitude: {self.llaq['alt'].value} ({self.llaq.unit[2].to_string()})>"
+                return f"<LLA longitude: {self.llaq['lon'].value} ({self.llaq.unit[0].to_string()}) " \
+                    f"latitude: {self.llaq['lat'].value} ({self.llaq.unit[1].to_string()}) " \
+                    f"altitude: {self.llaq['alt'].value} ({self.llaq.unit[2].to_string()})>"
+    def eci(self, forceenv=force.setgravity(0,0)):
+        '''
+        Find the ECI position from the geographic (LLA) coordinates, return a PVT
+        '''
+        topoframe = TopocentricFrame(forceenv['earth'], self.ork, "ptfromlla")
+        pos = topoframe.getPVCoordinates(dttm.to_okad(self.llaq.time), forceenv['celestialframe']).getPosition()
+        orkpt = posvel.orkpvt(pos, posvel.v3dnan, self.llaq.time)
+        return orbit.PVT(orkpt)
+
+def llafrompt(position, time, forceenv):
+    '''Find the geographic (LLA) coordinates from the ECI position and time'''
+    return LLA(forceenv['earth'].transform(position, forceenv['celestialframe'], time), time);
+
+# Transform from ECI to ECEF
+# eci_to_ecef(ex1.pvt, ex1.forceenv)
+def eci_to_ecef(pvt, forceenv):
+    xf = forceenv['celestialframe'].getTransformTo(forceenv['earthframe'], pvt.ork.date)
+    ecef = xf.transformPVCoordinates(pvt.ork)
+    return ecef
+
+# Not tested
+def ecef_to_eci(ecef, forceenv):
+    xf = forceenv['earthframe'].getTransformTo(forceenv['celestialframe'],ecef.ork.date)
+    return xf.transformPVCoordinates(ecef.ork)
 
 nullisland = LLA([0.0, 0.0, 0.0])
 

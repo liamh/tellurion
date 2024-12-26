@@ -9,5 +9,6 @@
 # __all__ = ["propagate", "orbit", "frames"]
 
 # Import the submodules
+from . import orkinit # Start Orekit
 from . import orbit # imports from here: astro, force, ecis, orbit, dttm
 from . import propagate # util, ecis, orbit
