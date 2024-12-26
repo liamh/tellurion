@@ -80,14 +80,14 @@ class PVT:
                 self.__init__([fromthing.position.x, fromthing.position.y, fromthing.position.z],
                               fromthing.date.apt(),
                               fromthing,
-                              [u.meter])
+                              (u.meter))
                 self.convert_units(units[0])
             else:
                 self.__init__([fromthing.position.x, fromthing.position.y, fromthing.position.z,
                                fromthing.velocity.x, fromthing.velocity.y, fromthing.velocity.z],
                               fromthing.date.apt(),
                               fromthing,
-                              [u.meter, u.meter/u.second])
+                              (u.meter, u.meter/u.second))
                 self.convert_units(units)
         elif type(fromthing) == astro.TQuantity:
             self.pvtq = fromthing
