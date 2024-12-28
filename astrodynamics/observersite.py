@@ -6,7 +6,7 @@ Define observation sites
 Defines: mcdonald, angellhall, kickapoo
 
 To get different formats,
- .llaq AstrodynamicsPy
+ .atq  astro.TQuantity, astro.Quantity
  .ork  Orekit
  .skf  Skyfield
 General information is in .info.

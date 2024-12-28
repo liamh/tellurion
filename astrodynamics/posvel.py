@@ -8,8 +8,12 @@ import astropy.units as u
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from . import astro
-from . import util
 from . import dttm
+from . import util
+
+# posvel preferred and SI units (for Orekit)
+astro.prefunits["posvel"] = (astro.prefunits["length"], astro.prefunits["velocity"])
+posvelsiu = (u.meter, u.meter/u.second)
 
 v3dnan = Vector3D(np.nan,np.nan,np.nan) # used in Orekit when there is no velocity specified
 
@@ -25,7 +29,21 @@ def v3d(arg):
     elif argtype == NoneType:
         return v3dnan
 
+def pvtork(pvc):
+    '''Convert TimeStampedPVCoordinates to PVT'''
+    pos = [pvc.position.x, pvc.position.y, pvc.position.z]
+    if pvc.velocity.x==v3dnan.x:
+        vel=None
+    else:
+        vel = [pvc.velocity.x, pvc.velocity.y, pvc.velocity.z]
+    if type(pvc) is TimeStampedPVCoordinates:
+        time=pvc.date.apt()
+    else:
+        time=None
+    return (pos, vel, time)
+
 def orkpvt(pos, vel, time=None):
+    '''Convert PVT to TimeStampedPVCoordinates'''
     if time==None:
         return PVCoordinates(v3d(pos), v3d(vel))
     else:
@@ -37,27 +55,24 @@ def orkpvt(pos, vel, time=None):
 
 def pvsplit(pv):
     '''Create a tuple of position and (optionally) velocity 3-vectors (or lists)'''
-    if util.listnpa(pv):
-        match len(pv):
-            case 6:            # Position and velocity
-                pos = pv[0:3]
-                vel = pv[3:6]
-            case 2:            # Position and velocity
-                pos = pv[0]
-                vel = pv[1]
-            case 3:            # Position only
-                pos = pv[0:3]
-                vel = None
-            case 1:            # Position only
-                pos = pv[0]
-                vel = None
-        return (pos,vel)
-    else:
-        return (None, None)
+    match len(pv):
+        case 6:            # Position and velocity
+            pos = pv[0:3]
+            vel = pv[3:6]
+        case 2:            # Position and velocity
+            pos = pv[0]
+            vel = pv[1]
+        case 3:            # Position only
+            pos = pv[0:3]
+            vel = None
+        case 1:            # Position only
+            pos = pv[0]
+            vel = None
+    return (pos,vel)
 
-def pvatq(pos, vel, time=None, units=(astro.prefunits["length"], astro.prefunits["velocity"])):
+def atqpvt(pos, vel, time=None, units=astro.prefunits["posvel"]):
     '''Create a position-velocity as an astro.TQuantity'''
-    if vel==None:
+    if np.isnan(vel[0]):
         pvtype = [('p', np.float64)]
         npa = np.array(pos, dtype = pvtype)
         pv = astro.TQuantity(npa, u.StructuredUnit(units[0]), time)

@@ -23,10 +23,17 @@ ex1 = orbit.new_cart([5740.13268349499, 3314.06715, 0.0,
                force.setgravity(0,0))
 
 
-# All these are the same as ex1.pvt: PVT(ex1.cart), PVT(ex1.pvt.pvtq), PVT(ex1.pvt.ork), PVT(*ex1.pvt.makenp())
+def checkpvt(obj):
+    print(obj.pvt)
+    print(orbit.PVT(obj.cart))
+    print(orbit.PVT(obj.pvt.atq))
+    print(orbit.PVT(obj.pvt.ork))
+    print(orbit.PVT(obj.pvt.makenp()))
+
+# All these are the same as ex1.pvt: orbit.PVT(exmp.ex1.cart), orbit.PVT(exmp.ex1.pvt.atq), orbit.PVT(exmp.ex1.pvt.ork), orbit.PVT(exmp.ex1.pvt.makenp())
 # In [3]: ex1.pvt
 # Out[3]: <PVT position: [5740.13268349499, 3314.06715, 0.0] (km) velocity:[-2.75082683526322, 4.7645718414998, 5.50165367052644] (km/s) epoch 2022-06-01T12:00:00.000 (UTC)>
-# In [4]: ex1.pvt.pvtq
+# In [4]: ex1.pvt.atq
 # Out[4]: <TQuantity ([5740.13268349, 3314.06715   ,    0.        ], [-2.75082684,  4.76457184,  5.50165367]) (km, km / s), time=2022-06-01T12:00:00.000>
 # In [8]: ex1.pvt.ork
 # Out[8]: <TimeStampedPVCoordinates: {2022-06-01T12:00:00.000, P(5740132.68349499, 3314067.15, 0.0), V(-2750.82683526322, 4764.5718414998, 5501.65367052644), A(0.0, 0.0, 0.0)}>

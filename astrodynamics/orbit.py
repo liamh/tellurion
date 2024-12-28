@@ -8,6 +8,7 @@ Examples: ex1, ex2
 import astropy
 import astropy.time # For ex1, ex2
 import astropy.units as u
+import warnings
 import numpy as np
 import orekit.pyhelpers as pyhelp
 from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
@@ -16,7 +17,7 @@ from org.orekit.orbits import CircularOrbit
 from org.orekit.orbits import EquinoctialOrbit
 from org.orekit.utils import Constants
 # Orbital elements and PVT
-from org.orekit.utils import TimeStampedPVCoordinates
+from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 import collections.abc
 #from astropy.table.row import *
@@ -40,11 +41,11 @@ _okc = {'cartesian': OrbitType.CARTESIAN}
 
 # PVT as
 #  .ork:  TimeStampedPVCoordinates (Orekit)
-#  .pvtq: astro.TQuantity (AstroPy)
+#  .atq: astro.TQuantity (AstroPy)
 class PVT:
     """A position-value-time, represented in two ways,
-       pvtq as a astro.TQuantity (based on AstroPy's u.Quantity)
-       ork  as an Orekit TimeStampedPVCoordinates
+       atq as a astro.TQuantity (based on AstroPy's u.Quantity)
+       ork as an Orekit TimeStampedPVCoordinates
 
     They can be made from a
     * list or numpy ndarray of 6 components (position and velocity), and an absolute time specification
@@ -54,76 +55,100 @@ class PVT:
     * tuple in order (astropy.time.Time, u.Quantity (position), u.Quantity (velocity))
     * Orbit
 
-    If the units are not in the input, they may be specified in the
-    units argument, which defaults to `[prefunits["length"],
-    prefunits["velocity"]]`
+    If the units are not in the input, they may be specified as a tuple in the
+    units argument, which defaults to `(prefunits["length"],
+    prefunits["velocity"])`
     """
-    pvtq: astro.TQuantity
+    atq: astro.TQuantity
     ork: TimeStampedPVCoordinates
 
-    def __init__(self, fromthing, time=None, ork=None,
-                 units=(astro.prefunits["length"], astro.prefunits["velocity"])):
-        (pos, vel) = posvel.pvsplit(fromthing)
-        if pos is not None:
-            self.pvtq = posvel.pvatq(pos, vel, time, units=units)
-            if ork is None:
-                psi = self.pvtq.si['p'].value.tolist()
-                if vel is None:
-                    vsi = None
-                else:
-                    vsi = self.pvtq.si['v'].value.tolist()
-                self.ork = posvel.orkpvt(psi,vsi,time)
+    def __init__(self, fromthing, time=None, ork=None, units=astro.prefunits["posvel"]):
+
+        atqargunits = None
+
+        # Convert all possible inputs into standardized pos, vel, time
+        if _isnppvt(fromthing): # An np tuple (pv, time)
+            ftis = "np"
+            (pv, time) = fromthing
+            pos=pv[0:3]
+            vel=pv[3:6]
+        elif util.listnpa(fromthing): # List or posvel without time
+            ftis = "python" # Either python list or numpy array
+            (pos, vel) = posvel.pvsplit(fromthing)
+        elif _isorkpvt(fromthing) or type(fromthing)==Orbit:
+            ftis = "ork"
+            if type(fromthing)==Orbit:
+                ft=fromthing.pVCoordinates
             else:
-                self.ork = ork
-        elif type(fromthing) == TimeStampedPVCoordinates:
-            if np.isnan(fromthing.velocity.x):
-                self.__init__([fromthing.position.x, fromthing.position.y, fromthing.position.z],
-                              fromthing.date.apt(),
-                              fromthing,
-                              (u.meter))
-                self.convert_units(units[0])
-            else:
-                self.__init__([fromthing.position.x, fromthing.position.y, fromthing.position.z,
-                               fromthing.velocity.x, fromthing.velocity.y, fromthing.velocity.z],
-                              fromthing.date.apt(),
-                              fromthing,
-                              (u.meter, u.meter/u.second))
-                self.convert_units(units)
-        elif type(fromthing) == astro.TQuantity:
-            self.pvtq = fromthing
-            psi = fromthing.si['p'].value.tolist()
-            vsi = fromthing.si['v'].value.tolist()
-            self.ork = posvel.orkpvt(psi, vsi, fromthing.time.datetime)
+                ft=fromthing
+            (pos, vel, time) = posvel.pvtork(ft)
+            atqargunits = posvel.atqpvt(pos, vel, time, posvel.posvelsiu).convert_units(units)
+        elif _isatqpvt(fromthing):
+            ftis = "atq"
+            atqargunits = fromthing.convert_units(units)
+            time = fromthing.time.datetime
         elif type(fromthing) == astropy.table.row.Row:
-            self.__init__(posvel.pvatq([fromthing['position'], fromthing['velocity']], fromthing['time'], \
-                                       units=units))
-        elif type(fromthing) == tuple and len(fromthing) == 3 and type(fromthing[0]) == astropy.time.Time \
-             and type(fromthing[1]) == astro.TQuantity and type(fromthing[2]) == astro.TQuantity:
-            self.__init__(astro.posvel([fromthing[1], fromthing[2]], fromthing[0]))
-        elif type(fromthing) == Orbit: # The inverse of .cartesian()
-            self.__init__(fromthing.pVCoordinates)
-    def __repr__(self):
-        if 'v' in self.pvtq.dtype.names:
-            return f"<PT position: {self.pvtq['p'].value.tolist()} ({self.pvtq.unit[0].to_string()}) " \
-                f"velocity:{self.pvtq['v'].value.tolist()} ({self.pvtq.unit[1].to_string()}) " \
-                f"epoch {self.pvtq.time} (UTC)>"
+            ftis = "aptbrow"
+            pos = fromthing['position']
+            vel = fromthing['velocity']
+            time = fromthing['time']
         else:
-            return f"<PVT position: {self.pvtq['p'].value.tolist()} ({self.pvtq.unit[0].to_string()}) " \
-                f"epoch {self.pvtq.time} (UTC)>"
+            warnings.warn(f"Cannot convert object `{fromthing}` to a PVT")
+            return None
+
+        # Set the TQuantity variable
+        if atqargunits is None:
+            self.atq = posvel.atqpvt(pos, vel, time, units=units)
+        else:
+            self.atq = atqargunits
+
+        # Set the Orekit variable
+        if ftis=="ork":
+            self.ork = fromthing
+        else:
+            self.ork = posvel.orkpvt(self.atq.si['p'].value.tolist(), \
+                                     self.atq.si['v'].value.tolist(), time)
+
+    def __repr__(self):
+        if 'v' in self.atq.dtype.names:
+            return f"<PVT position: {self.atq['p'].value.tolist()} ({self.atq.unit[0].to_string()}) " \
+                f"velocity:{self.atq['v'].value.tolist()} ({self.atq.unit[1].to_string()}) " \
+                f"epoch {self.atq.time} (UTC)>"
+        else:
+            return f"<PT position: {self.atq['p'].value.tolist()} ({self.atq.unit[0].to_string()}) " \
+                f"epoch {self.atq.time} (UTC)>"
     def scale(self, pvscale):
         # Multiple the position by a scalar (pvscale[0]) and velocity by another scalar (pvscale[1])
-        return PVT(posvel._scale_posvel(self.pvtq, pvscale))
-    def convert_units(self, units=(astro.prefunits["length"], astro.prefunits["velocity"])):
-        self.pvtq = self.pvtq.convert_units(units)
+        return PVT(posvel._scale_posvel(self.atq, pvscale))
+    def convert_units(self, units=astro.prefunits["posvel"]):
+        self.atq = self.atq.convert_units(units)
         return self
     def makenp(self):
         # Make a NumPy object
-        return np.concatenate((self.pvtq.value[0], self.pvtq.value[1])), self.pvtq.time.datetime64
+        return np.concatenate((self.atq.value[0], self.atq.value[1])), self.atq.time.datetime64
     def lla(self, forceenv=force.setgravity(0,0)):
         '''Convert to geographic coordinates'''
         return frames.llafrompt(self.ork.getPosition(), self.ork.getDate(), forceenv)
         #return frames.LLA(forceenv['earth'].transform(self.ork.getPosition(), \
         #                                              forceenv['celestialframe'], self.ork.getDate()))
+
+### Subfunctions needed to sort out the input "fromthing"
+
+def _isnppvt(obj):
+    '''Object is a length-2 tuple with posvel as numpy array and time as datetime64'''
+    return(type(obj) is tuple and len(obj)==2 \
+           and type(obj[0]) is np.ndarray and type(obj[1]) is np.datetime64)
+
+def _isorkpvt(obj):
+    return(type(obj) is TimeStampedPVCoordinates or type(obj) is PVCoordinates)
+
+def _isatqpvt(obj):
+    '''Object is an atq position possibly with time'''
+    isatq = type(obj) == astro.TQuantity or type(obj) == u.Quantity
+    if not isatq:
+        return False
+    return 'p' in obj.dtype.names and 'v' in obj.dtype.names
+
 
 ######## Properties of orbits
 
@@ -145,7 +170,7 @@ def new_cart(pv, time, constants):
     pvt = PVT(pv, time)
     ret = ecis.newtree('pvt', pvt, constants) # Create the tree and set the first component to the PVT
     ret.cartesian() # Convert the PVT to the Orekit CartesianOrbit and save that as the next component
-    ret.kepler()
+    # ret.kepler() # This gets preferred for propagation, don't want that
     return(ret)
 
 ################################################################################

@@ -63,22 +63,22 @@ def prop(orbitinit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
         integrator.setInitialStepSize(initStep)
 
         initialState = SpacecraftState(orb, force['mass'])
-        prop = NumericalPropagator(integrator)
-        prop.setOrbitType(orbit._okc['cartesian'])
-        prop.setInitialState(initialState)
-        generator = prop.getEphemerisGenerator()
+        okprop = NumericalPropagator(integrator)
+        okprop.setOrbitType(orbit._okc['cartesian'])
+        okprop.setInitialState(initialState)
+        generator = okprop.getEphemerisGenerator()
 
         # Forces
-        prop.addForceModel(okgrav.HolmesFeatherstoneAttractionModel(force['earthframe'], force['gravity']))
+        okprop.addForceModel(okgrav.HolmesFeatherstoneAttractionModel(force['earthframe'], force['gravity']))
         if 'dragforce' in force:
-            prop.addForceModel(force['dragforce'])
+            okprop.addForceModel(force['dragforce'])
 
         # Events
-        prop.addEventDetector(AltitudeDetector(stopalt, force['sphalt']))
+        okprop.addEventDetector(AltitudeDetector(stopalt, force['sphalt']))
 
         # Propagate
         pt = timesec(proptime)
-        propagated = prop.propagate(orb.date, orb.date.shiftedBy(pt))
+        propagated = okprop.propagate(orb.date, orb.date.shiftedBy(pt))
         ephgen = generator.getGeneratedEphemeris();
 
         if type(orbitinit) is ecis.Ecis:
@@ -113,10 +113,10 @@ def prop(orbitinit, reltimes, stopalt=125.0e3, maximum_tof=0.0):
         state = bp.propagate(bp.getMinDate().shiftedBy(timesec(reltimes))).orbit
         pvt=orbit.PVT(state)
     pvts = util.ensurelist(tree.get('pvt')) + util.ensurelist(pvt)
-    pvts.sort(key = lambda s: s.pvtq.time)
+    pvts.sort(key = lambda s: s.atq.time)
     tree.update(pvt = pvts)
     states = util.ensurelist(tree.get('orbit')) + util.ensurelist(state)
-    states.sort(key = lambda s: orbit.PVT(s).pvtq.time)
+    states.sort(key = lambda s: orbit.PVT(s).atq.time)
     tree.update(orbit=states)
     tree.update(ephem=ephts(tree))
     return(pvt)
@@ -137,9 +137,9 @@ def timearray(times):
 
 # Make a time series (ephemeris table) from the propagated ephemeris
 def ephts(prop):
-    ts = apts.TimeSeries(time=[pvt.pvtq.time for pvt in prop.pvt],
-                    data={'position': [pvt.pvtq['p'] for pvt in prop.pvt],
-                          'velocity': [pvt.pvtq['v'] for pvt in prop.pvt]})
+    ts = apts.TimeSeries(time=[pvt.atq.time for pvt in prop.pvt],
+                    data={'position': [pvt.atq['p'] for pvt in prop.pvt],
+                          'velocity': [pvt.atq['v'] for pvt in prop.pvt]})
     ts['position'].info.format = '9.3f'
     ts['velocity'].info.format = '9.6f'
     return ts
@@ -170,7 +170,7 @@ def timesec(t):
 
 ## Time series of orbital elements
 def tselements(ephem, elements):
-    return apts.TimeSeries(time=[pvt.pvtq.time for pvt in ephem.pvt],
+    return apts.TimeSeries(time=[pvt.atq.time for pvt in ephem.pvt],
                       data=[dict(zip(elements,
                                      orbit.elementval(orb, elements,
                                                 ephem.forceenv["earthrad"])))
