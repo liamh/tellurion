@@ -1,5 +1,5 @@
 """
-Vectors and PVT (position, velocity, time) sets in AstroPy
+PVT (position, velocity, time) sets in AstroPy
 
 No definitions for direct use
 """

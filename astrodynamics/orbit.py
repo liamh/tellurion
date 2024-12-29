@@ -9,6 +9,7 @@ import astropy
 import astropy.time # For ex1, ex2
 import astropy.units as u
 import warnings
+import typing
 import numpy as np
 import orekit.pyhelpers as pyhelp
 from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
@@ -23,7 +24,7 @@ import collections.abc
 #from astropy.table.row import *
 
 from . import astro  # AstroPy and TQuantity
-from . import pvatq # Vectors and PVT (position, velocity, time) sets in AstroPy
+from . import pvatq  # PVT (position, velocity, time) sets in astro.TQuantity
 from . import pvork  # Vectors and PVT (position, velocity, time) sets in Orekit
 from . import dttm   # Dates and times and conversions in various packages: Orekit, AstroPy, NumPy, Python
 from . import force
@@ -49,37 +50,29 @@ class PVT:
        ork as an Orekit TimeStampedPVCoordinates
 
     They can be made from a
-    * list or numpy ndarray of 6 components (position and velocity), and an absolute time specification
-    * astro.TQuantity
-    * TimeStampedPVCoordinates
-    * astropy.table.row.Row
-    * tuple in order (astropy.time.Time, u.Quantity (position), u.Quantity (velocity))
-    * Orbit
+    * Orekit: PVCoordinates, TimeStampedPVCoordinates, Orbit
+    * astro or AstroPy: Quantity, TQuantity, astropy.table.row.Row
+    * Any input acceptable to pvatq.atqpvt
 
     If the units are not in the input, they may be specified as a tuple in the
     units argument, which defaults to `(prefunits["length"],
     prefunits["velocity"])`
     """
-    atq: astro.TQuantity
+    atq: typing.Union[astro.TQuantity, u.Quantity]
     ork: TimeStampedPVCoordinates
 
     def __init__(self, fromthing, time=None, ork=None, units=astro.prefunits["posvel"]):
-
-        if (type(fromthing) is TimeStampedPVCoordinates or type(fromthing) is PVCoordinates) \
-           or type(fromthing)==Orbit:
+        if type(fromthing)==Orbit:  # fromthing is an Orekit Orbit
+            fromthing = fromthing.pVCoordinates
+        if type(fromthing) is TimeStampedPVCoordinates or type(fromthing) is PVCoordinates:
             # fromthing is an Orekit object
-            if type(fromthing)==Orbit:
-                ft=fromthing.pVCoordinates
-            else:
-                ft=fromthing
-            (pos, vel, time) = pvork.pvtork(ft)
-            atq = pvatq.atqptpvt(pos, vel, time, pvatq.posvelsiu).convert_units(units)
+            (pos, vel, time) = pvork.pvtork(fromthing)
+            self.atq = pvatq.atqptpvt(pos, vel, time, pvatq.posvelsiu).convert_units(units)
             self.ork = fromthing
-        else: # fromthing is not an Orekit object
-            atq = pvatq.atqpvt(fromthing, time, units=units)
-            self.ork = pvork.orkpvt(atq.si['p'].value.tolist(), \
-                                    atq.si['v'].value.tolist(), time)
-        self.atq = atq
+        else: # fromthing can be converted to an atq and is not an Orekit object
+            self.atq = pvatq.atqpvt(fromthing, time, units=units)
+            self.ork = pvork.orkpvt(self.atq.si['p'].value.tolist(), \
+                                    self.atq.si['v'].value.tolist(), time)
 
     def __repr__(self):
         if 'v' in self.atq.dtype.names:
