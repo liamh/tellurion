@@ -64,50 +64,21 @@ class PVT:
 
     def __init__(self, fromthing, time=None, ork=None, units=astro.prefunits["posvel"]):
 
-        atqargunits = None
-
-        # Convert all possible inputs into standardized pos, vel, time
-        if _isnppvt(fromthing): # An np tuple (pv, time)
-            ftis = "np"
-            (pv, time) = fromthing
-            pos=pv[0:3]
-            vel=pv[3:6]
-        elif util.listnpa(fromthing): # List or posvel without time
-            ftis = "python" # Either python list or numpy array
-            (pos, vel) = posvel.pvsplit(fromthing)
-        elif _isorkpvt(fromthing) or type(fromthing)==Orbit:
-            ftis = "ork"
+        if (type(fromthing) is TimeStampedPVCoordinates or type(fromthing) is PVCoordinates) \
+           or type(fromthing)==Orbit:
+            # fromthing is an Orekit object
             if type(fromthing)==Orbit:
                 ft=fromthing.pVCoordinates
             else:
                 ft=fromthing
             (pos, vel, time) = posvel.pvtork(ft)
-            atqargunits = posvel.atqpvt(pos, vel, time, posvel.posvelsiu).convert_units(units)
-        elif _isatqpvt(fromthing):
-            ftis = "atq"
-            atqargunits = fromthing.convert_units(units)
-            time = fromthing.time.datetime
-        elif type(fromthing) == astropy.table.row.Row:
-            ftis = "aptbrow"
-            pos = fromthing['position']
-            vel = fromthing['velocity']
-            time = fromthing['time']
-        else:
-            warnings.warn(f"Cannot convert object `{fromthing}` to a PVT")
-            return None
-
-        # Set the TQuantity variable
-        if atqargunits is None:
-            self.atq = posvel.atqpvt(pos, vel, time, units=units)
-        else:
-            self.atq = atqargunits
-
-        # Set the Orekit variable
-        if ftis=="ork":
+            atq = posvel.atqptpvt(pos, vel, time, posvel.posvelsiu).convert_units(units)
             self.ork = fromthing
-        else:
-            self.ork = posvel.orkpvt(self.atq.si['p'].value.tolist(), \
-                                     self.atq.si['v'].value.tolist(), time)
+        else: # fromthing is not an Orekit object
+            atq = posvel.atqpvt(fromthing, time, units=units)
+            self.ork = posvel.orkpvt(atq.si['p'].value.tolist(), \
+                                     atq.si['v'].value.tolist(), time)
+        self.atq = atq
 
     def __repr__(self):
         if 'v' in self.atq.dtype.names:
@@ -131,24 +102,6 @@ class PVT:
         return frames.llafrompt(self.ork.getPosition(), self.ork.getDate(), forceenv)
         #return frames.LLA(forceenv['earth'].transform(self.ork.getPosition(), \
         #                                              forceenv['celestialframe'], self.ork.getDate()))
-
-### Subfunctions needed to sort out the input "fromthing"
-
-def _isnppvt(obj):
-    '''Object is a length-2 tuple with posvel as numpy array and time as datetime64'''
-    return(type(obj) is tuple and len(obj)==2 \
-           and type(obj[0]) is np.ndarray and type(obj[1]) is np.datetime64)
-
-def _isorkpvt(obj):
-    return(type(obj) is TimeStampedPVCoordinates or type(obj) is PVCoordinates)
-
-def _isatqpvt(obj):
-    '''Object is an atq position possibly with time'''
-    isatq = type(obj) == astro.TQuantity or type(obj) == u.Quantity
-    if not isatq:
-        return False
-    return 'p' in obj.dtype.names and 'v' in obj.dtype.names
-
 
 ######## Properties of orbits
 
