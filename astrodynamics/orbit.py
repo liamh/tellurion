@@ -23,7 +23,8 @@ import collections.abc
 #from astropy.table.row import *
 
 from . import astro  # AstroPy and TQuantity
-from . import posvel # Vectors and PVT (position, velocity, time) sets in Orekit and AstroPy
+from . import pvatq # Vectors and PVT (position, velocity, time) sets in AstroPy
+from . import pvork  # Vectors and PVT (position, velocity, time) sets in Orekit
 from . import dttm   # Dates and times and conversions in various packages: Orekit, AstroPy, NumPy, Python
 from . import force
 from . import frames
@@ -71,13 +72,13 @@ class PVT:
                 ft=fromthing.pVCoordinates
             else:
                 ft=fromthing
-            (pos, vel, time) = posvel.pvtork(ft)
-            atq = posvel.atqptpvt(pos, vel, time, posvel.posvelsiu).convert_units(units)
+            (pos, vel, time) = pvork.pvtork(ft)
+            atq = pvatq.atqptpvt(pos, vel, time, pvatq.posvelsiu).convert_units(units)
             self.ork = fromthing
         else: # fromthing is not an Orekit object
-            atq = posvel.atqpvt(fromthing, time, units=units)
-            self.ork = posvel.orkpvt(atq.si['p'].value.tolist(), \
-                                     atq.si['v'].value.tolist(), time)
+            atq = pvatq.atqpvt(fromthing, time, units=units)
+            self.ork = pvork.orkpvt(atq.si['p'].value.tolist(), \
+                                    atq.si['v'].value.tolist(), time)
         self.atq = atq
 
     def __repr__(self):
@@ -90,7 +91,7 @@ class PVT:
                 f"epoch {self.atq.time} (UTC)>"
     def scale(self, pvscale):
         # Multiple the position by a scalar (pvscale[0]) and velocity by another scalar (pvscale[1])
-        return PVT(posvel._scale_posvel(self.atq, pvscale))
+        return PVT(pvatq._scale_posvel(self.atq, pvscale))
     def convert_units(self, units=astro.prefunits["posvel"]):
         self.atq = self.atq.convert_units(units)
         return self

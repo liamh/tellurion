@@ -10,7 +10,7 @@ For examples, see observersite.py
 from . import dttm
 from . import geonames
 from . import astro
-from . import posvel
+from . import pvork  # Vectors and PVT (position, velocity, time) sets in Orekit
 from . import orbit
 from . import force
 import astropy.units as u
@@ -96,7 +96,7 @@ class LLA:
         '''
         topoframe = TopocentricFrame(forceenv['earth'], self.ork, "ptfromlla")
         pos = topoframe.getPVCoordinates(dttm.to_okad(self.llaq.time), forceenv['celestialframe']).getPosition()
-        orkpt = posvel.orkpvt(pos, posvel.v3dnan, self.llaq.time)
+        orkpt = pvork.orkpvt(pos, pvork.v3dnan, self.llaq.time)
         return orbit.PVT(orkpt)
 
 def llafrompt(position, time, forceenv):
