@@ -3,6 +3,8 @@ Position, velocity sets in AstroPy
 """
 import numpy as np
 import astropy.units as u
+from astropy.timeseries import TimeSeries
+import astropy.table.row
 # from . import astro
 import astro
 
@@ -16,6 +18,17 @@ def ispv(obj):
     return type(obj) == u.Quantity and obj.dtype.names is not None \
         and 'p' in obj.dtype.names and 'v' in obj.dtype.names \
         and isq3vec(obj['p'],'length') and isq3vec(obj['v'],'speed')
+
+_eph_time = 'time'
+_eph_pos = 'position'
+_eph_vel = 'velocity'
+_ephemeris_columns = [_eph_time, _eph_pos, _eph_vel]
+
+def isephem(ts):
+    return type(ts) is TimeSeries and all([k in ts.keys() for k in _ephemeris_columns])
+
+def isephrow(row):
+    return type(row) is astropy.table.row.Row and all([row.keys().__contains__(k) for k in _ephemeris_columns])
 
 def makepos(pos, unit=astro.prefunits['length']):
     '''Create a position vector or convert units'''
@@ -41,3 +54,9 @@ def makepv(pos, vel, units=astro.prefunits["posvel"]):
         npa = np.array((pos, vel), dtype = pvtype)
         pv = u.Quantity(npa, u.StructuredUnit(units))
         return(pv)
+
+def makepvt(obj):
+    if isephrow(obj):
+        pos = obj[_eph_pos]
+        vel = obj[_eph_vel]
+        return (makepv(pos, vel), obj[_eph_time])

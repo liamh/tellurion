@@ -1,6 +1,5 @@
 import astropy.time
 from astropy.timeseries import TimeSeries
-from astropy.table.row import Row
 from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit
 from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
@@ -65,8 +64,8 @@ def mkephem(orbitinit, proptime, force, stopalt=125.0e3):
 def ephem(initpvt, reltimes, forceenv=pvork.deffe):
     if type(initpvt) is tuple:
         initcart = pvork.orkpvt(*initpvt).cartesian()
-    elif isephrow(initpvt):
-        return ephem((posvel.makepv(initpvt['position'], initpvt['velocity']), \
+    elif posvel.isephrow(initpvt):
+        return ephem((posvel.makepv(initpvt[posvel._eph_pos], initpvt[posvel._eph_vel]), \
                       initpvt['time']), \
                      reltimes, forceenv)
     else:
@@ -76,11 +75,5 @@ def ephem(initpvt, reltimes, forceenv=pvork.deffe):
               for rt in reltimes]
     times = [pvork.pvtork(st)[1] for st in states]
     dat = [pvork.pvtork(st)[0] for st in states]
-    datdict = {'position': [d['p'] for d in dat], 'velocity': [d['v'] for d in dat]}
+    datdict = {posvel._eph_pos: [d['p'] for d in dat], posvel._eph_vel: [d['v'] for d in dat]}
     return TimeSeries(time=times, data=datdict)
-
-def isephem(ts):
-    return type(ts) is TimeSeries and all([k in ts.keys() for k in ['time', 'position', 'velocity']])
-
-def isephrow(row):
-    return type(row) is Row and all([row.keys().__contains__(k) for k in ['time', 'position', 'velocity']])

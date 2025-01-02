@@ -18,5 +18,6 @@ mypv = posvel.makepv(myp,myv)
 
 proptimes = [5*(1+tm) for tm in range(10)]*u.min
 ts = prop.ephem(mypv, proptimes)
+(pv3, t3) = posvel.makepvt(ts[3])
 
 # from experimental import *
