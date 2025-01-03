@@ -7,7 +7,7 @@ from astropy.timeseries import TimeSeries
 import astropy.table.row
 # from . import astro
 import astro
-
+import dttm
 
 ##################################################
 ####   Constants used to define field names   ####
@@ -80,7 +80,9 @@ def makepvt(obj):
         pos = obj[_eph_pos]
         vel = obj[_eph_vel]
         return (makepv(pos, vel), obj[_eph_time])
-    elif obj is tuple:
-        if len(obj)==3:
-            return (makepv(obj[0], obj[1]), obj[2])
-        elif len(obj)=2 and
+    elif ispv(obj):
+        return (obj, dttm.nowutc())
+    elif type(obj) is tuple and len(obj)==3:
+        return (makepv(obj[0], obj[1]), obj[2])
+    else:
+        raise ValueError('Cannot make a PVT from this object')

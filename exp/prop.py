@@ -62,15 +62,13 @@ def mkephem(orbitinit, proptime, force, stopalt=125.0e3):
 # end mkephem
 
 def ephem(initpvt, reltimes, forceenv=pvork.deffe):
-    if type(initpvt) is tuple:
-        initcart = pvork.orkpvt(*initpvt).cartesian()
-    elif posvel.isephrow(initpvt):
-        return ephem((posvel.makepv(initpvt[posvel._eph_pos], initpvt[posvel._eph_vel]), \
-                      initpvt['time']), \
-                     reltimes, forceenv)
+    # Use posvel.makepvt() to simplify this logic
+    if posvel.ispv(initpvt):
+        pvt0 = posvel.makepvt((initpvt, dttm.nowutc()))
     else:
-        initcart = pvork.orkpvt(initpvt, dttm.nowutc()).cartesian()
-    bp = mkephem(initcart, max(reltimes), forceenv)
+        pvt0 = initpvt
+    ork0 = pvork.orkpvt(*pvt0).cartesian()
+    bp = mkephem(ork0, max(reltimes), forceenv)
     states = [bp.propagate(bp.getMinDate().shiftedBy(astro.timesec(rt))).orbit \
               for rt in reltimes]
     times = [pvork.pvtork(st)[1] for st in states]

@@ -53,7 +53,7 @@ def nowutc(as_okad=False):
 def to_dttm(obj):
     '''Convert the object to an dttm as defined by isdttm().'''
     if type(obj) is str:
-        return astropy.time.Time(np.datetime64(string), scale='utc')
+        return astropy.time.Time(np.datetime64(obj), scale='utc')
     elif type(obj) is org.orekit.time.AbsoluteDate:
         print ("here")
         return to_dttm(pyhelp.absolutedate_to_datetime(obj))
