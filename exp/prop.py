@@ -75,5 +75,6 @@ def ephem(initpvt, reltimes, forceenv=pvork.deffe):
               for rt in reltimes]
     times = [pvork.pvtork(st)[1] for st in states]
     dat = [pvork.pvtork(st)[0] for st in states]
-    datdict = {posvel._eph_pos: [d['p'] for d in dat], posvel._eph_vel: [d['v'] for d in dat]}
+    datdict = {posvel._eph_pos: [d[posvel._eph_pos] for d in dat], \
+               posvel._eph_vel: [d[posvel._eph_vel] for d in dat]}
     return TimeSeries(time=times, data=datdict)

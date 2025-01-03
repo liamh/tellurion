@@ -44,8 +44,8 @@ def pvtork(pvc):
 def orkpvt(pv, time=None):
     '''Convert PVT to TimeStampedPVCoordinates or PV to PVCoordinates'''
     conv = pv.to(astro.posvelsiu)
-    vecp = v3d(conv['p'].value)
-    vecv = v3d(conv['v'].value)
+    vecp = v3d(conv[posvel._eph_pos].value)
+    vecv = v3d(conv[posvel._eph_vel].value)
     if time==None:
         return PVCoordinates(vecp, vecv)
     else:

@@ -10,11 +10,14 @@ import datetime
 import orekit.pyhelpers as pyhelp
 import org.orekit.time
 
+def isdttm(obj):
+    return type(obj) is astropy.time.Time
+
 def to_okad(t):
     """
     Convert time in any form to Orekit AbsoluteDate (okad)
     """
-    if type(t)==astropy.time.Time: # AstroPy
+    if isdttm(t): # AstroPy
         return pyhelp.datetime_to_absolutedate(t.datetime)
     elif type(t) == np.datetime64: # NumPy
         return pyhelp.datetime_to_absolutedate(pd.Timestamp(t).to_pydatetime())
@@ -33,7 +36,7 @@ def to_skftime(t):
     """
     Convert time from AstroPy to Skyfield Time
     """
-    if type(t)==astropy.time.Time: # AstroPy
+    if isdttm(t):
         return skfts.from_astropy(t)
 
 # Create the UTC apt at this instant: nowutc()
@@ -46,6 +49,16 @@ def nowutc(as_okad=False):
         return to_okad(nowutc(False))
     else:
         return astropy.time.Time(datetime.datetime.now(datetime.UTC), scale='utc')
+
+def to_dttm(obj):
+    '''Convert the object to an dttm as defined by isdttm().'''
+    if type(obj) is str:
+        return astropy.time.Time(np.datetime64(string), scale='utc')
+    elif type(obj) is org.orekit.time.AbsoluteDate:
+        print ("here")
+        return to_dttm(pyhelp.absolutedate_to_datetime(obj))
+    else:
+        return astropy.time.Time(obj)
 
 # To add timezone to datetime
 #import pytz
