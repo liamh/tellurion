@@ -7,7 +7,7 @@ from astropy.timeseries import TimeSeries
 import astropy.table.row
 # from . import astro
 import astro
-import dttm
+import apdttm
 
 ##################################################
 ####   Constants used to define field names   ####
@@ -32,6 +32,10 @@ def ispv(obj):
     return type(obj) == u.Quantity and obj.dtype.names is not None \
         and _eph_pos in obj.dtype.names and _eph_vel in obj.dtype.names \
         and isq3vec(obj[_eph_pos],'length') and isq3vec(obj[_eph_vel],'speed')
+
+def ispvt(obj):
+    return type(obj) == tuple and len(obj) == 2 \
+        and ispv(obj[0]) and apdttm.isdttm(obj[1])
 
 def isephem(ts):
     '''Argument is an ephemeris table'''
@@ -60,29 +64,56 @@ def makepos(pos, unit=astro.prefunits['length']):
     else:
         raise ValueError('Unit does not represent a position')
 
-def makepv(pos, vel, units=astro.prefunits["posvel"]):
+def pv(pos, vel, units=astro.prefunits["posvel"]):
     '''Make a posvel from separate position and velocity; if argument `pos` is a posvel, then convert units'''
     # See https://docs.astropy.org/en/stable/units/structured_units.html#example
     if ispv(pos):
         return(pos.to(units))
     if isq3vec(pos, 'length') and isq3vec(vel, 'speed'):
-        return(makepv(pos.value, vel.value, u.StructuredUnit((pos.unit, vel.unit))).to(units))
+        return(pv(pos.value, vel.value, u.StructuredUnit((pos.unit, vel.unit))).to(units))
     else:
         pvtype = [(_eph_pos, '(3,)f8'), (_eph_vel, '(3,)f8')]
         npa = np.array((pos, vel), dtype = pvtype)
-        pv = u.Quantity(npa, u.StructuredUnit(units))
-        return(pv)
+        pvq = u.Quantity(npa, u.StructuredUnit(units))
+        return(pvq)
 
 # A PVT consists of a tuple a posvel (as defined by ispv()) and an astropy.time.Time
-def makepvt(obj):
-    '''Return a tuple of posvel and time, from either an ephrow or a (pos, vel, time) tuple.'''
+def pvt(obj, item=None):
+    '''Return a tuple of posvel and time from a variety of sources.
+    '''
     if isephrow(obj):
+        # PVT from an ephemeris row
         pos = obj[_eph_pos]
         vel = obj[_eph_vel]
-        return (makepv(pos, vel), obj[_eph_time])
+        return (pv(pos, vel), obj[_eph_time])
+    elif type(obj) is TimeSeries:
+        # Select a row from an ephemeris by index, absolute time, or relative time
+        if item == None:
+            item = -1
+        try:
+            row = obj[item]
+        except:
+            try:
+                row = obj.loc[apdttm.dttm(item)]
+            except:
+                row = obj.loc[obj[0]['time'] + item]
+        return pvt(row)
     elif ispv(obj):
-        return (obj, dttm.nowutc())
-    elif type(obj) is tuple and len(obj)==3:
-        return (makepv(obj[0], obj[1]), obj[2])
+        if item==None:
+            # Add the current time to the PV
+            return (obj, apdttm.nowutc())
+        else:
+            # Add the specified time to the PV
+            return (obj, apdttm.dttm(item))
+    elif ispvt(obj):
+        if apdttm.isdttm(item):
+            # Replace the timestamp in the PVT
+            return (obj[0], item)
+        else:
+            # Displace the timestamp in the PVT by the given relative time
+            return (obj[0], obj[1] + item)
+    elif type(obj) is tuple:
+        # Create a PVT from the three P, V, T
+        return (pv(obj[0], obj[1]), obj[2])
     else:
         raise ValueError('Cannot make a PVT from this object')

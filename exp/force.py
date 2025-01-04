@@ -1,5 +1,5 @@
 #from .
-import dttm
+import apdttm
 
 from org.orekit.utils import Constants
 from org.orekit.forces.gravity.potential import GravityFieldFactory
@@ -44,9 +44,9 @@ def setgravity(degree, order, mass = 100.0):
 
 # This will find the unnormalized coefficients independent of any simulation.
 # Returns three arrays: zonals (J2,...), Cnm, Snm
-def unnormcoef(degree, order, when = dttm.nowutc(True)):
+def unnormcoef(degree, order, when = apdttm.nowutc(True)):
     if type(when) is Quantity and get_physical_type(when) == 'time':
-        when = dttm.to_okad(dttm.nowutc() + when)
+        when = apdttm.okad(apdttm.nowutc() + when)
     provider = GravityFieldFactory.getUnnormalizedProvider(degree, order)
     deg = provider.maxDegree
     ord = provider.maxOrder

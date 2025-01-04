@@ -10,7 +10,7 @@ from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
 
 #from .
-import dttm
+import apdttm
 #from .
 import astro
 #from .
@@ -37,9 +37,9 @@ def pvtork(pvc):
         pos = [pvc.position.x, pvc.position.y, pvc.position.z]
         vel = [pvc.velocity.x, pvc.velocity.y, pvc.velocity.z]
         if type(pvc) is TimeStampedPVCoordinates:
-            return posvel.makepv(posvel.makepv(pos, vel, astro.posvelsiu), None), pvc.date.apt()
+            return posvel.pv(posvel.pv(pos, vel, astro.posvelsiu), None), apdttm.dttm(pvc.date)
         else:
-            return posvel.makepv(posvel.makepv(pos, vel, astro.posvelsiu), None)
+            return posvel.pv(posvel.pv(pos, vel, astro.posvelsiu), None)
 
 def orkpvt(pv, time=None):
     '''Convert PVT to TimeStampedPVCoordinates or PV to PVCoordinates'''
@@ -49,7 +49,7 @@ def orkpvt(pv, time=None):
     if time==None:
         return PVCoordinates(vecp, vecv)
     else:
-        return TimeStampedPVCoordinates(dttm.to_okad(time), vecp, vecv)
+        return TimeStampedPVCoordinates(apdttm.okad(time), vecp, vecv)
 
 deffe = force.setgravity(0,0)
 

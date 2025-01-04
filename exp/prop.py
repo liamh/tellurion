@@ -13,7 +13,7 @@ import astro
 import orekit
 import pvork
 import posvel
-import dttm
+import apdttm
 
 def generate(initpvt, proptime, force=pvork.deffe, stopalt=125.0e3):
     """
@@ -27,7 +27,7 @@ def generate(initpvt, proptime, force=pvork.deffe, stopalt=125.0e3):
     """
 
     if posvel.ispv(initpvt):
-        pvt0 = posvel.makepvt((initpvt, dttm.nowutc()))
+        pvt0 = posvel.pvt((initpvt, apdttm.nowutc()))
     else:
         pvt0 = initpvt
     ork0 = pvork.orkpvt(*pvt0).cartesian()

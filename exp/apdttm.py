@@ -13,7 +13,7 @@ import org.orekit.time
 def isdttm(obj):
     return type(obj) is astropy.time.Time
 
-def to_okad(t):
+def okad(t):
     """
     Convert time in any form to Orekit AbsoluteDate (okad)
     """
@@ -26,18 +26,22 @@ def to_okad(t):
     elif type(t) == org.orekit.time.AbsoluteDate:
         return t
 
-"""
-Convert Orekit AbsoluteDate to AstroPy Time
-"""
-org.orekit.time.AbsoluteDate.apt = lambda t: astropy.time.Time(pyhelp.absolutedate_to_datetime(t))
-
 skfts = skyfield.api.load.timescale()
-def to_skftime(t):
+def skftime(t):
     """
     Convert time from AstroPy to Skyfield Time
     """
     if isdttm(t):
         return skfts.from_astropy(t)
+
+def dttm(obj):
+    '''Convert the object to a dttm as defined by isdttm().'''
+    if type(obj) is str:
+        return astropy.time.Time(np.datetime64(obj), scale='utc')
+    elif type(obj) is org.orekit.time.AbsoluteDate:
+        return dttm(pyhelp.absolutedate_to_datetime(obj))
+    else:
+        return astropy.time.Time(obj)
 
 # Create the UTC apt at this instant: nowutc()
 # Create the Hipparchus AbsoluteDate at this instant: to_ocad(nowutc())
@@ -46,19 +50,9 @@ def nowutc(as_okad=False):
     The time now (in UTC) as Orekit AbsoluteDate (as_okad=True) or AstroPy Time (as_okad=False).
     """
     if as_okad:
-        return to_okad(nowutc(False))
+        return okad(nowutc(False))
     else:
         return astropy.time.Time(datetime.datetime.now(datetime.UTC), scale='utc')
-
-def to_dttm(obj):
-    '''Convert the object to an dttm as defined by isdttm().'''
-    if type(obj) is str:
-        return astropy.time.Time(np.datetime64(obj), scale='utc')
-    elif type(obj) is org.orekit.time.AbsoluteDate:
-        print ("here")
-        return to_dttm(pyhelp.absolutedate_to_datetime(obj))
-    else:
-        return astropy.time.Time(obj)
 
 # To add timezone to datetime
 #import pytz
