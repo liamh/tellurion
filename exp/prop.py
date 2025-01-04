@@ -1,3 +1,5 @@
+import collections
+import collections.abc
 import astropy.time
 from astropy.timeseries import TimeSeries
 from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit
@@ -13,24 +15,29 @@ import pvork
 import posvel
 import dttm
 
-def mkephem(orbitinit, proptime, force, stopalt=125.0e3):
+def generate(initpvt, proptime, force=pvork.deffe, stopalt=125.0e3):
     """
-        Time series for ephemeris
+        Make a generator for an ephemeris; the output is the first argument of propagate()
 
-        Propagate from epoch for a specified time
         mkephem creates a BoundedPropagator but computes no actual states (see prop())
-        orbitinit:    the initial state
+        initpvt:  the initial state
         proptime: the maximum time (s) to propagate
         force:    forces to use
         stopalt:  lowest altitude above spherical earth (m) to propagate
     """
+
+    if posvel.ispv(initpvt):
+        pvt0 = posvel.makepvt((initpvt, dttm.nowutc()))
+    else:
+        pvt0 = initpvt
+    ork0 = pvork.orkpvt(*pvt0).cartesian()
 
     # Set parameters
     minstep = 0.001
     maxstep = 1000.0
     initStep = 60.0
     positionTolerance = 1.0
-    tolerances = NumericalPropagator.tolerances(positionTolerance, orbitinit, orbitinit.getType())
+    tolerances = NumericalPropagator.tolerances(positionTolerance, ork0, ork0.getType())
 
     # Initialize the integrator
     integrator = DormandPrince853Integrator(
@@ -40,7 +47,7 @@ def mkephem(orbitinit, proptime, force, stopalt=125.0e3):
 	    orekit.JArray_double.cast_(tolerances[1]))
     integrator.setInitialStepSize(initStep)
 
-    initialState = SpacecraftState(orbitinit, force['mass'])
+    initialState = SpacecraftState(ork0, force['mass'])
     okprop = NumericalPropagator(integrator)
     okprop.setOrbitType(OrbitType.CARTESIAN)
     okprop.setInitialState(initialState)
@@ -52,27 +59,33 @@ def mkephem(orbitinit, proptime, force, stopalt=125.0e3):
         okprop.addForceModel(force['dragforce'])
 
     # Events
-    # okprop.addEventDetector(AltitudeDetector(stopalt, force['sphalt']))
+    okprop.addEventDetector(AltitudeDetector(stopalt, force['sphalt']))
 
     # Propagate
-    propagated = okprop.propagate(orbitinit.date, orbitinit.date.shiftedBy(astro.timesec(proptime)))
+    propagated = okprop.propagate(ork0.date, ork0.date.shiftedBy(astro.timesec(proptime)))
     ephgen = generator.getGeneratedEphemeris();
 
     return(ephgen)
 # end mkephem
 
-def ephem(initpvt, reltimes, forceenv=pvork.deffe):
-    # Use posvel.makepvt() to simplify this logic
-    if posvel.ispv(initpvt):
-        pvt0 = posvel.makepvt((initpvt, dttm.nowutc()))
+def propagate(generator, reltimes, include_init=True):
+    '''From an existing ephemeris generator, propagate to the time(s)
+    relative to epoch of the initial state. If an list of relative
+    times is given, an ephemeris table is returned; if reltimes is a
+    single time, then a PVT is returned. If `include`_init is true,
+    then include the initial PVT in the ephemeris table.
+    '''
+    rts = astro.timesec(reltimes)
+    if isinstance(rts, collections.abc.Iterable):
+        states = [generator.propagate(generator.getMinDate().shiftedBy(rt)).orbit for rt in rts]
+        times = collections.deque([pvork.pvtork(st)[1] for st in states])
+        dat = collections.deque([pvork.pvtork(st)[0] for st in states])
+        if include_init:
+            pvt0 = pvork.pvtork(generator.initialState.pVCoordinates)
+            dat.appendleft(pvt0[0])
+            times.appendleft(pvt0[1])
+        datdict = {posvel._eph_pos: [d[posvel._eph_pos] for d in dat], \
+                   posvel._eph_vel: [d[posvel._eph_vel] for d in dat]}
+        return TimeSeries(time=times, data=datdict)
     else:
-        pvt0 = initpvt
-    ork0 = pvork.orkpvt(*pvt0).cartesian()
-    bp = mkephem(ork0, max(reltimes), forceenv)
-    states = [bp.propagate(bp.getMinDate().shiftedBy(astro.timesec(rt))).orbit \
-              for rt in reltimes]
-    times = [pvork.pvtork(st)[1] for st in states]
-    dat = [pvork.pvtork(st)[0] for st in states]
-    datdict = {posvel._eph_pos: [d[posvel._eph_pos] for d in dat], \
-               posvel._eph_vel: [d[posvel._eph_vel] for d in dat]}
-    return TimeSeries(time=times, data=datdict)
+        return pvork.pvtork(generator.propagate(generator.getMinDate().shiftedBy(rts)).orbit)

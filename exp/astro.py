@@ -4,6 +4,7 @@ AstroPy Quantity
 
 import astropy.units as u
 import numpy as np
+import collections.abc
 
 ################################################################################
 ## Units
@@ -24,6 +25,8 @@ posvelsiu = u.StructuredUnit((u.meter, u.meter/u.second))
 def timesec(t):
     if type(t) is u.Quantity and u.get_physical_type(t) == 'time':
         pt = t.si.value.tolist() # convert to seconds and get the value_unit
+    elif isinstance(t, collections.abc.Iterable):
+        return [timesec(i) for i in t]
     else:
         pt = float(t) # assume seconds
     return(pt)
