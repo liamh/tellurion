@@ -15,22 +15,26 @@ import pvork
 import posvel
 import apdttm
 
-def generate(initpvt, proptime, force=pvork.deffe, stopalt=125.0e3):
+def generate(initstate, proptime, force=pvork.deffe, stopalt=125.0e3):
     """
         Make a generator for an ephemeris; the output is the first argument of propagate()
 
-        mkephem creates a BoundedPropagator but computes no actual states (see prop())
-        initpvt:  the initial state
-        proptime: the maximum time (s) to propagate
-        force:    forces to use
-        stopalt:  lowest altitude above spherical earth (m) to propagate
+        initstate: the initial state
+        proptime:  the maximum time (s) to propagate
+        force:     forces to use
+        stopalt:   lowest altitude above spherical earth (m) to propagate
     """
 
-    if posvel.ispv(initpvt):
-        pvt0 = posvel.pvt((initpvt, apdttm.nowutc()))
+    if posvel.ispvt(initstate):
+        pvt0 = initstate
+        ork0 = pvork.orkpvt(*pvt0).cartesianorbit(force)
+    elif posvel.ispv(initstate):
+        pvt0 = posvel.pvt((initstate, apdttm.nowutc()))
+        ork0 = pvork.orkpvt(*pvt0).cartesianorbit(force)
+    elif hasattr(initstate, 'cartesianorbit'):
+        ork0 = initstate.cartesianorbit()
     else:
-        pvt0 = initpvt
-    ork0 = pvork.orkpvt(*pvt0).cartesian()
+        raise ValueError('Cannot propagate initstate')
 
     # Set parameters
     minstep = 0.001
@@ -78,8 +82,9 @@ def propagate(generator, reltimes, include_init=True):
     rts = astro.timesec(reltimes)
     if isinstance(rts, collections.abc.Iterable):
         states = [generator.propagate(generator.getMinDate().shiftedBy(rt)).orbit for rt in rts]
-        times = collections.deque([pvork.pvtork(st)[1] for st in states])
-        dat = collections.deque([pvork.pvtork(st)[0] for st in states])
+        pvts = [st.pvt() for st in states]
+        times = collections.deque([pvt[1] for pvt in pvts])
+        dat = collections.deque([pvt[0] for pvt in pvts])
         if include_init:
             pvt0 = pvork.pvtork(generator.initialState.pVCoordinates)
             dat.appendleft(pvt0[0])
@@ -88,4 +93,4 @@ def propagate(generator, reltimes, include_init=True):
                    posvel._eph_vel: [d[posvel._eph_vel] for d in dat]}
         return TimeSeries(time=times, data=datdict)
     else:
-        return pvork.pvtork(generator.propagate(generator.getMinDate().shiftedBy(rts)).orbit)
+        return generator.propagate(generator.getMinDate().shiftedBy(rts)).orbit.pvt()

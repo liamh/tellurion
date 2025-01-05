@@ -18,6 +18,8 @@ import posvel
 #from .
 import force
 
+deffe = force.setgravity(0,0)
+
 def v3d(arg):
     '''Make a Vector3D from the argument'''
     # match/case will not work because `case list` causes an error
@@ -30,16 +32,19 @@ def v3d(arg):
         return arg
 
 def pvtork(pvc):
-    '''Convert TimeStampedPVCoordinates or PVCoordinates to a PVT tuple'''
-    if type(pvc) in [CartesianOrbit, Orbit]:
-        return pvtork(pvc.pVCoordinates)
+    '''Convert Orekit objects to a PVT tuple'''
+    pos = [pvc.position.x, pvc.position.y, pvc.position.z]
+    vel = [pvc.velocity.x, pvc.velocity.y, pvc.velocity.z]
+    if type(pvc) is TimeStampedPVCoordinates:
+        return posvel.pv(posvel.pv(pos, vel, astro.posvelsiu), None), apdttm.dttm(pvc.date)
     else:
-        pos = [pvc.position.x, pvc.position.y, pvc.position.z]
-        vel = [pvc.velocity.x, pvc.velocity.y, pvc.velocity.z]
-        if type(pvc) is TimeStampedPVCoordinates:
-            return posvel.pv(posvel.pv(pos, vel, astro.posvelsiu), None), apdttm.dttm(pvc.date)
-        else:
-            return posvel.pv(posvel.pv(pos, vel, astro.posvelsiu), None)
+        return posvel.pv(posvel.pv(pos, vel, astro.posvelsiu), None)
+
+TimeStampedPVCoordinates.pvt = lambda self: pvtork(self)
+Orbit.pvt = lambda self: pvtork(self.pVCoordinates)
+CartesianOrbit.pvt = lambda self: pvtork(self.pVCoordinates)
+TimeStampedPVCoordinates.cartesianorbit = lambda self, gravity=deffe: \
+    CartesianOrbit(self, gravity['celestialframe'], gravity['earthmu'])
 
 def orkpvt(pv, time=None):
     '''Convert PVT to TimeStampedPVCoordinates or PV to PVCoordinates'''
@@ -50,7 +55,3 @@ def orkpvt(pv, time=None):
         return PVCoordinates(vecp, vecv)
     else:
         return TimeStampedPVCoordinates(apdttm.okad(time), vecp, vecv)
-
-deffe = force.setgravity(0,0)
-
-TimeStampedPVCoordinates.cartesian = lambda self, gravity=deffe: CartesianOrbit(self, gravity['celestialframe'], gravity['earthmu'])
