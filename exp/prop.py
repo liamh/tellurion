@@ -11,26 +11,26 @@ import org.orekit.forces.gravity as okgrav
 
 import astro
 import orekit
-import pvork
+import ork.force as ofr
+import ork.posvel as opv
 import posvel
-import apdttm
 
-def generate(initstate, proptime, force=pvork.deffe, stopalt=125.0e3):
+def generate(initstate, proptime, forceenv=ofr.deffe, stopalt=125.0e3):
     """
         Make a generator for an ephemeris; the output is the first argument of propagate()
 
         initstate: the initial state
         proptime:  the maximum time (s) to propagate
-        force:     forces to use
+        forceenv:  forces to use
         stopalt:   lowest altitude above spherical earth (m) to propagate
     """
 
     if posvel.ispvt(initstate):
         pvt0 = initstate
-        ork0 = pvork.orkpvt(*pvt0).cartesianorbit(force)
+        ork0 = opv.orkpvt(*pvt0).cartesianorbit(forceenv)
     elif posvel.ispv(initstate):
-        pvt0 = posvel.pvt((initstate, apdttm.nowutc()))
-        ork0 = pvork.orkpvt(*pvt0).cartesianorbit(force)
+        pvt0 = posvel.pvt((initstate, posvel.nowutc()))
+        ork0 = opv.orkpvt(*pvt0).cartesianorbit(forceenv)
     elif hasattr(initstate, 'cartesianorbit'):
         ork0 = initstate.cartesianorbit()
     else:
@@ -51,19 +51,19 @@ def generate(initstate, proptime, force=pvork.deffe, stopalt=125.0e3):
 	    orekit.JArray_double.cast_(tolerances[1]))
     integrator.setInitialStepSize(initStep)
 
-    initialState = SpacecraftState(ork0, force['mass'])
+    initialState = SpacecraftState(ork0, forceenv['mass'])
     okprop = NumericalPropagator(integrator)
     okprop.setOrbitType(OrbitType.CARTESIAN)
     okprop.setInitialState(initialState)
     generator = okprop.getEphemerisGenerator()
 
     # Forces
-    okprop.addForceModel(okgrav.HolmesFeatherstoneAttractionModel(force['earthframe'], force['gravity']))
-    if 'dragforce' in force:
-        okprop.addForceModel(force['dragforce'])
+    okprop.addForceModel(okgrav.HolmesFeatherstoneAttractionModel(forceenv['earthframe'], forceenv['gravity']))
+    if 'dragforce' in forceenv:
+        okprop.addForceModel(forceenv['dragforce'])
 
     # Events
-    okprop.addEventDetector(AltitudeDetector(stopalt, force['sphalt']))
+    okprop.addEventDetector(AltitudeDetector(stopalt, forceenv['sphalt']))
 
     # Propagate
     propagated = okprop.propagate(ork0.date, ork0.date.shiftedBy(astro.timesec(proptime)))
@@ -86,7 +86,7 @@ def propagate(generator, reltimes, include_init=True):
         times = collections.deque([pvt[1] for pvt in pvts])
         dat = collections.deque([pvt[0] for pvt in pvts])
         if include_init:
-            pvt0 = pvork.pvtork(generator.initialState.pVCoordinates)
+            pvt0 = opv.pvtork(generator.initialState.pVCoordinates)
             dat.appendleft(pvt0[0])
             times.appendleft(pvt0[1])
         datdict = {posvel._eph_pos: [d[posvel._eph_pos] for d in dat], \

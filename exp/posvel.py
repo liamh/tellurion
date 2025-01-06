@@ -1,13 +1,14 @@
 """
-Position, velocity sets in AstroPy
+Position, velocity and time sets in AstroPy
 """
+import datetime
 import numpy as np
 import astropy.units as u
 from astropy.timeseries import TimeSeries
 import astropy.table.row
 # from . import astro
 import astro
-import apdttm
+import cdttm
 
 ##################################################
 ####   Constants used to define field names   ####
@@ -33,9 +34,12 @@ def ispv(obj):
         and _eph_pos in obj.dtype.names and _eph_vel in obj.dtype.names \
         and isq3vec(obj[_eph_pos],'length') and isq3vec(obj[_eph_vel],'speed')
 
+def isdttm(obj):
+    return type(obj) is astropy.time.Time
+
 def ispvt(obj):
     return type(obj) == tuple and len(obj) == 2 \
-        and ispv(obj[0]) and apdttm.isdttm(obj[1])
+        and ispv(obj[0]) and isdttm(obj[1])
 
 def isephem(ts):
     '''Argument is an ephemeris table'''
@@ -77,6 +81,21 @@ def pv(pos, vel, units=astro.prefunits["posvel"]):
         pvq = u.Quantity(npa, u.StructuredUnit(units))
         return(pvq)
 
+##################################################
+#### Dates, times, and PVT                    ####
+##################################################
+
+def nowutc():
+    """
+    The time now (in UTC) as dttm.
+    """
+    return astropy.time.Time(datetime.datetime.now(datetime.UTC), scale='utc')
+
+# To add timezone to datetime
+#import pytz
+#def utcdt(datetime):
+#    return pytz.utc.localize(datetime)
+
 # A PVT consists of a tuple a posvel (as defined by ispv()) and an astropy.time.Time
 def pvt(obj, item=None):
     '''Return a tuple of posvel and time from a variety of sources.
@@ -94,19 +113,19 @@ def pvt(obj, item=None):
             row = obj[item]
         except:
             try:
-                row = obj.loc[apdttm.dttm(item)]
+                row = obj.loc[cdttm.dttm(item)]
             except:
                 row = obj.loc[obj[0]['time'] + item]
         return pvt(row)
     elif ispv(obj):
         if item==None:
             # Add the current time to the PV
-            return (obj, apdttm.nowutc())
+            return (obj, nowutc())
         else:
             # Add the specified time to the PV
-            return (obj, apdttm.dttm(item))
+            return (obj, cdttm.dttm(item))
     elif ispvt(obj):
-        if apdttm.isdttm(item):
+        if isdttm(item):
             # Replace the timestamp in the PVT
             return (obj[0], item)
         else:

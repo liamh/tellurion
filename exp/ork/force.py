@@ -1,5 +1,5 @@
 #from .
-import apdttm
+import posvel, cdttm
 
 from org.orekit.utils import Constants
 from org.orekit.forces.gravity.potential import GravityFieldFactory
@@ -40,13 +40,17 @@ def setgravity(degree, order, mass = 100.0):
                                    celestdflt['earthflat'],  celestdflt['earthframe']),
          'sphalt': OneAxisEllipsoid(force['earthrad'], 0.0, celestdflt['earthframe'])}
 
+# Default force & environment
+deffe = setgravity(0,0)
+
 # _swdata = CssiSpaceWeatherData("SpaceWeather-All-v1.2.txt")
 
 # This will find the unnormalized coefficients independent of any simulation.
 # Returns three arrays: zonals (J2,...), Cnm, Snm
-def unnormcoef(degree, order, when = apdttm.nowutc(True)):
+def unnormcoef(degree, order, when = cdttm.okad
+               (posvel.nowutc())):
     if type(when) is Quantity and get_physical_type(when) == 'time':
-        when = apdttm.okad(apdttm.nowutc() + when)
+        when = cdttm.okad(posvel.nowutc() + when)
     provider = GravityFieldFactory.getUnnormalizedProvider(degree, order)
     deg = provider.maxDegree
     ord = provider.maxOrder

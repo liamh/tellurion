@@ -1,20 +1,19 @@
 import numpy as np
 import astropy.units as u
 import posvel
-import orkinit
-import pvork
+import ork.init
+import ork.posvel as opv
+import ork.element as oel
 import prop
-import force
 import astro
-import apdttm
-import element
+import cdttm
 from astropy.timeseries import TimeSeries
 
 ################ Experimental
 
 p0 = [5740.13268349, 3314.06715   ,    0.]
 v0 = [-2.75082684,  4.76457184,  5.50165367]
-newyear = apdttm.dttm('2025-01-01T00:00:00')
+newyear = cdttm.dttm('2025-01-01T00:00:00')
 pvt0 = posvel.pvt((p0,v0,newyear))
 cgen = prop.generate(pvt0, 86400.0) # Use cgen for any propagation up to 1 day
 
@@ -31,21 +30,23 @@ pvt12h = prop.propagate(cgen, 12*u.hour) # Propagate to a single time, as a PVT
 
 pvtshift = posvel.pvt(pvt12h,1*u.day)
 
-from org.orekit.orbits import KeplerianOrbit, PositionAngleType
-from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
-
 ckep0 = cgen.initialState.orbit.keplerianorbit()
 
-orb1h = pvork.orkpvt(*pvt1h).cartesianorbit()
-kep1h = pvork.orkpvt(*pvt1h).keplerianorbit()
-# pvt1h, pvork.pvtork(kep1h) are equal but can't be compared, u.allclose does not work on the pv part
-# https://github.com/astropy/astropy/issues/17602
+orb1h = opv.orkpvt(*pvt1h).cartesianorbit()
+kep1h = opv.orkpvt(*pvt1h).keplerianorbit()
+# pvt1h, opv.pvtork(kep1h) are equal but can't be compared, u.allclose does not work on the pv part
+# https://github.com/astropy/astropy/issues/17602, it is a numpy issue https://github.com/numpy/numpy/issues/28104
 
 
-kep0 = element.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "raan":217.4, "ma":7.25}, \
-                      apdttm.dttm('2023-09-14T08:30:00'))
+kep0 = oel.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "raan":217.4, "ma":7.25}, \
+                      cdttm.dttm('2023-09-14T08:30:00'))
 kgen = prop.generate(kep0, 86400.0)
 keph = prop.propagate(kgen, proptimes, True)  # Propagate to each step, and include the initial state in the ephemeris table
+# posvel.pvt(keph, 35*u.min)
+# fails with KeyError: 'No matches found for key 2023-09-14 09:05:00'
+# but posvel.pvt(keph,['2023-09-14 09:05:00']) works
+
+kep20m = opv.orkpvt(*posvel.pvt(keph[4])).keplerianorbit()
 
 
 # from experimental import *

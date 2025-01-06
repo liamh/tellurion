@@ -10,15 +10,14 @@ from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
 
 #from .
-import apdttm
+import cdttm
 #from .
 import astro
 #from .
 import posvel
 #from .
-import force
+import ork.force as ofr
 
-deffe = force.setgravity(0,0)
 
 def v3d(arg):
     '''Make a Vector3D from the argument'''
@@ -36,14 +35,14 @@ def pvtork(pvc):
     pos = [pvc.position.x, pvc.position.y, pvc.position.z]
     vel = [pvc.velocity.x, pvc.velocity.y, pvc.velocity.z]
     if type(pvc) is TimeStampedPVCoordinates:
-        return posvel.pv(posvel.pv(pos, vel, astro.posvelsiu), None), apdttm.dttm(pvc.date)
+        return posvel.pv(posvel.pv(pos, vel, astro.posvelsiu), None), cdttm.dttm(pvc.date)
     else:
         return posvel.pv(posvel.pv(pos, vel, astro.posvelsiu), None)
 
 TimeStampedPVCoordinates.pvt = lambda self: pvtork(self)
 Orbit.pvt = lambda self: pvtork(self.pVCoordinates)
 CartesianOrbit.pvt = lambda self: pvtork(self.pVCoordinates)
-TimeStampedPVCoordinates.cartesianorbit = lambda self, gravity=deffe: \
+TimeStampedPVCoordinates.cartesianorbit = lambda self, gravity=ofr.deffe: \
     CartesianOrbit(self, gravity['celestialframe'], gravity['earthmu'])
 
 def orkpvt(pv, time=None):
@@ -54,4 +53,4 @@ def orkpvt(pv, time=None):
     if time==None:
         return PVCoordinates(vecp, vecv)
     else:
-        return TimeStampedPVCoordinates(apdttm.okad(time), vecp, vecv)
+        return TimeStampedPVCoordinates(cdttm.okad(time), vecp, vecv)

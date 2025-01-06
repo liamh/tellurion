@@ -1,5 +1,5 @@
 """
-Define dates and times and conversions in various packages: Orekit, AstroPy, NumPy, Python
+Conversions of datetimes in various packages: Orekit, AstroPy, NumPy, Python
 """
 
 import numpy as np
@@ -9,15 +9,13 @@ import astropy.time
 import datetime
 import orekit.pyhelpers as pyhelp
 import org.orekit.time
-
-def isdttm(obj):
-    return type(obj) is astropy.time.Time
+import posvel
 
 def okad(t):
     """
     Convert time in any form to Orekit AbsoluteDate (okad)
     """
-    if isdttm(t): # AstroPy
+    if posvel.isdttm(t): # AstroPy
         return pyhelp.datetime_to_absolutedate(t.datetime)
     elif type(t) == np.datetime64: # NumPy
         return pyhelp.datetime_to_absolutedate(pd.Timestamp(t).to_pydatetime())
@@ -29,9 +27,9 @@ def okad(t):
 skfts = skyfield.api.load.timescale()
 def skftime(t):
     """
-    Convert time from AstroPy to Skyfield Time
+    Convert time from dttm to Skyfield Time
     """
-    if isdttm(t):
+    if posvel.isdttm(t):
         return skfts.from_astropy(t)
 
 def dttm(obj):
@@ -42,19 +40,3 @@ def dttm(obj):
         return dttm(pyhelp.absolutedate_to_datetime(obj))
     else:
         return astropy.time.Time(obj)
-
-# Create the UTC apt at this instant: nowutc()
-# Create the Hipparchus AbsoluteDate at this instant: to_ocad(nowutc())
-def nowutc(as_okad=False):
-    """
-    The time now (in UTC) as Orekit AbsoluteDate (as_okad=True) or AstroPy Time (as_okad=False).
-    """
-    if as_okad:
-        return okad(nowutc(False))
-    else:
-        return astropy.time.Time(datetime.datetime.now(datetime.UTC), scale='utc')
-
-# To add timezone to datetime
-#import pytz
-#def utcdt(datetime):
-#    return pytz.utc.localize(datetime)

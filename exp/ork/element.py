@@ -1,5 +1,5 @@
 """"
-Orbital elements on Orekit
+Orbital elements in Orekit
 """
 
 import collections.abc
@@ -9,28 +9,30 @@ from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.orekit.orbits import KeplerianOrbit, PositionAngleType
 
 import astro
-import apdttm
-import pvork
+import cdttm
+import posvel
+import ork.force as ofr
+import ork.posvel as opv
 
-def elementval (orbit, element, earthrad=None):
+def elementval (orbit, elt, earthrad=None):
     """
     Compute the orbital element from the orbit
     Arguments
       orbit:    orbit (of any type), may be a list
-      element:  the orbital element desired, see list eldict.keys(); may be a list, e.g. ["sma", "ecc"]
+      elt:  the orbital element desired, see list eldict.keys(); may be a list, e.g. ["sma", "ecc"]
       earthrad: the radius of the earth, necessary to provide for altitudes of perigee and apogee
     """
     if isinstance(orbit, collections.abc.Iterable):
-        return [elementval(orb, element) for orb in orbit]
+        return [elementval(orb, elt) for orb in orbit]
     else:
         if type(orbit) is KeplerianOrbit:
             orbkep = orbit
         else:
             orbkep = _convert(orbit,"kep")
-        if isinstance(element, list):
-            return [_elget(orbkep, el, earthrad) for el in element]
+        if isinstance(elt, list):
+            return [_elget(orbkep, el, earthrad) for el in elt]
         else:
-            return _elget(orbkep, element, earthrad)
+            return _elget(orbkep, elt, earthrad)
 
 _elkeys = ["name", "description", "phystype", "orkunit", "getter"]
 _elvals = [["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],
@@ -73,7 +75,14 @@ def _orkkep(el, oes):
 def _makekep(elvald):
     return {e: _elmake(e, elvald[e]) for e in elvald}
 
-def kepler(oes, epoch, constants=pvork.deffe):
+def kepler(oes, epoch=None, constants=ofr.deffe):
+    '''Find the org.orekit.orbits.KeplerianOrbit from the input'''
+    if posvel.ispvt(oes) and epoch is None:
+        return opv.orkpvt(*oes).keplerianorbit()
+    if posvel.ispv(oes):
+        return opv.orkpvt(oes, epoch).keplerianorbit()
+    if posvel.isephrow(oes):
+        return kepler(posvel.pvt(oes))
     foes = _makekep({"ecc":0.0, "inc":38.0, "raan":0.0, "argper":-90.0, "ma":0}) | _makekep(oes)
     if 'ma' in foes:
         timeelt_type = PositionAngleType.MEAN
@@ -89,14 +98,14 @@ def kepler(oes, epoch, constants=pvork.deffe):
                           timeelt,
                           timeelt_type,  # Sets which type of anomaly we use (true
                           constants['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                          apdttm.okad(epoch),   # Sets the date of the orbital parameters
+                          cdttm.okad(epoch),   # Sets the date of the orbital parameters
                           constants['earthmu'])   # Sets the central attraction coefficient (m³/s²)
 
 # Convert from KeplerianOrbit
 KeplerianOrbit.cartesianorbit = lambda self: CartesianOrbit.cast_(OrbitType.CARTESIAN.convertType(self))
-KeplerianOrbit.pvt = lambda self: pvork.pvtork(self.pVCoordinates)
+KeplerianOrbit.pvt = lambda self: opv.pvtork(self.pVCoordinates)
 
 # Convert to KeplerianOrbit
-TimeStampedPVCoordinates.keplerianorbit = lambda self, gravity=pvork.deffe: self.cartesianorbit(gravity).keplerianorbit()
+TimeStampedPVCoordinates.keplerianorbit = lambda self, gravity=ofr.deffe: self.cartesianorbit(gravity).keplerianorbit()
 CartesianOrbit.keplerianorbit = lambda self: KeplerianOrbit.cast_(OrbitType.KEPLERIAN.convertType(self))
 Orbit.keplerianorbit = lambda self: KeplerianOrbit.cast_(OrbitType.KEPLERIAN.convertType(self))
