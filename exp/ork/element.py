@@ -4,6 +4,7 @@ Orbital elements in Orekit
 
 import collections.abc
 import astropy.units as u
+from astropy.timeseries import TimeSeries
 from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.orekit.orbits import KeplerianOrbit, PositionAngleType
@@ -14,7 +15,7 @@ import posvel
 import ork.force as ofr
 import ork.posvel as opv
 
-def elementval (orbit, elt, earthrad=None):
+def elementval (orbit, elt, earthrad=ofr.deffe["earthrad"]):
     """
     Compute the orbital element from the orbit
     Arguments
@@ -109,3 +110,9 @@ KeplerianOrbit.pvt = lambda self: opv.pvtork(self.pVCoordinates)
 TimeStampedPVCoordinates.keplerianorbit = lambda self, gravity=ofr.deffe: self.cartesianorbit(gravity).keplerianorbit()
 CartesianOrbit.keplerianorbit = lambda self: KeplerianOrbit.cast_(OrbitType.KEPLERIAN.convertType(self))
 Orbit.keplerianorbit = lambda self: KeplerianOrbit.cast_(OrbitType.KEPLERIAN.convertType(self))
+
+## Time series of orbital elements
+def tselements(ephem, elements):
+    return TimeSeries(time=ephem.time,
+                      data=[dict(zip(elements, elementval(kepler(orb), elements)))
+                            for orb in ephem])

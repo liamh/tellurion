@@ -1,5 +1,6 @@
 import numpy as np
 import astropy.units as u
+from astropy.timeseries import TimeSeries
 import posvel
 import ork.init
 import ork.posvel as opv
@@ -7,7 +8,6 @@ import ork.element as oel
 import prop
 import astro
 import cdttm
-from astropy.timeseries import TimeSeries
 
 ################ Experimental
 
@@ -32,8 +32,11 @@ pvtshift = posvel.pvt(pvt12h,1*u.day)
 
 ckep0 = cgen.initialState.orbit.keplerianorbit()
 
-orb1h = opv.orkpvt(*pvt1h).cartesianorbit()
-kep1h = opv.orkpvt(*pvt1h).keplerianorbit()
+caltperapo = oel.tselements(ceph, ["altper","altapo"]) # TimeTable of altitudes of perigee and apogee
+capa = astro.hcat(ceph, caltperapo) # Ephemeris table with additional columns for perige and apogee altitude
+
+# orb1h = opv.orkpvt(*pvt1h).cartesianorbit()
+kep1h = oel.kepler(pvt1h)
 # pvt1h, opv.pvtork(kep1h) are equal but can't be compared, u.allclose does not work on the pv part
 # https://github.com/astropy/astropy/issues/17602, it is a numpy issue https://github.com/numpy/numpy/issues/28104
 
@@ -46,7 +49,8 @@ keph = prop.propagate(kgen, proptimes, True)  # Propagate to each step, and incl
 # fails with KeyError: 'No matches found for key 2023-09-14 09:05:00'
 # but posvel.pvt(keph,['2023-09-14 09:05:00']) works
 
-kep20m = opv.orkpvt(*posvel.pvt(keph[4])).keplerianorbit()
+kep20m = oel.kepler(keph[4])
+
 
 
 # from experimental import *
