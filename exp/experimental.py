@@ -52,5 +52,15 @@ keph = prop.propagate(kgen, proptimes, True)  # Propagate to each step, and incl
 kep20m = oel.kepler(keph[4])
 
 
+############### Earth locations
 
-# from experimental import *
+import astropy.coordinates as coord
+import ork.geog as oge
+import geog
+
+mcd = coord.EarthLocation.of_site('McDonald Observatory')
+newyear = cdttm.dttm('2025-01-01T00:00:00')
+
+mcdsv_apy = geog.sitevec(mcd, newyear)
+mcdsv_ork = oge.sitevec(mcd, newyear)
+mcdsv_apy_ork_dist = np.linalg.norm(mcdsv_ork[0] - mcdsv_apy[0]).si

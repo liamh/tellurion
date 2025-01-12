@@ -4,6 +4,7 @@ No definitions for direct use
 """
 
 import numpy as np
+import astropy.units as u
 from astropy.timeseries import TimeSeries
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
@@ -44,6 +45,7 @@ Orbit.pvt = lambda self: pvtork(self.pVCoordinates)
 CartesianOrbit.pvt = lambda self: pvtork(self.pVCoordinates)
 TimeStampedPVCoordinates.cartesianorbit = lambda self, gravity=ofr.deffe: \
     CartesianOrbit(self, gravity['celestialframe'], gravity['earthmu'])
+Vector3D.quant = lambda self, unit: u.Quantity([self.x, self.y, self.z], unit)
 
 def orkpvt(pv, time=None):
     '''Convert PVT to TimeStampedPVCoordinates or PV to PVCoordinates'''

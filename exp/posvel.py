@@ -6,6 +6,7 @@ import numpy as np
 import astropy.units as u
 from astropy.timeseries import TimeSeries
 import astropy.table.row
+import astropy.coordinates as coord
 # from . import astro
 import astro
 import cdttm
@@ -58,6 +59,8 @@ def isephrow(row):
 # This will be needed for makept
 def makepos(pos, unit=astro.prefunits['length']):
     '''Create a position vector or convert units'''
+    if type(pos) is coord.representation.cartesian.CartesianRepresentation:
+        return makepos(pos.xyz, unit)
     if u.get_physical_type(unit) == 'length':
         if isq3vec(pos, 'length'):
             return pos.to(unit)
