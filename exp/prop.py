@@ -91,6 +91,9 @@ def propagate(generator, reltimes, include_init=True):
             times.appendleft(pvt0[1])
         datdict = {posvel._eph_pos: [d[posvel._eph_pos] for d in dat], \
                    posvel._eph_vel: [d[posvel._eph_vel] for d in dat]}
-        return TimeSeries(time=times, data=datdict)
+        ts = TimeSeries(time=times, data=datdict)
+        ts[posvel._eph_pos].info.format = posvel._pos_format
+        ts[posvel._eph_vel].info.format = posvel._vel_format
+        return ts
     else:
         return generator.propagate(generator.getMinDate().shiftedBy(rts)).orbit.pvt()

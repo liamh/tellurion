@@ -2,6 +2,7 @@
 AstroPy Quantity
 """
 
+import warnings
 import astropy.units as u
 import astropy.table
 import numpy as np
@@ -37,9 +38,11 @@ def timesec(t):
 ################################################################################
 
 def striptime(ts):
-    '''Remove the time column from a TimeSeries'''
+    '''Remove the time column from a TimeSeries and return a plain Table'''
     return astropy.table.Table([ts[k] for k in ts.keys()[1:None]])
 
 def hcat(ts1, ts2):
-    '''Concatenate timeseries by adding columns; no check is performed on time equality'''
+    '''Concatenate timeseries by adding columns; warn if times are not all equal'''
+    if not(all(ts1['time'].__eq__(ts2['time']))):
+        warnings.warn("Times are not all equal; using times from first set")
     return astropy.table.hstack([ts1, striptime(ts2)])

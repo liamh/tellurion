@@ -9,7 +9,7 @@ import prop
 import astro
 import cdttm
 
-################ Experimental
+################ Propagation
 
 p0 = [5740.13268349, 3314.06715   ,    0.]
 v0 = [-2.75082684,  4.76457184,  5.50165367]
@@ -60,7 +60,12 @@ import geog
 
 mcd = coord.EarthLocation.of_site('McDonald Observatory')
 newyear = cdttm.dttm('2025-01-01T00:00:00')
+mcdsv = geog.sitevec(mcd, ceph.time, 'mcdonald sitevec')
+cmcd = astro.hcat(ceph, mcdsv) # Ephemeris table with additional column for McDonald site vector
+mcdsvork = oge.sitevec(mcd, ceph.time, 'mcdonald sitevec')
+cmcdork = astro.hcat(ceph, mcdsvork) # Ephemeris table with additional column for McDonald site vector
 
+# Difference between AstroPy and Orekit
 mcdsv_apy = geog.sitevec(mcd, newyear)
 mcdsv_ork = oge.sitevec(mcd, newyear)
 mcdsv_apy_ork_dist = np.linalg.norm(mcdsv_ork[0] - mcdsv_apy[0]).si

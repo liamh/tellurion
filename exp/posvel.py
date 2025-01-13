@@ -20,6 +20,9 @@ _eph_pos = 'position'
 _eph_vel = 'velocity'
 _ephemeris_columns = [_eph_time, _eph_pos, _eph_vel]
 
+_pos_format = '10.3f'
+_vel_format = '10.6f'
+
 ##################################################
 ####   Tests for posvel and related types     ####
 ##################################################
