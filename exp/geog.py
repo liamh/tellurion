@@ -1,9 +1,11 @@
 # Site vector calculation
 import numpy as np
+import astropy.units as u
 import astropy.coordinates as coord
 from astropy.timeseries import TimeSeries
 import cdttm
 import posvel
+import geonames
 
 # List of sites: astropy.coordinates.EarthLocation.get_site_names()
 def sitevec(loc, dttm=None, name='sitevec'):
@@ -24,3 +26,11 @@ def sitevec(loc, dttm=None, name='sitevec'):
     itrs = coord.ITRS(coord.CartesianRepresentation(x=loc.x, y=loc.y, z=loc.z), obstime=dttm)
     gcrs = itrs.transform_to(coord.GCRS(obstime=dttm)).cartesian
     return (posvel.makepos(gcrs), dttm)
+
+def earthloc(lon, lat, elevation=None):
+    '''Make an earth location; if elev=None (default), look it up.'''
+    longi = coord.Angle(lon)
+    latit = coord.Angle(lat)
+    if elevation is None:
+        elevation = geonames.elev(latit.value, longi.value)*u.m
+    return coord.EarthLocation.from_geodetic(lon=longi, lat=latit, height=elevation.si)

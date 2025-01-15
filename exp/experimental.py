@@ -57,6 +57,7 @@ kep20m = oel.kepler(keph[4])
 import astropy.coordinates as coord
 import ork.geog as oge
 import geog
+import geonames
 
 mcd = coord.EarthLocation.of_site('McDonald Observatory')
 newyear = cdttm.dttm('2025-01-01T00:00:00')
@@ -69,3 +70,8 @@ cmcdork = astro.hcat(ceph, mcdsvork) # Ephemeris table with additional column fo
 mcdsv_apy = geog.sitevec(mcd, newyear)
 mcdsv_ork = oge.sitevec(mcd, newyear)
 mcdsv_apy_ork_dist = np.linalg.norm(mcdsv_ork[0] - mcdsv_apy[0]).si
+
+
+kickapoo = geog.earthloc(lon='98°45′49.82″W', lat='33°33′08.50″N')
+# From geonames.location('carbarn') - integrate earthloc with location()?
+carbarn = geog.earthloc(lat=38.87206*u.deg, lon=-77.01748*u.deg, elevation=13.0*u.m)
