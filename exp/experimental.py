@@ -75,3 +75,4 @@ mcdsv_apy_ork_dist = np.linalg.norm(mcdsv_ork[0] - mcdsv_apy[0]).si
 kickapoo = geog.earthloc(lon='98°45′49.82″W', lat='33°33′08.50″N')
 # From geonames.location('carbarn') - integrate earthloc with location()?
 carbarn = geog.earthloc(lat=38.87206*u.deg, lon=-77.01748*u.deg, elevation=13.0*u.m)
+carbarn_lst_newyear = geog.siderealtime(newyear, carbarn)

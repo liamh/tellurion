@@ -3,6 +3,7 @@ import numpy as np
 import astropy.units as u
 import astropy.coordinates as coord
 from astropy.timeseries import TimeSeries
+from astropy.time import Time
 import cdttm
 import posvel
 import geonames
@@ -34,3 +35,15 @@ def earthloc(lon, lat, elevation=None):
     if elevation is None:
         elevation = geonames.elev(latit.value, longi.value)*u.m
     return coord.EarthLocation.from_geodetic(lon=longi, lat=latit, height=elevation.si)
+
+nullisland = earthloc(0*u.deg, 0*u.deg, 0*u.m)
+
+def siderealtime(time = None, location = nullisland):
+    '''
+    The sidereal time of the location; `time=None` (default) gives
+    the current time, default `location` gives GST
+    '''
+    if time==None:
+        time = posvel.nowutc()
+    obstm = Time(time, location = location)
+    return obstm.sidereal_time('mean')
