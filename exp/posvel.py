@@ -142,3 +142,11 @@ def pvt(obj, item=None):
         return (pv(obj[0], obj[1]), obj[2])
     else:
         raise ValueError('Cannot make a PVT from this object')
+
+##################################################
+#### Compare positions, velocities            ####
+##################################################
+
+def magdiff(a, b):
+    '''Magnitude of the difference of two vectors'''
+    return u.Quantity([np.linalg.norm(ai - bi) for (ai, bi) in zip(a, b)])

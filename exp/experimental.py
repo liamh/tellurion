@@ -5,11 +5,12 @@ import posvel
 import ork.init
 import ork.posvel as opv
 import ork.element as oel
+import ork.force as ofr
 import prop
 import astro
 import cdttm
 
-################ Propagation
+################ Propagation two-body
 
 p0 = [5740.13268349, 3314.06715   ,    0.]
 v0 = [-2.75082684,  4.76457184,  5.50165367]
@@ -50,6 +51,15 @@ keph = prop.propagate(kgen, proptimes, True)  # Propagate to each step, and incl
 # but posvel.pvt(keph,['2023-09-14 09:05:00']) works
 
 kep20m = oel.kepler(keph[4])
+
+################ Propagation with perturbations
+
+fe4x4 = ofr.setgravity(4,4)
+cgen4x4 = prop.generate(pvt0, 86400.0, fe4x4)
+ceph4x4 = prop.propagate(cgen4x4, proptimes, True)
+ceph4x4_posdiff = posvel.magdiff(ceph4x4['position'], ceph['position'])
+
+# It would be nice to have the ability to assemble table with any columns, appropriately renamed, generalize hcat
 
 
 ############### Earth locations

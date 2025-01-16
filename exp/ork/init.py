@@ -7,7 +7,7 @@ To suppress version information
   OKNOVERPRINT=1 ipython -m "orkinit" -i
 """
 
-import sys, os, astropy, skyfield
+import sys, os, astropy #, skyfield
 import numpy as np
 import orekit
 import orekit.pyhelpers as pyhelpers
@@ -22,7 +22,7 @@ if 'OKNOVERPRINT' not in os.environ:  # To suppresss version printing: OKNOVERPR
     print ('Java version:',_vm.java_version)
     print ('Numpy version:', np.__version__)
     print ('Astropy version:', astropy.__version__)
-    print ('Skyfield version:', skyfield.VERSION)
+#    print ('Skyfield version:', skyfield.VERSION)
     print ('Orekit version:', orekit.VERSION)
 
 # Load the Orekit data file
