@@ -86,3 +86,19 @@ kickapoo = geog.earthloc(lon='98°45′49.82″W', lat='33°33′08.50″N')
 # From geonames.location('carbarn') - integrate earthloc with location()?
 carbarn = geog.earthloc(lat=38.87206*u.deg, lon=-77.01748*u.deg, elevation=13.0*u.m)
 carbarn_lst_newyear = geog.siderealtime(newyear, carbarn)
+
+############### Earth observations
+
+# A simulated observation from carbarn
+ob = coord.SkyCoord(coord.AltAz(az=255*u.deg, alt=80*u.deg, distance=1455*u.km, location=carbarn, obstime=newyear))
+# ECI Cartesian coordinates
+obeci = ob.transform_to(coord.GCRS)
+obeci_cart = obeci.cartesian
+obeci_ra = obeci.ra
+obeci_dec = obeci.dec
+# An observation from McDonald
+obmcd = ob.transform_to(coord.AltAz(location=mcd, obstime=newyear))
+
+# Angles only
+# obao = coord.SkyCoord(coord.AltAz(az=63*u.deg, alt=80*u.deg, location=carbarn, obstime=newyear))
+# obsloc_carbarn = coord.AltAz(location=carbarn, obstime=newyear)
