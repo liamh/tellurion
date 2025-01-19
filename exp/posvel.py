@@ -4,6 +4,7 @@ Position, velocity and time sets in AstroPy
 import datetime
 import numpy as np
 import astropy.units as u
+import astropy.coordinates as coord
 from astropy.timeseries import TimeSeries
 import astropy.table.row
 import astropy.coordinates as coord
@@ -58,21 +59,6 @@ def isephrow(row):
 ##################################################
 ####   Make posvel and related types          ####
 ##################################################
-
-# This will be needed for makept
-def makepos(pos, unit=astro.prefunits['length']):
-    '''Create a position vector or convert units'''
-    if type(pos) is coord.representation.cartesian.CartesianRepresentation:
-        return makepos(pos.xyz, unit)
-    if u.get_physical_type(unit) == 'length':
-        if isq3vec(pos, 'length'):
-            return pos.to(unit)
-        elif type(pos) is u.Quantity:
-            raise ValueError('Argument does not represent a position 3-vector')
-        else:
-            return pos*unit
-    else:
-        raise ValueError('Unit does not represent a position')
 
 def pv(pos, vel, units=astro.prefunits["posvel"]):
     '''Make a posvel from separate position and velocity; if argument `pos` is a posvel, then convert units'''
@@ -142,6 +128,26 @@ def pvt(obj, item=None):
         return (pv(obj[0], obj[1]), obj[2])
     else:
         raise ValueError('Cannot make a PVT from this object')
+
+def makepos(pos, unit=astro.prefunits['length']):
+    '''Create a position vector or convert units'''
+    if type(pos) is coord.SkyCoord:
+        return makepos(pos.cartesian, unit)
+    if type(pos) is coord.representation.cartesian.CartesianRepresentation:
+        return makepos(pos.xyz, unit)
+    if u.get_physical_type(unit) == 'length':
+        if isq3vec(pos, 'length'):
+            return pos.to(unit)
+        elif type(pos) is u.Quantity:
+            raise ValueError('Argument does not represent a position 3-vector')
+        else:
+            return pos*unit
+    else:
+        raise ValueError('Unit does not represent a position')
+
+def makept(pos, dttm, frame='gcrs'):
+    '''Make a SkyCoord GCRS location'''
+    return coord.SkyCoord(coord.CartesianRepresentation(pos), obstime=dttm, frame=frame)
 
 ##################################################
 #### Compare positions, velocities            ####

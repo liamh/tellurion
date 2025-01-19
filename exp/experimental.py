@@ -1,3 +1,7 @@
+import os
+if os.getenv("OREKITDATA") == None:
+    raise ValueError("You need to source env.sh for Orekit to work")
+
 import numpy as np
 import astropy.units as u
 from astropy.timeseries import TimeSeries
@@ -71,16 +75,15 @@ import geonames
 
 mcd = coord.EarthLocation.of_site('McDonald Observatory')
 newyear = cdttm.dttm('2025-01-01T00:00:00')
-mcdsv = geog.sitevec(mcd, ceph.time, 'mcdonald sitevec')
+mcdsv = geog.eciobs(mcd, ceph.time, 'mcdonald sitevec')
 cmcd = astro.hcat(ceph, mcdsv) # Ephemeris table with additional column for McDonald site vector
-mcdsvork = oge.sitevec(mcd, ceph.time, 'mcdonald sitevec')
+mcdsvork = oge.eciobs(mcd, ceph.time, 'mcdonald sitevec')
 cmcdork = astro.hcat(ceph, mcdsvork) # Ephemeris table with additional column for McDonald site vector
 
 # Difference between AstroPy and Orekit
-mcdsv_apy = geog.sitevec(mcd, newyear)
-mcdsv_ork = oge.sitevec(mcd, newyear)
-mcdsv_apy_ork_dist = np.linalg.norm(mcdsv_ork[0] - mcdsv_apy[0]).si
-
+mcdsv_apy = posvel.makepos(geog.eciobs(mcd, newyear))
+mcdsv_ork = posvel.makepos(oge.eciobs(mcd, newyear))
+mcdsv_apy_ork_dist = np.linalg.norm(mcdsv_ork - mcdsv_apy).si
 
 kickapoo = geog.earthloc(lon='98°45′49.82″W', lat='33°33′08.50″N')
 # From geonames.location('carbarn') - integrate earthloc with location()?
@@ -90,15 +93,19 @@ carbarn_lst_newyear = geog.siderealtime(newyear, carbarn)
 ############### Earth observations
 
 # A simulated observation from carbarn
-ob = coord.SkyCoord(coord.AltAz(az=255*u.deg, alt=80*u.deg, distance=1455*u.km, location=carbarn, obstime=newyear))
+ob = geog.azelrange(255*u.deg, 80*u.deg, 1455*u.km, carbarn, newyear)
 # ECI Cartesian coordinates
 obeci = ob.transform_to(coord.GCRS)
 obeci_cart = obeci.cartesian
-obeci_ra = obeci.ra
-obeci_dec = obeci.dec
+obeci_radec = obeci.spherical
+
 # An observation from McDonald
 obmcd = ob.transform_to(coord.AltAz(location=mcd, obstime=newyear))
 
 # Angles only
 # obao = coord.SkyCoord(coord.AltAz(az=63*u.deg, alt=80*u.deg, location=carbarn, obstime=newyear))
 # obsloc_carbarn = coord.AltAz(location=carbarn, obstime=newyear)
+
+ptobork = oge.eciobs(carbarn, ob, 'carbarn obs')
+ptobapy = geog.eciobs(carbarn, ob, 'carbarn obs')
+ob_ork_apy_dist = np.linalg.norm(ptobork.cartesian.xyz - ptobapy.cartesian.xyz).si

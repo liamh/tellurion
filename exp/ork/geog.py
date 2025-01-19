@@ -1,5 +1,6 @@
 import numpy as np
 import astropy.units as u
+import astropy.coordinates as coord
 from astropy.timeseries import TimeSeries
 
 from org.orekit.bodies import GeodeticPoint
@@ -14,27 +15,36 @@ import ork.force as ofr
 def geodpt(earthloc):
     '''Create the Orekit GeodeticPoint from an AstroPy EarthLocation'''
     geod = earthloc.geodetic
-    lat_rdn = float(u.Quantity(geod.lat).to(u.radian).value)
-    lon_rdn = float(u.Quantity(geod.lon).to(u.radian).value)
-    altitude_m = float(u.Quantity(geod.height).to(u.m).value)
+    lat_rdn = float(geod.lat.radian)
+    lon_rdn = float(geod.lon.radian)
+    altitude_m = float(geod.height.si.value)
     return GeodeticPoint(lat_rdn, lon_rdn, altitude_m)
 
-def sitevec(loc, dttm, name='sitevec', forceenv=ofr.deffe):
-    '''Find the site vector (in the GCRS frame) of the EarthLocation
-    using Orekit. If `dttm` has multiple times, then a time series is
-    created of all the site vectors. If it is `None`, then the current
-    time is used.
-    '''
-    if dttm==None:
+def eciobs(loc, observation=None, name='eci obs', forceenv=ofr.deffe):
+    '''Find the ECI position and time of the observations made from
+    the location. If observation is a Time or multiple times, find the site
+    vector(s). Uses Orekit.'''
+    tf = TopocentricFrame(forceenv['earth'], geodpt(loc), name)
+    if type(observation) is coord.sky_coordinate.SkyCoord:
+        tf = TopocentricFrame(forceenv['earth'], \
+                              tf.pointAtDistance(
+                                  float(observation.az.radian),
+                                  float(observation.alt.radian), \
+                                  float(observation.distance.si.value)), \
+                              name)
+        dttm = observation.obstime
+    elif observation==None:
         dttm = posvel.nowutc()
+    else:
+        dttm = observation
     if type(dttm.value) is np.ndarray:
-        arr = [sitevec(loc, dt) for dt in dttm]
-        datdict = {name: [x[0] for x in arr]}
-        times = [x[1] for x in arr]
+        arr = [eciobs(loc, dt) for dt in dttm]
+        datdict = {name: [ob.cartesian.xyz for ob in arr]}
+        times = [ob.obstime for ob in arr]
         ts = TimeSeries(time=times, data=datdict)
         ts[name].info.format = posvel._pos_format
         return ts
-    topoframe = TopocentricFrame(forceenv['earth'], geodpt(loc), name)
-    posv3d = topoframe.getPVCoordinates(cdttm.okad(dttm), forceenv['celestialframe']).getPosition()
-    pos = posvel.makepos(posv3d.quant(u.m))
-    return (pos, dttm)
+    else:
+        posv3d = tf.getPVCoordinates(cdttm.okad(dttm), forceenv['celestialframe']).getPosition()
+        pos = posvel.makepos(posv3d.quant(u.m))
+        return posvel.makept(pos, dttm)
