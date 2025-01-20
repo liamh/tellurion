@@ -1,3 +1,10 @@
+"""Computation of GeodeticPoint and ECI computation of site vectors
+and angles & range observation. These definitions are not necessary as
+AstroPy does the same computation (see ../geog.py), unless the
+specific earth frame used for Orekit is needed to high accuracy.
+
+"""
+
 import numpy as np
 import astropy.units as u
 import astropy.coordinates as coord

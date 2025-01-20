@@ -1,3 +1,8 @@
+"""Computation of GeodeticPoint and ECI computation of site vectors
+and angles & range observation eciobs()
+
+"""
+
 # Site vector calculation
 import numpy as np
 import astropy.units as u
@@ -45,7 +50,14 @@ def eciobs(loc, observation=None, name='eci obs'):
         return None
 
 def azelrange(az, el, rang, obsloc, obstime):
+    '''Create an azimuth, elevation, and range observation'''
     return coord.SkyCoord(coord.AltAz(az=az, alt=el, distance=rang, location=obsloc, obstime=obstime))
+
+def radecrange(ra, dec, rang, obsloc, obstime, frame='gcrs'):
+    '''Create an right ascension, declination, and range observation'''
+    # This doesn't seem to offset the origin to the observer location
+    return coord.SkyCoord(ra=ra, dec=dec, distance=rang, obstime=obstime, frame=frame, \
+                          obsgeoloc=posvel.makepos(obsloc))
 
 def siderealtime(time = None, location = nullisland):
     '''

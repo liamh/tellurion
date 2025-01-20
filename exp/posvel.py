@@ -135,6 +135,8 @@ def makepos(pos, unit=astro.prefunits['length']):
         return makepos(pos.cartesian, unit)
     if type(pos) is coord.representation.cartesian.CartesianRepresentation:
         return makepos(pos.xyz, unit)
+    if type(pos) is tuple:
+        return u.Quantity(pos, unit)
     if u.get_physical_type(unit) == 'length':
         if isq3vec(pos, 'length'):
             return pos.to(unit)
