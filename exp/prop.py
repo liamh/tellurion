@@ -86,7 +86,7 @@ def propagate(generator, reltimes, include_init=True):
         times = collections.deque([pvt[1] for pvt in pvts])
         dat = collections.deque([pvt[0] for pvt in pvts])
         if include_init:
-            pvt0 = opv.pvtork(generator.initialState.pVCoordinates)
+            pvt0 = generator.initialState.pVCoordinates.pvt()
             dat.appendleft(pvt0[0])
             times.appendleft(pvt0[1])
         datdict = {posvel._eph_pos: [d[posvel._eph_pos] for d in dat], \

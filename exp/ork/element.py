@@ -5,7 +5,7 @@ Orbital elements in Orekit
 import collections.abc
 import astropy.units as u
 from astropy.timeseries import TimeSeries
-from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
+from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType, CircularOrbit
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.orekit.orbits import KeplerianOrbit, PositionAngleType
 
@@ -102,17 +102,21 @@ def kepler(oes, epoch=None, constants=ofr.deffe):
                           cdttm.okad(epoch),   # Sets the date of the orbital parameters
                           constants['earthmu'])   # Sets the central attraction coefficient (m³/s²)
 
-# Convert from KeplerianOrbit
-KeplerianOrbit.cartesianorbit = lambda self: CartesianOrbit.cast_(OrbitType.CARTESIAN.convertType(self))
-KeplerianOrbit.pvt = lambda self: opv.pvtork(self.pVCoordinates)
-
-# Convert to KeplerianOrbit
-TimeStampedPVCoordinates.keplerianorbit = lambda self, gravity=ofr.deffe: self.cartesianorbit(gravity).keplerianorbit()
-CartesianOrbit.keplerianorbit = lambda self: KeplerianOrbit.cast_(OrbitType.KEPLERIAN.convertType(self))
-Orbit.keplerianorbit = lambda self: KeplerianOrbit.cast_(OrbitType.KEPLERIAN.convertType(self))
-
 ## Time series of orbital elements
 def tselements(ephem, elements):
     return TimeSeries(time=ephem.time,
                       data=[dict(zip(elements, elementval(kepler(orb), elements)))
                             for orb in ephem])
+
+########################################
+####    Convert element types       ####
+########################################
+
+# Convert to KeplerianOrbit
+TimeStampedPVCoordinates.keplerianorbit = lambda self, gravity=ofr.deffe: self.cartesianorbit(gravity).keplerianorbit()
+Orbit.keplerianorbit = lambda self: KeplerianOrbit.cast_(OrbitType.KEPLERIAN.convertType(self))
+
+# Circular orbit
+TimeStampedPVCoordinates.circularorbit = \
+    lambda self, gravity=ofr.deffe: CircularOrbit(self, gravity['celestialframe'], gravity['earthmu'])
+Orbit.circularorbit = lambda self: CircularOrbit(self)

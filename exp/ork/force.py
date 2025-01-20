@@ -23,7 +23,7 @@ def setgravity(degree, order, mass = 100.0):
     """
     celestdflt = {
         'earthframe': FramesFactory.getITRF(IERSConventions.IERS_2010, True),
-        'celestialframe': FramesFactory.getEME2000(),
+        'celestialframe': FramesFactory.getGCRF(),
         'earthangspd': Constants.IERS2010_EARTH_ANGULAR_VELOCITY,
         'earthflat': Constants.IERS2010_EARTH_FLATTENING,
         'sun': CelestialBodyFactory.getSun(),

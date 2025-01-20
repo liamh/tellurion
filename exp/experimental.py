@@ -14,12 +14,25 @@ import prop
 import astro
 import cdttm
 
-################ Propagation two-body
+################ State and elements
 
 p0 = [5740.13268349, 3314.06715   ,    0.]
 v0 = [-2.75082684,  4.76457184,  5.50165367]
 newyear = cdttm.dttm('2025-01-01T00:00:00')
-pvt0 = posvel.pvt((p0,v0,newyear))
+pvt0 = posvel.pvt((p0,v0,newyear))  # A tuple (Quantity, Time)
+
+# Orekit representations
+opvt0 = opv.orkpvt(*pvt0)           # org.orekit.utils.TimeStampedPVCoordinates
+ocartorb0 = opvt0.cartesianorbit()  # org.orekit.orbits.CartesianOrbit
+okeporb0 = opvt0.keplerianorbit()   # org.orekit.orbits.KeplerianOrbit
+
+# Get the pvt back
+pvt_opvt0 = opvt0.pvt()
+pvt_ocartorb0 = ocartorb0.pvt()
+pvt_okeporb0 = okeporb0.pvt()
+
+################ Propagation two-body
+
 cgen = prop.generate(pvt0, 86400.0) # Use cgen for any propagation up to 1 day
 
 # The example pvt as a CartesianOrbit
