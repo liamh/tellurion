@@ -40,7 +40,7 @@ Vector3D.quant = lambda self, unit: u.Quantity([self.x, self.y, self.z], unit)
 ####  PVT tuple to and from Orekit  ####
 ########################################
 
-def pvtork(pvc):
+def _pvtork(pvc):
     '''Convert Orekit objects to a PVT tuple, called through methods below'''
     pos = [pvc.position.x, pvc.position.y, pvc.position.z]
     vel = [pvc.velocity.x, pvc.velocity.y, pvc.velocity.z]
@@ -48,9 +48,20 @@ def pvtork(pvc):
         return posvel.pv(posvel.pv(pos, vel, astro.posvelsiu), None), cdttm.dttm(pvc.date)
     else:
         return posvel.pv(posvel.pv(pos, vel, astro.posvelsiu), None)
+TimeStampedPVCoordinates.pvt = lambda self: _pvtork(self)
+PVCoordinates.pvt = lambda self: _pvtork(self)
+Orbit.pvt = lambda self: _pvtork(self.pVCoordinates)
 
-def orkpvt(pv, time=None):
+def pvt(pv, time=None):
     '''Convert PVT to TimeStampedPVCoordinates or PV to PVCoordinates'''
+    if posvel.isephrow(pv):
+        (pv, tpvt) = posvel.pvt(pv)
+        if time==None:
+            return pvt(pv, tpvt)
+        elif isdttm(time):
+            return pvt(pv, time)
+        elif isreltime(time):
+            return pvt(pv, tpvt+time)
     conv = pv.to(astro.posvelsiu)
     vecp = v3d(conv[posvel._eph_pos].value)
     vecv = v3d(conv[posvel._eph_vel].value)
@@ -63,8 +74,6 @@ def orkpvt(pv, time=None):
 ####       Convert Cartesian        ####
 ########################################
 
-TimeStampedPVCoordinates.pvt = lambda self: pvtork(self)
 TimeStampedPVCoordinates.cartesianorbit = lambda self, fe=ofr.deffe: \
     CartesianOrbit(self, fe['celestialframe'], fe['earthmu'])
-Orbit.pvt = lambda self: pvtork(self.pVCoordinates)
 Orbit.cartesianorbit = lambda self: CartesianOrbit.cast_(OrbitType.CARTESIAN.convertType(self))

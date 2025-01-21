@@ -13,7 +13,7 @@ import astro
 import cdttm
 import posvel
 import ork.force as ofr
-import ork.posvel as opv
+import ork.posvel
 
 def elementval (orbit, elt, earthrad=ofr.deffe["earthrad"]):
     """
@@ -76,32 +76,6 @@ def _orkkep(el, oes):
 def _makekep(elvald):
     return {e: _elmake(e, elvald[e]) for e in elvald}
 
-def kepler(oes, epoch=None, constants=ofr.deffe):
-    '''Find the org.orekit.orbits.KeplerianOrbit from the input'''
-    if posvel.ispvt(oes) and epoch is None:
-        return opv.orkpvt(*oes).keplerianorbit()
-    if posvel.ispv(oes):
-        return opv.orkpvt(oes, epoch).keplerianorbit()
-    if posvel.isephrow(oes):
-        return kepler(posvel.pvt(oes))
-    foes = _makekep({"ecc":0.0, "inc":38.0, "raan":0.0, "argper":-90.0, "ma":0}) | _makekep(oes)
-    if 'ma' in foes:
-        timeelt_type = PositionAngleType.MEAN
-        timeelt = _orkkep('ma',foes)
-    else:
-        timeelt_type = PositionAngleType.TRUE
-        timeelt = _orkkep('ta',foes)
-    return KeplerianOrbit(_orkkep('sma',foes),
-                          _orkkep('ecc',foes),
-                          _orkkep('inc',foes),
-                          _orkkep('argper',foes),
-                          _orkkep('raan',foes),
-                          timeelt,
-                          timeelt_type,  # Sets which type of anomaly we use (true
-                          constants['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                          cdttm.okad(epoch),   # Sets the date of the orbital parameters
-                          constants['earthmu'])   # Sets the central attraction coefficient (m³/s²)
-
 ## Time series of orbital elements
 def tselements(ephem, elements):
     return TimeSeries(time=ephem.time,
@@ -109,12 +83,55 @@ def tselements(ephem, elements):
                             for orb in ephem])
 
 ########################################
+####    Make Kepler element set     ####
+########################################
+
+import ork.force as ofr
+
+def keplerianorbit(oes, epoch, units=(astro.prefunits['length'], astro.prefunits['angle']), fe=ofr.deffe):
+    '''Make a org.orekit.orbits.KeplerianOrbit from orbital elements as a u.Quantity or Dict'''
+    if type(oes) is dict:
+        oes = element.kepler(oes, None, units)
+
+    oessi = oes.si.value
+    if 'ma' in oessi.dtype.names:
+        return KeplerianOrbit(float(oessi['sma']), float(oessi['ecc']), float(oessi['inc']), \
+                              float(oessi['argper']), float(oessi['raan']), \
+                              float(oessi['ma']), PositionAngleType.MEAN, \
+                              fe['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
+                              cdttm.okad(epoch),   # Sets the date of the orbital parameters
+                              fe['earthmu'])   # Sets the central attraction coefficient (m³/s²)
+    elif 'ta' in oessi.dtype.names:
+        return KeplerianOrbit(float(oessi['sma']), float(oessi['ecc']), float(oessi['inc']), \
+                              float(oessi['argper']), float(oessi['raan']), \
+                              float(oessi['ma']), PositionAngleType.TRUE, \
+                              fe['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
+                              cdttm.okad(epoch),   # Sets the date of the orbital parameters
+                              fe['earthmu'])   # Sets the central attraction coefficient (m³/s²)
+    else:
+        raise ValueError('Time element (ma or ta) required in element set')
+    return
+
+def _kepler(orkobj, units=(astro.prefunits['length'], astro.prefunits['angle'])):
+    '''Make a kepler u.Quantity from the Orekit object.'''
+    return element.kepler({'sma': elementval( FILL THIS IN)},
+                          cdttm.dttm(orkobj.getDate()),
+                          units)
+
+########################################
 ####    Convert element types       ####
 ########################################
 
-# Convert to KeplerianOrbit
+
+# Convert to KeplerianOrbit (Orekit)
 TimeStampedPVCoordinates.keplerianorbit = lambda self, gravity=ofr.deffe: self.cartesianorbit(gravity).keplerianorbit()
 Orbit.keplerianorbit = lambda self: KeplerianOrbit.cast_(OrbitType.KEPLERIAN.convertType(self))
+
+# Convert to kepler (u.Quantity)
+TimeStampedPVCoordinates.kepler = \
+    lambda self, units=(astro.prefunits['length'], astro.prefunits['angle']): \
+        self.cartesianorbit(ofr.deffe).kepler(units)
+Orbit.kepler = lambda self, units=(astro.prefunits['length'], astro.prefunits['angle']): _kepler(self, units)
 
 # Circular orbit
 TimeStampedPVCoordinates.circularorbit = \

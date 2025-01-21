@@ -42,6 +42,9 @@ def ispv(obj):
 def isdttm(obj):
     return type(obj) is astropy.time.Time
 
+def isreltime(obj):
+    return type(obj) is u.Quantity and u.get_physical_type(obj) == u.get_physical_type('time')
+
 def ispvt(obj):
     return type(obj) == tuple and len(obj) == 2 \
         and ispv(obj[0]) and isdttm(obj[1])
@@ -99,7 +102,7 @@ def pvt(obj, item=None):
         return (pv(pos, vel), obj[_eph_time])
     elif type(obj) is TimeSeries:
         # Select a row from an ephemeris by index, absolute time, or relative time
-        if item == None:
+        if item == None:   # Return the last row
             item = -1
         try:
             row = obj[item]

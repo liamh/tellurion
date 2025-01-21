@@ -12,7 +12,7 @@ import org.orekit.forces.gravity as okgrav
 import astro
 import orekit
 import ork.force as ofr
-import ork.posvel as opv
+import ork.posvel
 import posvel
 
 def generate(initstate, proptime, forceenv=ofr.deffe, stopalt=125.0e3):
@@ -27,10 +27,10 @@ def generate(initstate, proptime, forceenv=ofr.deffe, stopalt=125.0e3):
 
     if posvel.ispvt(initstate):
         pvt0 = initstate
-        ork0 = opv.orkpvt(*pvt0).cartesianorbit(forceenv)
+        ork0 = ork.posvel.pvt(*pvt0).cartesianorbit(forceenv)
     elif posvel.ispv(initstate):
         pvt0 = posvel.pvt((initstate, posvel.nowutc()))
-        ork0 = opv.orkpvt(*pvt0).cartesianorbit(forceenv)
+        ork0 = ork.posvel.pvt(*pvt0).cartesianorbit(forceenv)
     elif hasattr(initstate, 'cartesianorbit'):
         ork0 = initstate.cartesianorbit()
     else:
@@ -97,3 +97,10 @@ def propagate(generator, reltimes, include_init=True):
         return ts
     else:
         return generator.propagate(generator.getMinDate().shiftedBy(rts)).orbit.pvt()
+
+SpacecraftState.pvt = lambda self: opv.pvtork(self.pVCoordinates)
+BoundedPropagator.pvt = lambda self: self.initialState.pvt()
+SpacecraftState.cartesianorbit = lambda self: CartesianOrbit.cast_(OrbitType.CARTESIAN.convertType(self))
+BoundedPropagator.cartesianorbit  = lambda self: self.initialState.cartesianorbit()
+SpacecraftState.keplerianorbit = lambda self: self.orbit.keplerianorbit()
+BoundedPropagator.keplerianorbit  = lambda self: self.initialState.keplerianorbit()
