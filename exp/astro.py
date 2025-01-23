@@ -22,9 +22,13 @@ prefunits = {"time": u.second, "length": u.km, "speed": u.km/u.second,
 prefunits["posvel"] = (prefunits["length"], prefunits["speed"])
 posvelsiu = u.StructuredUnit((u.meter, u.meter/u.second))
 
+def valsunits(quants):
+    vulist = [(q.value, q.unit) for q in quants]
+    return vulist
+# tl = [oel.elementval(okep1h, 'sma'), oel.elementval(okep1h, 'ecc'), oel.elementval(okep1h, 'inc')]
 
-# Convert a Quantity to seconds as a Python float
 def timesec(t):
+    '''Convert a Quantity to seconds as a Python float'''
     if type(t) is u.Quantity and u.get_physical_type(t) == 'time':
         pt = t.si.value.tolist() # convert to seconds and get the value_unit
     elif isinstance(t, collections.abc.Iterable):

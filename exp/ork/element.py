@@ -1,4 +1,4 @@
-""""
+"""
 Orbital elements in Orekit
 """
 
@@ -12,6 +12,7 @@ from org.orekit.orbits import KeplerianOrbit, PositionAngleType
 import astro
 import cdttm
 import posvel
+import element
 import ork.force as ofr
 import ork.posvel
 
@@ -26,10 +27,7 @@ def elementval (orbit, elt, earthrad=ofr.deffe["earthrad"]):
     if isinstance(orbit, collections.abc.Iterable):
         return [elementval(orb, elt) for orb in orbit]
     else:
-        if type(orbit) is KeplerianOrbit:
-            orbkep = orbit
-        else:
-            orbkep = _convert(orbit,"kep")
+        orbkep = orbit.keplerianorbit()
         if isinstance(elt, list):
             return [_elget(orbkep, el, earthrad) for el in elt]
         else:
@@ -114,7 +112,12 @@ def keplerianorbit(oes, epoch, units=(astro.prefunits['length'], astro.prefunits
 
 def _kepler(orkobj, units=(astro.prefunits['length'], astro.prefunits['angle'])):
     '''Make a kepler u.Quantity from the Orekit object.'''
-    return element.kepler({'sma': elementval( FILL THIS IN)},
+    return element.kepler({'sma': elementval(orkobj, 'sma'),
+                           'ecc': elementval(orkobj, 'ecc'),
+                           'inc': elementval(orkobj, 'inc'),
+                           'argper': elementval(orkobj, 'argper'),
+                           'raan': elementval(orkobj, 'raan'),
+                           'ma': 0.0},
                           cdttm.dttm(orkobj.getDate()),
                           units)
 

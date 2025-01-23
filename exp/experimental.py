@@ -57,7 +57,7 @@ ckep0 = cgen.keplerianorbit() # Convert pvt0 initial state directly from generat
 koes0 = element.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25},
                       cdttm.dttm('2023-09-14T08:30:00'))
 
-kep0 = oel.kepler(*koes0)
+kep0 = oel.keplerianorbit(*koes0)
 
 kgen = prop.generate(kep0, 86400.0)
 keph = prop.propagate(kgen, proptimes, True)  # Propagate to each step, and include the initial state in the ephemeris table
@@ -65,7 +65,7 @@ keph = prop.propagate(kgen, proptimes, True)  # Propagate to each step, and incl
 # fails with KeyError: 'No matches found for key 2023-09-14 09:05:00'
 # but posvel.pvt(keph,['2023-09-14 09:05:00']) works
 
-kep20m = ork.posvel.pvt(keph[4]).keplerianorbit().kepler
+# kep20m = ork.posvel.pvt(keph[4]).keplerianorbit().kepler
 
 ################ Time series selection and manipulation
 
@@ -75,7 +75,11 @@ pvt35m = posvel.pvt(ceph,'2025-01-01 00:35:00') # PVT for 35min by time
 pvt45m = posvel.pvt(ceph, 45*u.min) # PVT for 45min by relative time
 pvt1h = posvel.pvt(ceph) # PVT at the end of the ephemeris
 pvtshift = posvel.pvt(pvt12h,1*u.day) # Shift the same posvel to 1 day later
-# kep1h = oel.kepler(pvt1h)
+# kep1h = opv.pvt(*pvt1h).kepler()
+
+# This makes a KeplerianOrbit
+okep1h = opv.pvt(*pvt1h).keplerianorbit()
+
 
 
 ################ Propagation with perturbations
