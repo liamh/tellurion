@@ -22,11 +22,6 @@ prefunits = {"time": u.second, "length": u.km, "speed": u.km/u.second,
 prefunits["posvel"] = (prefunits["length"], prefunits["speed"])
 posvelsiu = u.StructuredUnit((u.meter, u.meter/u.second))
 
-def valsunits(quants):
-    vulist = [(q.value, q.unit) for q in quants]
-    return vulist
-# tl = [oel.elementval(okep1h, 'sma'), oel.elementval(okep1h, 'ecc'), oel.elementval(okep1h, 'inc')]
-
 def timesec(t):
     '''Convert a Quantity to seconds as a Python float'''
     if type(t) is u.Quantity and u.get_physical_type(t) == 'time':
@@ -36,6 +31,23 @@ def timesec(t):
     else:
         pt = float(t) # assume seconds
     return(pt)
+
+
+def sq(values, names, sizes, phystype, unitlookup=prefunits):
+    '''Make a structured quantity from numbers'''
+    # sq([[1,2,3],[4,5,6]], ('pos','vel'), (3, 3), ('length', 'speed'))
+    # sq([12345.0, 45.0], ('sma','inc'), (1,1), ('length', 'angle'))
+    def scvec(size):
+        if size==1:
+            return f"f8"
+        else:
+            return f"({size},)f8"
+    dtype = [(n, scvec(s)) for (n, s) in zip(names, sizes)]
+    npa = np.array(tuple(values), dtype = dtype)
+    units = tuple([unitlookup[pt] for pt in phystype])
+    return u.Quantity(npa, u.StructuredUnit(units))
+# Now have it take u.Q as input
+# tl = [oel.elementval(okep1h, 'sma'), oel.elementval(okep1h, 'ecc'), oel.elementval(okep1h, 'inc')]
 
 ################################################################################
 ## Time series and Tables
