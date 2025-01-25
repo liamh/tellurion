@@ -40,17 +40,18 @@ Vector3D.quant = lambda self, unit: u.Quantity([self.x, self.y, self.z], unit)
 ####  PVT tuple to and from Orekit  ####
 ########################################
 
-def _pvtork(pvc):
+def _pvtork(pvc, unitlookup):
     '''Convert Orekit objects to a PVT tuple, called through methods below'''
     pos = [pvc.position.x, pvc.position.y, pvc.position.z]
     vel = [pvc.velocity.x, pvc.velocity.y, pvc.velocity.z]
+    pv = astro.changeunits(posvel.pv(pos, vel, astro.orkunits), unitlookup)
     if type(pvc) is TimeStampedPVCoordinates:
-        return posvel.pv(posvel.pv(pos, vel, astro.posvelsiu), None), cdttm.dttm(pvc.date)
+        return pv, cdttm.dttm(pvc.date)
     else:
-        return posvel.pv(posvel.pv(pos, vel, astro.posvelsiu), None)
-TimeStampedPVCoordinates.pvt = lambda self: _pvtork(self)
-PVCoordinates.pvt = lambda self: _pvtork(self)
-Orbit.pvt = lambda self: _pvtork(self.pVCoordinates)
+        return pv
+TimeStampedPVCoordinates.pvt = lambda self, unitlookup=astro.prefunits: _pvtork(self, unitlookup)
+PVCoordinates.pvt = lambda self, unitlookup=astro.prefunits: _pvtork(self, unitlookup)
+Orbit.pvt = lambda self, unitlookup=astro.prefunits: _pvtork(self.pVCoordinates, unitlookup)
 
 def pvt(pv, time=None):
     '''Convert PVT to TimeStampedPVCoordinates or PV to PVCoordinates'''

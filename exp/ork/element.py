@@ -117,7 +117,7 @@ def _kepler(orkobj, units=(astro.prefunits['length'], astro.prefunits['angle']))
                            'inc': elementval(orkobj, 'inc'),
                            'argper': elementval(orkobj, 'argper'),
                            'raan': elementval(orkobj, 'raan'),
-                           'ma': 0.0},
+                           'ma': elementval(orkobj, 'ma')},
                           cdttm.dttm(orkobj.getDate()),
                           units)
 

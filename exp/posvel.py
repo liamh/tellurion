@@ -63,18 +63,13 @@ def isephrow(row):
 ####   Make posvel and related types          ####
 ##################################################
 
-def pv(pos, vel, units=astro.prefunits["posvel"]):
-    '''Make a posvel from separate position and velocity; if argument `pos` is a posvel, then convert units'''
-    # See https://docs.astropy.org/en/stable/units/structured_units.html#example
-    if ispv(pos):
-        return(pos.to(units))
-    if isq3vec(pos, 'length') and isq3vec(vel, 'speed'):
-        return(pv(pos.value, vel.value, u.StructuredUnit((pos.unit, vel.unit))).to(units))
+def pv(position, velocity, unitlookup=astro.prefunits):
+    '''Make a posvel from separate position and velocity; if argument `position` is a posvel, then convert units'''
+    if ispv(position):
+        return(position.to(unitlookup['length']))
     else:
-        pvtype = [(_eph_pos, '(3,)f8'), (_eph_vel, '(3,)f8')]
-        npa = np.array((pos, vel), dtype = pvtype)
-        pvq = u.Quantity(npa, u.StructuredUnit(units))
-        return(pvq)
+        return astro.makesq((position, velocity), (_eph_pos, _eph_vel), \
+                            phystype=('length','speed'), unitlookup=unitlookup)
 
 ##################################################
 #### Dates, times, and PVT                    ####

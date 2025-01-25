@@ -21,6 +21,9 @@ prefunits = {"time": u.second, "length": u.km, "speed": u.km/u.second,
              "dimensionless": u.dimensionless_unscaled}
 prefunits["posvel"] = (prefunits["length"], prefunits["speed"])
 posvelsiu = u.StructuredUnit((u.meter, u.meter/u.second))
+orkunits = {"time": u.second, "length": u.m, "speed": u.m/u.second,
+             "angle": u.radian, "angular speed": u.radian/u.second,
+             "dimensionless": u.dimensionless_unscaled}
 
 def timesec(t):
     '''Convert a Quantity to seconds as a Python float'''
@@ -33,21 +36,86 @@ def timesec(t):
     return(pt)
 
 
-def sq(values, names, sizes, phystype, unitlookup=prefunits):
-    '''Make a structured quantity from numbers'''
-    # sq([[1,2,3],[4,5,6]], ('pos','vel'), (3, 3), ('length', 'speed'))
-    # sq([12345.0, 45.0], ('sma','inc'), (1,1), ('length', 'angle'))
+# sq1 = makesq([[1,2,3],[4,5,6]], ('pos','vel'), phystype=('length', 'speed'))
+# sq2 = makesq([12345.0, 45.0], ('sma','inc'), phystype=('length', 'angle'))
+# sq3 = makesq([12345.0, 45.0], ('sma','inc'), ('km', 'deg'))
+# sq4 = makesq([12345.0*u.km, 45.0*u.deg], ('sma','inc'), ('meter', 'radian'))
+
+# sq2split = splitsq(sq2)
+# sq2sq = makesq(*sq2split)
+
+# kep1vals = {"argper":66.0, "ecc":0.1, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25, "sma":8000.0}
+# kep1pt = {"sma":'length', "ecc":'dimensionless', "inc":'angle', "argper":'angle', "raan":'angle', "ma":'angle'}
+# kep1 = makesq(kep1vals, phystype=kep1pt)
+
+def makesq(values, names=None, units=None, phystype=None, unitlookup=prefunits):
+    '''Make a structured quantity from numbers or quantities; either `units` or
+    `phystype` and `unitlookup` must be defined.'''
+    def conv(val, unit):
+        if type(val) is u.Quantity:
+            return val.to(unit).value
+        else:
+            return val
     def scvec(size):
         if size==1:
             return f"f8"
         else:
             return f"({size},)f8"
+    def pqlen(item):
+        if type(item) is u.Quantity:
+            if type(item.value) is np.ndarray:
+                return len(item)
+            else:
+                return 1
+        else:
+            if type(item) is list or type(item) is tuple or type(item) is np.ndarray:
+                return len(item)
+            else:
+                return 1
+    if type(values) is dict:
+        names = tuple(values.keys())
+        vals = tuple(values.values())
+        if type(vals[0]) is u.Quantity:
+            units = tuple([v.unit for v in vals])
+            vals = tuple([v.value for v in vals])
+        else:
+            # If values is a dict, units/phystype must also be a dict
+            if units==None:
+                units = tuple([unitlookup[phystype[nm]] for nm in names])
+            else:
+                units = tuple(units[nm] for nm in names) # units must also be a dict
+    else:
+        if units==None:
+            if phystype==None: # values is a quantity
+                units = tuple([v.unit for v in values])
+                vals = tuple([v.value for v in values])
+            else:
+                units = tuple([unitlookup[pt] for pt in phystype])
+                vals = tuple([conv(v, u) for (v, u) in zip(values, units)])
+        else:
+            vals = values
+    sizes = [pqlen(v) for v in vals]
     dtype = [(n, scvec(s)) for (n, s) in zip(names, sizes)]
-    npa = np.array(tuple(values), dtype = dtype)
-    units = tuple([unitlookup[pt] for pt in phystype])
+    npa = np.array(tuple(vals), dtype = dtype)
     return u.Quantity(npa, u.StructuredUnit(units))
-# Now have it take u.Q as input
-# tl = [oel.elementval(okep1h, 'sma'), oel.elementval(okep1h, 'ecc'), oel.elementval(okep1h, 'inc')]
+
+def splitsq(stqu, quant=True):
+    '''Make a dict of names and quantities, or values, names, and units from the structured quantity'''
+    if quant:
+        vnu = splitsq(stqu, False)
+        qs = [v*u for (v, u) in zip(vnu[0], vnu[2])]
+        return {un:val for (val, un) in zip(qs, vnu[1])}
+    else:
+        return (stqu.value.tolist(), stqu.dtype.names, stqu.unit.values())
+
+def changeunits(qsq, unitlookup=prefunits):
+    '''Change the units for the quantity or structured quantity to the system of units.'''
+    if type(qsq.unit) is u.StructuredUnit:
+        tounits = u.StructuredUnit(tuple([unitlookup[u.get_physical_type(un)._physical_type_list[0]] \
+                                          for un in qsq.unit.values()]))
+    else:
+        tounits = unitlookup[u.get_physical_type(qsq.unit)._physical_type_list[0]]
+    return qsq.to(tounits)
 
 ################################################################################
 ## Time series and Tables

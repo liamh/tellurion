@@ -24,6 +24,7 @@ pvt0 = posvel.pvt((p0,v0,newyear))  # A tuple (Quantity, Time)
 
 # Orekit representations
 opvt0 = ork.posvel.pvt(*pvt0)           # org.orekit.utils.TimeStampedPVCoordinates
+okep0 = opvt0.kepler()
 ocartorb0 = opvt0.cartesianorbit()  # org.orekit.orbits.CartesianOrbit
 okeporb0 = opvt0.keplerianorbit()   # org.orekit.orbits.KeplerianOrbit
 
@@ -42,13 +43,14 @@ proptimes = np.linspace(5.0*u.minute, 60.0*u.minute, 12) # Step every 5 minutes 
 ceph = prop.propagate(cgen, proptimes, True)  # Propagate to each step, and include the initial state in the ephemeris table
 pvt12h = prop.propagate(cgen, 12*u.hour) # Propagate to a single time, as a PVT
 
-ckep0 = cgen.keplerianorbit() # Convert pvt0 initial state directly from generator
+ckep0 = cgen.kepler() # Convert pvt0 initial state directly from generator
+cpvt0 = cgen.pvt() # Convert pvt0 initial state directly from generator
 
 # caltperapo = oel.tselements(ceph, ["altper","altapo"]) # TimeTable of altitudes of perigee and apogee
 # capa = astro.hcat(ceph, caltperapo) # Ephemeris table with additional columns for perige and apogee altitude
 
 # orb1h = ork.posvel.pvt(*pvt1h).cartesianorbit()
-# pvt1h, opv._pvtork(kep1h) are equal but can't be compared, u.allclose does not work on the pv part
+# pvt1h, ork.posvel._pvtork(kep1h) are equal but can't be compared, u.allclose does not work on the pv part
 # https://github.com/astropy/astropy/issues/17602, it is a numpy issue https://github.com/numpy/numpy/issues/28104
 
 
@@ -65,7 +67,7 @@ keph = prop.propagate(kgen, proptimes, True)  # Propagate to each step, and incl
 # fails with KeyError: 'No matches found for key 2023-09-14 09:05:00'
 # but posvel.pvt(keph,['2023-09-14 09:05:00']) works
 
-# kep20m = ork.posvel.pvt(keph[4]).keplerianorbit().kepler
+# kep20m = ork.posvel.pvt(keph[4]).keplerianorbit().kepler()
 
 ################ Time series selection and manipulation
 
@@ -75,10 +77,10 @@ pvt35m = posvel.pvt(ceph,'2025-01-01 00:35:00') # PVT for 35min by time
 pvt45m = posvel.pvt(ceph, 45*u.min) # PVT for 45min by relative time
 pvt1h = posvel.pvt(ceph) # PVT at the end of the ephemeris
 pvtshift = posvel.pvt(pvt12h,1*u.day) # Shift the same posvel to 1 day later
-# kep1h = opv.pvt(*pvt1h).kepler()
+# kep1h = ork.posvel.pvt(*pvt1h).kepler()
 
 # This makes a KeplerianOrbit
-okep1h = opv.pvt(*pvt1h).keplerianorbit()
+okep1h = ork.posvel.pvt(*pvt1h).keplerianorbit()
 
 
 

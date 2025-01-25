@@ -2,17 +2,16 @@ import numpy as np
 import astropy.units as u
 import astro
 
+# kep1 = kepler({"ecc":0.1, "sma":8000.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25})
 def kepler(oes, dttm=None, units=(astro.prefunits['length'], astro.prefunits['angle'])):
     '''Make a Kepler orbital element set with either mean or true anomaly as the time element.'''
     if 'ma' in oes:
-        keptype = [('sma', 'f8'), ('ecc', 'f8'), ('inc', 'f8'), ('argper', 'f8'), ('raan', 'f8'), ('ma', 'f8')]
+        keppt = {"sma":'length', "ecc":'dimensionless', "inc":'angle', "argper":'angle', "raan":'angle', "ma":'angle'}
     else:
-        keptype = [('sma', 'f8'), ('ecc', 'f8'), ('inc', 'f8'), ('argper', 'f8'), ('raan', 'f8'), ('ta', 'f8')]
-    npa = np.array((oes[keptype[0][0]], oes[keptype[1][0]], oes[keptype[2][0]], \
-                    oes[keptype[3][0]], oes[keptype[4][0]], oes[keptype[5][0]]), dtype = keptype)
-    kep = u.Quantity(npa, u.StructuredUnit((units[0], u.dimensionless_unscaled, units[1], \
-                                            units[1], units[1], units[1])))
+        keppt = {"sma":'length', "ecc":'dimensionless', "inc":'angle', "argper":'angle', "raan":'angle', "ta":'angle'}
+    ordoes = {k:oes[k] for k in keppt.keys()}
+    kepsq = astro.makesq(ordoes, phystype=keppt)
     if dttm==None:
-        return kep
+        return kepsq
     else:
-        return (kep, dttm)
+        return (kepsq, dttm)

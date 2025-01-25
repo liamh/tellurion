@@ -98,8 +98,12 @@ def propagate(generator, reltimes, include_init=True):
     else:
         return generator.propagate(generator.getMinDate().shiftedBy(rts)).orbit.pvt()
 
-SpacecraftState.pvt = lambda self: opv.pvtork(self.pVCoordinates)
+# The following return AstroPy objects
+SpacecraftState.pvt = lambda self, unitlookup=astro.prefunits: ork.posvel._pvtork(self.pVCoordinates, unitlookup)
 BoundedPropagator.pvt = lambda self: self.initialState.pvt()
+SpacecraftState.kepler = lambda self: self.orbit.kepler()
+BoundedPropagator.kepler  = lambda self: self.initialState.kepler()
+# The following return Orekit objects
 SpacecraftState.cartesianorbit = lambda self: CartesianOrbit.cast_(OrbitType.CARTESIAN.convertType(self))
 BoundedPropagator.cartesianorbit  = lambda self: self.initialState.cartesianorbit()
 SpacecraftState.keplerianorbit = lambda self: self.orbit.keplerianorbit()
