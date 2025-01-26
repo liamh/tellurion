@@ -17,7 +17,7 @@ import astro
 #from .
 import posvel
 #from .
-import ork.force as ofr
+import ork.force
 
 ########################################
 ####    Vector3D                    ####
@@ -75,6 +75,6 @@ def pvt(pv, time=None):
 ####       Convert Cartesian        ####
 ########################################
 
-TimeStampedPVCoordinates.cartesianorbit = lambda self, fe=ofr.deffe: \
+TimeStampedPVCoordinates.cartesianorbit = lambda self, fe=ork.force.deffe: \
     CartesianOrbit(self, fe['celestialframe'], fe['earthmu'])
 Orbit.cartesianorbit = lambda self: CartesianOrbit.cast_(OrbitType.CARTESIAN.convertType(self))

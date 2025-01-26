@@ -2,6 +2,7 @@ import collections
 import collections.abc
 import astropy.time
 from astropy.timeseries import TimeSeries
+import orekit
 from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit
 from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
@@ -10,19 +11,23 @@ from org.orekit.propagation.events import AltitudeDetector
 import org.orekit.forces.gravity as okgrav
 
 import astro
-import orekit
-import ork.force as ofr
-import ork.posvel
 import posvel
+import element
+import ork.force
+import ork.posvel
 
-def generate(initstate, proptime, forceenv=ofr.deffe, stopalt=125.0e3):
-    """
-        Make a generator for an ephemeris; the output is the first argument of propagate()
+def generate(initstate, proptime, forceenv=ork.force.deffe, stopalt=125.0e3):
+    """Make a generator for an ephemeris; the output is passed to
+    propagate() as the first argument. If epoch time of the initial
+    state is not specified, the current time is used. The initial
+    state is a posvel or an element set, or an Orekit representation
+    of those.
 
-        initstate: the initial state
-        proptime:  the maximum time (s) to propagate
-        forceenv:  forces to use
-        stopalt:   lowest altitude above spherical earth (m) to propagate
+    initstate: The initial state, either a state (posvel or element set) or a tuple of (state, epoch)
+    proptime:  the maximum time (s) to propagate
+    forceenv:  forces to use
+    stopalt:   lowest altitude above spherical earth (m) to propagate
+
     """
 
     if posvel.ispvt(initstate):
@@ -31,6 +36,11 @@ def generate(initstate, proptime, forceenv=ofr.deffe, stopalt=125.0e3):
     elif posvel.ispv(initstate):
         pvt0 = posvel.pvt((initstate, posvel.nowutc()))
         ork0 = ork.posvel.pvt(*pvt0).cartesianorbit(forceenv)
+    elif element.iskepels(initstate):
+        if type(initstate) is tuple:
+            ork0 = ork.element.keplerianorbit(*initstate)
+        else:
+            ork0 = ork.element.keplerianorbit(initstate, posvel.nowutc())
     elif hasattr(initstate, 'cartesianorbit'):
         ork0 = initstate.cartesianorbit()
     else:

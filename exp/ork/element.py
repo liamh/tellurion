@@ -13,10 +13,10 @@ import astro
 import cdttm
 import posvel
 import element
-import ork.force as ofr
+import ork.force
 import ork.posvel
 
-def elementval (orbit, elt, earthrad=ofr.deffe["earthrad"]):
+def elementval (orbit, elt, earthrad=ork.force.deffe["earthrad"]):
     """
     Compute the orbital element from the orbit
     Arguments
@@ -84,9 +84,7 @@ def tselements(ephem, elements):
 ####    Make Kepler element set     ####
 ########################################
 
-import ork.force as ofr
-
-def keplerianorbit(oes, epoch, units=(astro.prefunits['length'], astro.prefunits['angle']), fe=ofr.deffe):
+def keplerianorbit(oes, epoch, units=(astro.prefunits['length'], astro.prefunits['angle']), fe=ork.force.deffe):
     '''Make a org.orekit.orbits.KeplerianOrbit from orbital elements as a u.Quantity or Dict'''
     if type(oes) is dict:
         oes = element.kepler(oes, None, units)
@@ -127,16 +125,16 @@ def _kepler(orkobj, units=(astro.prefunits['length'], astro.prefunits['angle']))
 
 
 # Convert to KeplerianOrbit (Orekit)
-TimeStampedPVCoordinates.keplerianorbit = lambda self, gravity=ofr.deffe: self.cartesianorbit(gravity).keplerianorbit()
+TimeStampedPVCoordinates.keplerianorbit = lambda self, gravity=ork.force.deffe: self.cartesianorbit(gravity).keplerianorbit()
 Orbit.keplerianorbit = lambda self: KeplerianOrbit.cast_(OrbitType.KEPLERIAN.convertType(self))
 
 # Convert to kepler (u.Quantity)
 TimeStampedPVCoordinates.kepler = \
     lambda self, units=(astro.prefunits['length'], astro.prefunits['angle']): \
-        self.cartesianorbit(ofr.deffe).kepler(units)
+        self.cartesianorbit(ork.force.deffe).kepler(units)
 Orbit.kepler = lambda self, units=(astro.prefunits['length'], astro.prefunits['angle']): _kepler(self, units)
 
 # Circular orbit
 TimeStampedPVCoordinates.circularorbit = \
-    lambda self, gravity=ofr.deffe: CircularOrbit(self, gravity['celestialframe'], gravity['earthmu'])
+    lambda self, gravity=ork.force.deffe: CircularOrbit(self, gravity['celestialframe'], gravity['earthmu'])
 Orbit.circularorbit = lambda self: CircularOrbit(self)

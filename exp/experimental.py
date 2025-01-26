@@ -8,8 +8,8 @@ from astropy.timeseries import TimeSeries
 import posvel
 import ork.init
 import ork.posvel
-import ork.element as oel
-import ork.force as ofr
+import ork.element
+import ork.force
 import prop
 import astro
 import cdttm
@@ -24,9 +24,12 @@ pvt0 = posvel.pvt((p0,v0,newyear))  # A tuple (Quantity, Time)
 
 # Orekit representations
 opvt0 = ork.posvel.pvt(*pvt0)           # org.orekit.utils.TimeStampedPVCoordinates
-okep0 = opvt0.kepler()
 ocartorb0 = opvt0.cartesianorbit()  # org.orekit.orbits.CartesianOrbit
 okeporb0 = opvt0.keplerianorbit()   # org.orekit.orbits.KeplerianOrbit
+
+# AstroPy representations
+okep0 = opvt0.kepler()
+
 
 # Get the pvt back
 pvt_opvt0 = opvt0.pvt()
@@ -46,7 +49,7 @@ pvt12h = prop.propagate(cgen, 12*u.hour) # Propagate to a single time, as a PVT
 ckep0 = cgen.kepler() # Convert pvt0 initial state directly from generator
 cpvt0 = cgen.pvt() # Convert pvt0 initial state directly from generator
 
-# caltperapo = oel.tselements(ceph, ["altper","altapo"]) # TimeTable of altitudes of perigee and apogee
+# caltperapo = ork.element.tselements(ceph, ["altper","altapo"]) # TimeTable of altitudes of perigee and apogee
 # capa = astro.hcat(ceph, caltperapo) # Ephemeris table with additional columns for perige and apogee altitude
 
 # orb1h = ork.posvel.pvt(*pvt1h).cartesianorbit()
@@ -58,16 +61,18 @@ cpvt0 = cgen.pvt() # Convert pvt0 initial state directly from generator
 
 koes0 = element.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25},
                       cdttm.dttm('2023-09-14T08:30:00'))
-
-kep0 = oel.keplerianorbit(*koes0)
-
-kgen = prop.generate(kep0, 86400.0)
+kgen = prop.generate(koes0, 86400.0)
 keph = prop.propagate(kgen, proptimes, True)  # Propagate to each step, and include the initial state in the ephemeris table
 # posvel.pvt(keph, 35*u.min)
 # fails with KeyError: 'No matches found for key 2023-09-14 09:05:00'
 # but posvel.pvt(keph,['2023-09-14 09:05:00']) works
 
-# kep20m = ork.posvel.pvt(keph[4]).keplerianorbit().kepler()
+kkep0 = kgen.kepler() # Initial state as Kepler
+kpvt0 = kgen.pvt()    # Initial state as PVT
+
+kep20m_pvt = posvel.pvt(keph[4])      # PVT at 20 minutes from ephemeris
+kep20m_opvt = ork.posvel.pvt(keph[4]) # PVT at 20 minutes from ephemeris via Orekit
+kep20m_kep = kep20m_opvt.kepler()     # Kepler elements at 20 minutes
 
 ################ Time series selection and manipulation
 
@@ -86,7 +91,7 @@ okep1h = ork.posvel.pvt(*pvt1h).keplerianorbit()
 
 ################ Propagation with perturbations
 
-fe4x4 = ofr.setgravity(4,4)
+fe4x4 = ork.force.setgravity(4,4)
 cgen4x4 = prop.generate(pvt0, 86400.0, fe4x4)
 ceph4x4 = prop.propagate(cgen4x4, proptimes, True)
 ceph4x4_posdiff = posvel.magdiff(ceph4x4['position'], ceph['position'])

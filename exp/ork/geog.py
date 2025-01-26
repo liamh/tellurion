@@ -17,7 +17,7 @@ import org.orekit.models.earth as oearth
 import geog
 import posvel
 import cdttm
-import ork.force as ofr
+import ork.force
 
 def geodpt(earthloc):
     '''Create the Orekit GeodeticPoint from an AstroPy EarthLocation'''
@@ -27,7 +27,7 @@ def geodpt(earthloc):
     altitude_m = float(geod.height.si.value)
     return GeodeticPoint(lat_rdn, lon_rdn, altitude_m)
 
-def eciobs(loc, observation=None, name='eci obs', forceenv=ofr.deffe):
+def eciobs(loc, observation=None, name='eci obs', forceenv=ork.force.deffe):
     '''Find the ECI position and time of the observations made from
     the location. If observation is a Time or multiple times, find the site
     vector(s). Uses Orekit.'''
