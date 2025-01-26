@@ -49,13 +49,12 @@ pvt12h = prop.propagate(cgen, 12*u.hour) # Propagate to a single time, as a PVT
 ckep0 = cgen.kepler() # Convert pvt0 initial state directly from generator
 cpvt0 = cgen.pvt() # Convert pvt0 initial state directly from generator
 
-# caltperapo = ork.element.tselements(ceph, ["altper","altapo"]) # TimeTable of altitudes of perigee and apogee
-# capa = astro.hcat(ceph, caltperapo) # Ephemeris table with additional columns for perige and apogee altitude
+caltperapo = ork.element.tselements(ceph, ["altper","altapo"]) # TimeTable of altitudes of perigee and apogee
+capa = astro.hcat(ceph, caltperapo) # Ephemeris table with additional columns for perige and apogee altitude
 
-# orb1h = ork.posvel.pvt(*pvt1h).cartesianorbit()
+# orb1h_ork = ork.posvel.pvt(*pvt1h).cartesianorbit()
 # pvt1h, ork.posvel._pvtork(kep1h) are equal but can't be compared, u.allclose does not work on the pv part
 # https://github.com/astropy/astropy/issues/17602, it is a numpy issue https://github.com/numpy/numpy/issues/28104
-
 
 ################ Propagation Kepler element
 

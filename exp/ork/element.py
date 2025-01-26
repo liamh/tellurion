@@ -16,6 +16,16 @@ import element
 import ork.force
 import ork.posvel
 
+########################################
+####    Element values              ####
+########################################
+
+def tselements(ephem, elements):
+    '''Make a time series of selected orbital elements'''
+    return TimeSeries(time=ephem.time,
+                      data=[dict(zip(elements, elementval(ephrow, elements)))
+                            for ephrow in ephem])
+
 def elementval (orbit, elt, earthrad=ork.force.deffe["earthrad"]):
     """
     Compute the orbital element from the orbit
@@ -24,7 +34,9 @@ def elementval (orbit, elt, earthrad=ork.force.deffe["earthrad"]):
       elt:  the orbital element desired, see list eldict.keys(); may be a list, e.g. ["sma", "ecc"]
       earthrad: the radius of the earth, necessary to provide for altitudes of perigee and apogee
     """
-    if isinstance(orbit, collections.abc.Iterable):
+    if posvel.isephrow(orbit):
+        return elementval(ork.posvel.pvt(orbit), elt, earthrad)
+    elif isinstance(orbit, collections.abc.Iterable):
         return [elementval(orb, elt) for orb in orbit]
     else:
         orbkep = orbit.keplerianorbit()
@@ -73,12 +85,6 @@ def _orkkep(el, oes):
 
 def _makekep(elvald):
     return {e: _elmake(e, elvald[e]) for e in elvald}
-
-## Time series of orbital elements
-def tselements(ephem, elements):
-    return TimeSeries(time=ephem.time,
-                      data=[dict(zip(elements, elementval(kepler(orb), elements)))
-                            for orb in ephem])
 
 ########################################
 ####    Make Kepler element set     ####

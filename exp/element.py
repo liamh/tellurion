@@ -1,6 +1,7 @@
 import numpy as np
 import astropy.units as u
 from astropy.time import Time
+from astropy.timeseries import TimeSeries
 import astro
 
 # kep1 = kepler({"ecc":0.1, "sma":8000.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25})

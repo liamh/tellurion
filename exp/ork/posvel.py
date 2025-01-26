@@ -54,7 +54,7 @@ PVCoordinates.pvt = lambda self, unitlookup=astro.prefunits: _pvtork(self, unitl
 Orbit.pvt = lambda self, unitlookup=astro.prefunits: _pvtork(self.pVCoordinates, unitlookup)
 
 def pvt(pv, time=None):
-    '''Convert PVT to TimeStampedPVCoordinates or PV to PVCoordinates'''
+    '''Convert PVT or ephemeris row to TimeStampedPVCoordinates or PV to PVCoordinates'''
     if posvel.isephrow(pv):
         (pv, tpvt) = posvel.pvt(pv)
         if time==None:
