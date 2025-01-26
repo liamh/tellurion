@@ -5,12 +5,12 @@ import datetime
 import numpy as np
 import astropy.units as u
 import astropy.coordinates as coord
+import astropy.time
 from astropy.timeseries import TimeSeries
 import astropy.table.row
 import astropy.coordinates as coord
 # from . import astro
 import astro
-import cdttm
 
 ##################################################
 ####   Constants used to define field names   ####
@@ -75,6 +75,13 @@ def pv(position, velocity, unitlookup=astro.prefunits):
 #### Dates, times, and PVT                    ####
 ##################################################
 
+def dttm(obj):
+    """Convert the object to an astropy.time.Time dttm"""
+    if type(obj) is str:
+        return astropy.time.Time(np.datetime64(obj), scale='utc')
+    else:
+        return astropy.time.Time(obj)
+
 def nowutc():
     """
     The time now (in UTC) as dttm.
@@ -103,7 +110,7 @@ def pvt(obj, item=None):
             row = obj[item]
         except:
             try:
-                row = obj.loc[cdttm.dttm(item)]
+                row = obj.loc[dttm(item)]
             except:
                 row = obj.loc[obj[0]['time'] + item]
         return pvt(row)
@@ -113,7 +120,7 @@ def pvt(obj, item=None):
             return (obj, nowutc())
         else:
             # Add the specified time to the PV
-            return (obj, cdttm.dttm(item))
+            return (obj, dttm(item))
     elif ispvt(obj):
         if isdttm(item):
             # Replace the timestamp in the PVT

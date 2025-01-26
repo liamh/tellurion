@@ -9,7 +9,6 @@ import astropy.units as u
 import astropy.coordinates as coord
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
-import cdttm
 import posvel
 import geonames
 

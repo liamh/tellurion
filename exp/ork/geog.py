@@ -16,8 +16,8 @@ import org.orekit.models.earth as oearth
 
 import geog
 import posvel
-import cdttm
 import ork.force
+import ork.posvel
 
 def geodpt(earthloc):
     '''Create the Orekit GeodeticPoint from an AstroPy EarthLocation'''
@@ -52,6 +52,6 @@ def eciobs(loc, observation=None, name='eci obs', forceenv=ork.force.deffe):
         ts[name].info.format = posvel._pos_format
         return ts
     else:
-        posv3d = tf.getPVCoordinates(cdttm.okad(dttm), forceenv['celestialframe']).getPosition()
+        posv3d = tf.getPVCoordinates(ork.posvel.okad(dttm), forceenv['celestialframe']).getPosition()
         pos = posvel.makepos(posv3d.quant(u.m))
         return posvel.makept(pos, dttm)

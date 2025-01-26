@@ -10,7 +10,6 @@ from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.orekit.orbits import KeplerianOrbit, PositionAngleType
 
 import astro
-import cdttm
 import posvel
 import element
 import ork.force
@@ -101,14 +100,14 @@ def keplerianorbit(oes, epoch, units=(astro.prefunits['length'], astro.prefunits
                               float(oessi['argper']), float(oessi['raan']), \
                               float(oessi['ma']), PositionAngleType.MEAN, \
                               fe['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                              cdttm.okad(epoch),   # Sets the date of the orbital parameters
+                              ork.posvel.okad(epoch),   # Sets the date of the orbital parameters
                               fe['earthmu'])   # Sets the central attraction coefficient (m³/s²)
     elif 'ta' in oessi.dtype.names:
         return KeplerianOrbit(float(oessi['sma']), float(oessi['ecc']), float(oessi['inc']), \
                               float(oessi['argper']), float(oessi['raan']), \
                               float(oessi['ma']), PositionAngleType.TRUE, \
                               fe['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                              cdttm.okad(epoch),   # Sets the date of the orbital parameters
+                              ork.posvel.okad(epoch),   # Sets the date of the orbital parameters
                               fe['earthmu'])   # Sets the central attraction coefficient (m³/s²)
     else:
         raise ValueError('Time element (ma or ta) required in element set')
@@ -122,7 +121,7 @@ def _kepler(orkobj, units=(astro.prefunits['length'], astro.prefunits['angle']))
                            'argper': elementval(orkobj, 'argper'),
                            'raan': elementval(orkobj, 'raan'),
                            'ma': elementval(orkobj, 'ma')},
-                          cdttm.dttm(orkobj.getDate()),
+                          ork.posvel.okad(orkobj.getDate()),
                           units)
 
 ########################################
