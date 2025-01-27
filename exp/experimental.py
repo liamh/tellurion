@@ -20,15 +20,16 @@ p0 = [5740.13268349, 3314.06715   ,    0.]
 v0 = [-2.75082684,  4.76457184,  5.50165367]
 newyear = posvel.dttm('2025-01-01T00:00:00')
 pvt0 = posvel.pvt((p0,v0,newyear))  # A tuple (Quantity, Time)
+kep0 = ork.element.kepler(pvt0)  # Convert PVT to Kepler elements
+dict_kep0 = astro.splitsq(kep0[0])  # Easier to read Kepler elements
 
 # Orekit representations
-opvt0 = ork.posvel.pvt(*pvt0)           # org.orekit.utils.TimeStampedPVCoordinates
+opvt0 = ork.posvel.tspvc(*pvt0)           # org.orekit.utils.TimeStampedPVCoordinates
 ocartorb0 = opvt0.cartesianorbit()  # org.orekit.orbits.CartesianOrbit
 okeporb0 = opvt0.keplerianorbit()   # org.orekit.orbits.KeplerianOrbit
 
 # AstroPy representations
 okep0 = opvt0.kepler()
-
 
 # Get the pvt back
 pvt_opvt0 = opvt0.pvt()
@@ -51,7 +52,7 @@ cpvt0 = cgen.pvt() # Convert pvt0 initial state directly from generator
 caltperapo = ork.element.tselements(ceph, ["altper","altapo"]) # TimeTable of altitudes of perigee and apogee
 capa = astro.hcat(ceph, caltperapo) # Ephemeris table with additional columns for perige and apogee altitude
 
-# orb1h_ork = ork.posvel.pvt(*pvt1h).cartesianorbit()
+# orb1h_ork = ork.posvel.tspvc(*pvt1h).cartesianorbit()
 # pvt1h, ork.posvel._pvtork(kep1h) are equal but can't be compared, u.allclose does not work on the pv part
 # https://github.com/astropy/astropy/issues/17602, it is a numpy issue https://github.com/numpy/numpy/issues/28104
 
@@ -59,6 +60,8 @@ capa = astro.hcat(ceph, caltperapo) # Ephemeris table with additional columns fo
 
 koes0 = element.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25},
                       posvel.dttm('2023-09-14T08:30:00'))
+koes0pvt = ork.posvel.pvt(*koes0) # Convert Kepler elements to PVT
+
 kgen = ork.prop.generate(koes0, 86400.0)
 keph = ork.prop.propagate(kgen, proptimes, True)  # Propagate to each step, and include the initial state in the ephemeris table
 # posvel.pvt(keph, 35*u.min)
@@ -69,7 +72,7 @@ kkep0 = kgen.kepler() # Initial state as Kepler
 kpvt0 = kgen.pvt()    # Initial state as PVT
 
 kep20m_pvt = posvel.pvt(keph[4])      # PVT at 20 minutes from ephemeris
-kep20m_opvt = ork.posvel.pvt(keph[4]) # PVT at 20 minutes from ephemeris via Orekit
+kep20m_opvt = ork.posvel.tspvc(keph[4]) # PVT at 20 minutes from ephemeris via Orekit
 kep20m_kep = kep20m_opvt.kepler()     # Kepler elements at 20 minutes
 
 ################ Time series selection and manipulation
@@ -80,12 +83,7 @@ pvt35m = posvel.pvt(ceph,'2025-01-01 00:35:00') # PVT for 35min by time
 pvt45m = posvel.pvt(ceph, 45*u.min) # PVT for 45min by relative time
 pvt1h = posvel.pvt(ceph) # PVT at the end of the ephemeris
 pvtshift = posvel.pvt(pvt12h,1*u.day) # Shift the same posvel to 1 day later
-# kep1h = ork.posvel.pvt(*pvt1h).kepler()
-
-# This makes a KeplerianOrbit
-okep1h = ork.posvel.pvt(*pvt1h).keplerianorbit()
-
-
+kep1h = ork.element.kepler(pvt1h)  # Convert PVT to Kepler elements
 
 ################ Propagation with perturbations
 

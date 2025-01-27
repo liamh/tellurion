@@ -23,6 +23,14 @@ import ork.force
 import ork.posvel
 
 ########################################
+#### Convert element set to PVT     ####
+########################################
+
+def pvt(elset, time):
+    '''Convert an orbital element set to Cartesian PVT'''
+    return ork.element.keplerianorbit(elset, time).pvt()
+
+########################################
 ####    Vector3D                    ####
 ########################################
 
@@ -69,16 +77,16 @@ TimeStampedPVCoordinates.pvt = lambda self, unitlookup=astro.prefunits: _pvtork(
 PVCoordinates.pvt = lambda self, unitlookup=astro.prefunits: _pvtork(self, unitlookup)
 Orbit.pvt = lambda self, unitlookup=astro.prefunits: _pvtork(self.pVCoordinates, unitlookup)
 
-def pvt(pv, time=None):
+def tspvc(pv, time=None):
     '''Convert PVT or ephemeris row to TimeStampedPVCoordinates or PV to PVCoordinates'''
     if posvel.isephrow(pv):
         (pv, tpvt) = posvel.pvt(pv)
         if time==None:
-            return pvt(pv, tpvt)
+            return tspvc(pv, tpvt)
         elif isdttm(time):
-            return pvt(pv, time)
+            return tspvc(pv, time)
         elif isreltime(time):
-            return pvt(pv, tpvt+time)
+            return tspvc(pv, tpvt+time)
     conv = pv.to(astro.posvelsiu)
     vecp = v3d(conv[posvel._eph_pos].value)
     vecv = v3d(conv[posvel._eph_vel].value)

@@ -16,6 +16,14 @@ import ork.force
 import ork.posvel
 
 ########################################
+####  Convert PVT to Kepler elset   ####
+########################################
+
+def kepler(pvt, units=(astro.prefunits['length'], astro.prefunits['angle'])):
+    '''Convert Cartesian PVT to a Kepler orbital element set'''
+    return ork.posvel.tspvc(*pvt).kepler(units)
+
+########################################
 ####    Element values              ####
 ########################################
 
@@ -34,7 +42,7 @@ def elementval (orbit, elt, earthrad=ork.force.deffe["earthrad"]):
       earthrad: the radius of the earth, necessary to provide for altitudes of perigee and apogee
     """
     if posvel.isephrow(orbit):
-        return elementval(ork.posvel.pvt(orbit), elt, earthrad)
+        return elementval(ork.posvel.tspvc(orbit), elt, earthrad)
     elif isinstance(orbit, collections.abc.Iterable):
         return [elementval(orb, elt) for orb in orbit]
     else:

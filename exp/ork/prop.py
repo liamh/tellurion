@@ -17,25 +17,36 @@ import ork.force
 import ork.posvel
 
 def generate(initstate, proptime, forceenv=ork.force.deffe, stopalt=125.0e3):
-    """Make a generator for an ephemeris; the output is passed to
-    propagate() as the first argument. If epoch time of the initial
-    state is not specified, the current time is used. The initial
-    state is a posvel or an element set, or an Orekit representation
-    of those.
+    """Make a generator for an ephemeris
 
-    initstate: The initial state, either a state (posvel or element set) or a tuple of (state, epoch)
-    proptime:  the maximum time (s) to propagate
-    forceenv:  forces to use
-    stopalt:   lowest altitude above spherical earth (m) to propagate
+    Parameters
+    ----------
+    initstate: u.Quantity or tuple of (u.Quantity, astropy.time.Time)
+      The initial state, either a state (posvel or element set) or a
+      tuple of (state, epoch). If epoch time of the initial state is not
+      specified, the current time is used.
+
+    proptime:  u.Quantity, float
+      The maximum time to propagate, numbers are in seconds
+
+    forceenv:  dict
+      Forces to use; output of force.setgravity()
+
+    stopalt:   float
+      Stop propagation if altitude above spherical earth (m) drops below this threshold
+
+    Returns
+    -------
+    An Orekit object that is passed to `propagate()` as the first argument
 
     """
 
     if posvel.ispvt(initstate):
         pvt0 = initstate
-        ork0 = ork.posvel.pvt(*pvt0).cartesianorbit(forceenv)
+        ork0 = ork.posvel.tspvc(*pvt0).cartesianorbit(forceenv)
     elif posvel.ispv(initstate):
         pvt0 = posvel.pvt((initstate, posvel.nowutc()))
-        ork0 = ork.posvel.pvt(*pvt0).cartesianorbit(forceenv)
+        ork0 = ork.posvel.tspvc(*pvt0).cartesianorbit(forceenv)
     elif element.iskepels(initstate):
         if type(initstate) is tuple:
             ork0 = ork.element.keplerianorbit(*initstate)
