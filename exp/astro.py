@@ -54,7 +54,7 @@ def makesq(values, names=None, units=None, phystype=None, unitlookup=prefunits):
     values : dict of numbers, dict of `u.Quantity`, list or array of numbers, list or array of `u.Quantity`
       If a dict is given, the keys are the names of the structure elements, and `names` is ignored
       If numbers are given for values, `units` or `phystype` must be specified
-      If `u.Quanitity` are given for values, `units` and `phystype` are ignored
+      If `u.Quanitity` are given for values, they are converted to `units` or `phystype` and `unitlookup`
       Each value can be scalars or vectors
     names : the names of the fields of the structure;
       size must match number of values (ignored if `values` is a dict), optional
@@ -78,11 +78,14 @@ def makesq(values, names=None, units=None, phystype=None, unitlookup=prefunits):
     >>> makesq([12345.0, 45.0], ('sma','inc'), ('km', 'deg'))
     <Quantity (12345., 45.) (km, deg)>
 
-    >>> makesq([12345.0*u.km, 45.0*u.deg], ('sma','inc'), ('meter', 'radian'))
+    >>> makesq([12345.0*u.km, 45.0*u.deg], ('sma','inc'), units = ('meter', 'radian'))
+    <Quantity (12345000., 0.78539816) (m, rad)>
+
+    >>> makesq([12345000*u.m, 0.125*u.rev], ('sma','inc'), phystype = ('length', 'angle'))
     <Quantity (12345., 45.) (km, deg)>
 
     >>> makesq({'sma' : 12345.0*u.km, 'inc' : 45.0*u.deg}, units = ('meter', 'radian'))
-    <Quantity (12345., 45.) (km, deg)>
+    <Quantity (12345000., 0.78539816) (m, rad)>
     """
     def conv(val, unit):
         if type(val) is u.Quantity:
@@ -108,9 +111,12 @@ def makesq(values, names=None, units=None, phystype=None, unitlookup=prefunits):
     if type(values) is dict:
         names = tuple(values.keys())
         vals = tuple(values.values())
-        if type(vals[0]) is u.Quantity:
-            units = tuple([v.unit for v in vals])
-            vals = tuple([v.value for v in vals])
+        if type(vals[0]) is u.Quantity:  # convert units unless units=unitlookup=None
+            if units==None:
+                units = tuple([v.unit for v in vals])
+                vals = tuple([v.value for v in vals])
+            else:
+                vals = [conv(v, un) for (v, un) in zip(vals, units)]
         else:
             # If values is a dict, units/phystype must also be a dict
             if units==None:
@@ -127,8 +133,7 @@ def makesq(values, names=None, units=None, phystype=None, unitlookup=prefunits):
                 vals = tuple([conv(v, u) for (v, u) in zip(values, units)])
         else:
             if type(values[0]) is u.Quantity:
-                units = tuple([v.unit for v in values])
-                vals = tuple([v.value for v in values])
+                vals = [conv(v, un) for (v, un) in zip(values, units)]
             else:
                 vals = values
     sizes = [pqlen(v) for v in vals]
