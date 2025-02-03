@@ -94,6 +94,17 @@ ceph4x4_posdiff = posvel.magdiff(ceph4x4['position'], ceph['position'])
 
 # It would be nice to have the ability to assemble table with any columns, appropriately renamed, generalize hcat
 
+# Atmospheric drag
+fe4x4hpB01 = ork.force.dragforce(fe4x4, 'hp')
+cgen4x4hpB01 = ork.prop.generate(pvt0, 86400.0, fe4x4hpB01)
+ceph4x4hpB01 = ork.prop.propagate(cgen4x4hpB01, proptimes, True)
+ceph4x4hpB01_posdiff = posvel.magdiff(ceph4x4hpB01['position'], ceph['position'])
+
+# Lifetime - need a very low orbit to avoid a long integration
+# low0 = element.kepler({"sma":6500.0, "ecc":0.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25}, newyear)
+# low4x4hpB01gen = ork.prop.generate(low0, 10*u.day, fe4x4hpB01)
+# ceph4x4hpB01 = ork.prop.propagate(cgen4x4hpB01, proptimes, True)
+# ceph4x4hpB01_posdiff = posvel.magdiff(ceph4x4hpB01['position'], ceph['position'])
 
 ############### Earth locations
 
