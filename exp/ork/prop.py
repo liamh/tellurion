@@ -1,5 +1,6 @@
 import collections
 import collections.abc
+import astropy.units as u
 import astropy.time
 from astropy.timeseries import TimeSeries
 import orekit
@@ -129,3 +130,8 @@ SpacecraftState.cartesianorbit = lambda self: CartesianOrbit.cast_(OrbitType.CAR
 BoundedPropagator.cartesianorbit  = lambda self: self.initialState.cartesianorbit()
 SpacecraftState.keplerianorbit = lambda self: self.orbit.keplerianorbit()
 BoundedPropagator.keplerianorbit  = lambda self: self.initialState.keplerianorbit()
+
+# The time difference between the earliest (usually the initial time)
+# and the latest; not always what is requested as atmospheric drag can
+# shorten the timespan
+BoundedPropagator.timerange = lambda self: (ork.posvel.okad(self.maxDate)-ork.posvel.okad(self.minDate)).to(u.s)

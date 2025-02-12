@@ -60,6 +60,7 @@ _elvals = [["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],
           ["radper", "radius of perigee", "length", u.meter,
            lambda kep: kep.a*(1.0-kep.e)],
           ["radapo", "radius of apogee", "length", u.meter,
+
            lambda kep: kep.a*(1.0+kep.e)],
           ["altper", "altitude of perigee", "length", u.meter,
            lambda kep, earthrad: kep.a*(1.0-kep.e)-earthrad],
@@ -103,6 +104,9 @@ def keplerianorbit(oes, epoch, units=(astro.prefunits['length'], astro.prefunits
         oes = element.kepler(oes, None, units)
 
     oessi = oes.si.value
+# Future: convert zp/za to a/e
+#    oessidict = astro.splitsq(oessi)
+
     if 'ma' in oessi.dtype.names:
         return KeplerianOrbit(float(oessi['sma']), float(oessi['ecc']), float(oessi['inc']), \
                               float(oessi['argper']), float(oessi['raan']), \

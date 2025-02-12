@@ -1,3 +1,12 @@
+""" Demonstration of state, element, propagation
+
+See
+demoa.keys()
+demoa.init.keys()
+demoa.prop.keys()
+"""
+
+
 import os
 if os.getenv("OREKITDATA") == None:
     raise ValueError("You need to source env.sh for Orekit to work")
@@ -5,6 +14,7 @@ if os.getenv("OREKITDATA") == None:
 import numpy as np
 import astropy.units as u
 from astropy.timeseries import TimeSeries
+from munch import Munch
 import posvel
 import astro
 import element
@@ -14,43 +24,57 @@ import ork.element
 import ork.force
 import ork.prop
 
+
+newyear = posvel.dttm('2025-01-01T00:00:00')
+prop5m1h = np.linspace(5.0*u.minute, 60.0*u.minute, 12) # Step every 5 minutes for an hour
+
 ################ State and elements
 
-p0 = [5740.13268349, 3314.06715   ,    0.]
-v0 = [-2.75082684,  4.76457184,  5.50165367]
-newyear = posvel.dttm('2025-01-01T00:00:00')
-pvt0 = posvel.pvt((p0,v0,newyear))  # A tuple (Quantity, Time)
-kep0 = ork.element.kepler(pvt0)  # Convert PVT to Kepler elements
-dict_kep0 = astro.splitsq(kep0[0])  # Easier to read Kepler elements
+demoa = Munch()
+demoa.init = Munch()
+demoa.init.check = Munch()
+
+demoa.init.pos = [5740.13268349, 3314.06715   ,    0.]
+demoa.init.vel = [-2.75082684,  4.76457184,  5.50165367]
+demoa.init.dttm = newyear
+demoa.init.pvt = posvel.pvt((demoa.init.pos,demoa.init.vel,demoa.init.dttm))  # A tuple (Quantity, Time)
+demoa.init.kep = ork.element.kepler(demoa.init.pvt)  # Convert PVT to Kepler elements
+demoa.init.seekep = astro.splitsq(demoa.init.kep[0])  # Easier to read Kepler elements
 
 # Orekit representations
-opvt0 = ork.posvel.tspvc(*pvt0)           # org.orekit.utils.TimeStampedPVCoordinates
-ocartorb0 = opvt0.cartesianorbit()  # org.orekit.orbits.CartesianOrbit
-okeporb0 = opvt0.keplerianorbit()   # org.orekit.orbits.KeplerianOrbit
+demoa.init.ork = Munch()
+demoa.init.ork.pvt = ork.posvel.tspvc(*demoa.init.pvt)           # org.orekit.utils.TimeStampedPVCoordinates
+demoa.init.ork.cartorb = demoa.init.ork.pvt.cartesianorbit()  # org.orekit.orbits.CartesianOrbit
+demoa.init.ork.keporb = demoa.init.ork.pvt.keplerianorbit()   # org.orekit.orbits.KeplerianOrbit
 
 # AstroPy representations
-okep0 = opvt0.kepler()
+demoa.init.check.kepap = demoa.init.ork.pvt.kepler()
 
 # Get the pvt back
-pvt_opvt0 = opvt0.pvt()
-pvt_ocartorb0 = ocartorb0.pvt()
-pvt_okeporb0 = okeporb0.pvt()
+demoa.init.check.opvt0 = demoa.init.ork.pvt.pvt()
+demoa.init.check.ocartorb0 = demoa.init.ork.cartorb.pvt()
+demoa.init.check.okeporb0 = demoa.init.ork.keporb.pvt()
 
 ################ Propagation two-body
 
-cgen = ork.prop.generate(pvt0, 86400.0) # Use cgen for any propagation up to 1 day
+demoa.prop = Munch()
+demoa.prop.check = Munch()
+
+# The generator
+demoa.prop.gen = ork.prop.generate(demoa.init.pvt, 1*u.day) # Use generator for any propagation up to 1 day
 
 # The example pvt as a CartesianOrbit
 
-proptimes = np.linspace(5.0*u.minute, 60.0*u.minute, 12) # Step every 5 minutes for an hour
-ceph = ork.prop.propagate(cgen, proptimes, True)  # Propagate to each step, and include the initial state in the ephemeris table
-pvt12h = ork.prop.propagate(cgen, 12*u.hour) # Propagate to a single time, as a PVT
+demoa.prop.ephem = ork.prop.propagate(demoa.prop.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
+demoa.prop.pvt12h = ork.prop.propagate(demoa.prop.gen, 12*u.hour) # Propagate to a single time, as a PVT
 
-ckep0 = cgen.kepler() # Convert pvt0 initial state directly from generator
-cpvt0 = cgen.pvt() # Convert pvt0 initial state directly from generator
+demoa.prop.ckep0 = demoa.prop.gen.kepler() # Convert pvt0 initial state directly from generator
+demoa.prop.cpvt0 = demoa.prop.gen.pvt() # Convert pvt0 initial state directly from generator
 
-caltperapo = ork.element.tselements(ceph, ["altper","altapo"]) # TimeTable of altitudes of perigee and apogee
-capa = astro.hcat(ceph, caltperapo) # Ephemeris table with additional columns for perige and apogee altitude
+demoa.prop.altperapo = ork.element.tselements(demoa.prop.ephem, ["altper","altapo"]) # TimeTable of altitudes of perigee and apogee
+demoa.prop.pvapa = astro.hcat(demoa.prop.ephem, demoa.prop.altperapo) # Ephemeris table with additional columns for perige and apogee altitude
+
+demoa.prop.check.eph_has_pvt0 = posvel.pvt(demoa.prop.ephem, 0) == demoa.init.pvt # Check that initial state is in the ephemeris
 
 # orb1h_ork = ork.posvel.tspvc(*pvt1h).cartesianorbit()
 # pvt1h, ork.posvel._pvtork(kep1h) are equal but can't be compared, u.allclose does not work on the pv part
@@ -58,53 +82,60 @@ capa = astro.hcat(ceph, caltperapo) # Ephemeris table with additional columns fo
 
 ################ Propagation Kepler element
 
-koes0 = element.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25},
-                      posvel.dttm('2023-09-14T08:30:00'))
-koes0pvt = ork.posvel.pvt(*koes0) # Convert Kepler elements to PVT
+demob = Munch()
 
-kgen = ork.prop.generate(koes0, 86400.0)
-keph = ork.prop.propagate(kgen, proptimes, True)  # Propagate to each step, and include the initial state in the ephemeris table
+demob.kep = element.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25},
+                           posvel.dttm('2023-09-14T08:30:00'))
+demob.pvt = ork.posvel.pvt(*demob.kep) # Convert Kepler elements to PVT
+
+demob.gen = ork.prop.generate(demob.kep, 1*u.day)
+demob.eph = ork.prop.propagate(demob.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
 # posvel.pvt(keph, 35*u.min)
 # fails with KeyError: 'No matches found for key 2023-09-14 09:05:00'
 # but posvel.pvt(keph,['2023-09-14 09:05:00']) works
 
-kkep0 = kgen.kepler() # Initial state as Kepler
-kpvt0 = kgen.pvt()    # Initial state as PVT
+demob.kep0 = demob.gen.kepler() # Initial state as Kepler
+demob.pvt0 = demob.gen.pvt()    # Initial state as PVT
 
-kep20m_pvt = posvel.pvt(keph[4])      # PVT at 20 minutes from ephemeris
-kep20m_opvt = ork.posvel.tspvc(keph[4]) # PVT at 20 minutes from ephemeris via Orekit
-kep20m_kep = kep20m_opvt.kepler()     # Kepler elements at 20 minutes
+demob.kep20m_pvt = posvel.pvt(demob.eph[4])      # PVT at 20 minutes from ephemeris
+demob.kep20m_opvt = ork.posvel.tspvc(demob.eph[4]) # PVT at 20 minutes from ephemeris via Orekit
+demob.kep20m_kep = demob.kep20m_opvt.kepler()     # Kepler elements at 20 minutes
 
 ################ Time series selection and manipulation
 
-ceph_has_pvt0 = posvel.pvt(ceph, 0) == pvt0 # Check that initial state is in the ephemeris
-pvt15m = posvel.pvt(ceph, 3) # PVT for 15min by index
-pvt35m = posvel.pvt(ceph,'2025-01-01 00:35:00') # PVT for 35min by time
-pvt45m = posvel.pvt(ceph, 45*u.min) # PVT for 45min by relative time
-pvt1h = posvel.pvt(ceph) # PVT at the end of the ephemeris
-pvtshift = posvel.pvt(pvt12h,1*u.day) # Shift the same posvel to 1 day later
-kep1h = ork.element.kepler(pvt1h)  # Convert PVT to Kepler elements
+demoa.tssel = Munch()
+
+demoa.tssel.pvt15m = posvel.pvt(demoa.prop.ephem, 3) # PVT for 15min by index
+demoa.tssel.pvt35m = posvel.pvt(demoa.prop.ephem,'2025-01-01 00:35:00') # PVT for 35min by time
+demoa.tssel.pvt45m = posvel.pvt(demoa.prop.ephem, 45*u.min) # PVT for 45min by relative time
+demoa.tssel.pvt1h = posvel.pvt(demoa.prop.ephem) # PVT at the end of the ephemeris
+demoa.tssel.pvtshift = posvel.pvt(demoa.prop.pvt12h,1*u.day) # Shift the same posvel to 1 day later
+demoa.tssel.kep1h = ork.element.kepler(demoa.tssel.pvt1h)  # Convert PVT to Kepler elements
 
 ################ Propagation with perturbations
 
-fe4x4 = ork.force.setgravity(4,4)
-cgen4x4 = ork.prop.generate(pvt0, 86400.0, fe4x4)
-ceph4x4 = ork.prop.propagate(cgen4x4, proptimes, True)
-ceph4x4_posdiff = posvel.magdiff(ceph4x4['position'], ceph['position'])
+demoa.prop.fe4x4 = ork.force.setgravity(4,4)
+demoa.prop.gen4x4 = ork.prop.generate(demoa.init.pvt, 1*u.day, demoa.prop.fe4x4)
+demoa.prop.ephem4x4 = ork.prop.propagate(demoa.prop.gen4x4, prop5m1h, True)
+demoa.prop.ephem4x4_posdiff = posvel.magdiff(demoa.prop.ephem4x4['position'], demoa.prop.ephem['position'])
 
 # It would be nice to have the ability to assemble table with any columns, appropriately renamed, generalize hcat
 
 # Atmospheric drag
-fe4x4hpB01 = ork.force.dragforce(fe4x4, 'hp')
-cgen4x4hpB01 = ork.prop.generate(pvt0, 86400.0, fe4x4hpB01)
-ceph4x4hpB01 = ork.prop.propagate(cgen4x4hpB01, proptimes, True)
-ceph4x4hpB01_posdiff = posvel.magdiff(ceph4x4hpB01['position'], ceph['position'])
+demoa.prop.fe4x4hpB01 = ork.force.dragforce(demoa.prop.fe4x4, 'hp')
+demoa.prop.gen4x4hpB01 = ork.prop.generate(demoa.init.pvt, 1*u.day, demoa.prop.fe4x4hpB01)
+demoa.prop.ephem4x4hpB01 = ork.prop.propagate(demoa.prop.gen4x4hpB01, prop5m1h, True)
+demoa.prop.ephem4x4hpB01_posdiff = posvel.magdiff(demoa.prop.ephem4x4hpB01['position'], demoa.prop.ephem['position'])
 
-# Lifetime - need a very low orbit to avoid a long integration
-# low0 = element.kepler({"sma":6500.0, "ecc":0.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25}, newyear)
-# low4x4hpB01gen = ork.prop.generate(low0, 10*u.day, fe4x4hpB01)
-# ceph4x4hpB01 = ork.prop.propagate(cgen4x4hpB01, proptimes, True)
-# ceph4x4hpB01_posdiff = posvel.magdiff(ceph4x4hpB01['position'], ceph['position'])
+# Lifetime - need a very low orbit to avoid a long integration, but don't go below 100km altitude, HP will fail
+democ = Munch()
+democ.kep = element.kepler({"sma":6600.0, "ecc":0.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25}, newyear)
+democ.pvt = ork.posvel.pvt(*democ.kep) # Convert Kepler elements to PVT
+democ.gen = ork.prop.generate(democ.pvt, 10*u.day, demoa.prop.fe4x4hpB01)
+democ.tspan = democ.gen.timerange()
+democ.nhours = np.floor(democ.tspan.to(u.hour))
+democ.step1hmax = np.linspace(1.0*u.hour, democ.nhours, np.int64(democ.nhours))
+democ.eph1hmax = ork.prop.propagate(democ.gen, democ.step1hmax, True)
 
 ############### Earth locations
 
@@ -113,38 +144,42 @@ import ork.geog as oge
 import geog
 import geonames
 
-mcd = coord.EarthLocation.of_site('McDonald Observatory')
-mcdsv = geog.eciobs(mcd, ceph.time, 'mcdonald sitevec')
-cmcd = astro.hcat(ceph, mcdsv) # Ephemeris table with additional column for McDonald site vector
-mcdsvork = oge.eciobs(mcd, ceph.time, 'mcdonald sitevec')
-cmcdork = astro.hcat(ceph, mcdsvork) # Ephemeris table with additional column for McDonald site vector
+eloc = Munch()
+
+eloc.mcd = coord.EarthLocation.of_site('McDonald Observatory')
+eloc.mcdsv = geog.eciobs(eloc.mcd, demoa.prop.ephem.time, 'mcdonald sitevec')
+eloc.cmcd = astro.hcat(demoa.prop.ephem, eloc.mcdsv) # Ephemeris table with additional column for McDonald site vector
+eloc.mcdsvork = oge.eciobs(eloc.mcd, demoa.prop.ephem.time, 'mcdonald sitevec')
+eloc.cmcdork = astro.hcat(demoa.prop.ephem, eloc.mcdsvork) # Ephemeris table with additional column for McDonald site vector
 
 # Difference between AstroPy and Orekit
-mcdsv_apy = posvel.makepos(geog.eciobs(mcd, newyear))
-mcdsv_ork = posvel.makepos(oge.eciobs(mcd, newyear))
-mcdsv_apy_ork_dist = np.linalg.norm(mcdsv_ork - mcdsv_apy).si
+eloc.mcdsv_apy = posvel.makepos(geog.eciobs(eloc.mcd, newyear))
+eloc.mcdsv_ork = posvel.makepos(oge.eciobs(eloc.mcd, newyear))
+eloc.mcdsv_apy_ork_dist = np.linalg.norm(eloc.mcdsv_ork - eloc.mcdsv_apy).si
 
-kickapoo = geog.earthloc(lon='98°45′49.82″W', lat='33°33′08.50″N')
+eloc.kickapoo = geog.earthloc(lon='98°45′49.82″W', lat='33°33′08.50″N')
 # From geonames.location('carbarn') - integrate earthloc with location()?
-carbarn = geog.earthloc(lat=38.87206*u.deg, lon=-77.01748*u.deg, elevation=13.0*u.m)
-carbarn_lst_newyear = geog.siderealtime(newyear, carbarn)
+eloc.carbarn = geog.earthloc(lat=38.87206*u.deg, lon=-77.01748*u.deg, elevation=13.0*u.m)
+eloc.carbarn_lst_newyear = geog.siderealtime(newyear, eloc.carbarn)
 
 ############### Earth observations
 
+eobs = Munch()
+
 # A simulated observation from carbarn
-ob = geog.azelrange(255*u.deg, 80*u.deg, 1455*u.km, carbarn, newyear)
+eobs.ob = geog.azelrange(255*u.deg, 80*u.deg, 1455*u.km, eloc.carbarn, newyear)
 # ECI Cartesian coordinates
-obeci = ob.transform_to(coord.GCRS)
-obeci_cart = obeci.cartesian
-obeci_radec = obeci.spherical
+eobs.obeci = eobs.ob.transform_to(coord.GCRS)
+eobs.obeci_cart = eobs.obeci.cartesian
+eobs.obeci_radec = eobs.obeci.spherical
 
 # An observation from McDonald
-obmcd = ob.transform_to(coord.AltAz(location=mcd, obstime=newyear))
+eobs.obmcd = eobs.ob.transform_to(coord.AltAz(location=eloc.mcd, obstime=newyear))
 
 # Angles only
 # obao = coord.SkyCoord(coord.AltAz(az=63*u.deg, alt=80*u.deg, location=carbarn, obstime=newyear))
 # obsloc_carbarn = coord.AltAz(location=carbarn, obstime=newyear)
 
-ptobork = oge.eciobs(carbarn, ob, 'carbarn obs')
-ptobapy = geog.eciobs(carbarn, ob, 'carbarn obs')
-ob_ork_apy_dist = np.linalg.norm(ptobork.cartesian.xyz - ptobapy.cartesian.xyz).si
+eobs.ptobork = oge.eciobs(eloc.carbarn, eobs.ob, 'carbarn obs')
+eobs.ptobapy = geog.eciobs(eloc.carbarn, eobs.ob, 'carbarn obs')
+eobs.ob_ork_apy_dist = np.linalg.norm(eobs.ptobork.cartesian.xyz - eobs.ptobapy.cartesian.xyz).si
