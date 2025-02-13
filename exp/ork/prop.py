@@ -17,7 +17,9 @@ import element
 import ork.force
 import ork.posvel
 
-def generate(initstate, proptime, forceenv=ork.force.deffe, stopalt=125.0e3):
+defev = {'altitude': 125.0*u.km, 'eclipse': False, 'visibility': False}
+
+def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
     """Make a generator for an ephemeris
 
     Parameters
@@ -85,7 +87,7 @@ def generate(initstate, proptime, forceenv=ork.force.deffe, stopalt=125.0e3):
         okprop.addForceModel(forceenv['dragforce'])
 
     # Events
-    okprop.addEventDetector(AltitudeDetector(stopalt, forceenv['sphalt']))
+    okprop.addEventDetector(AltitudeDetector(float(events['altitude'].si.value), forceenv['sphalt']))
 
     # Propagate
     propagated = okprop.propagate(ork0.date, ork0.date.shiftedBy(astro.timesec(proptime)))
