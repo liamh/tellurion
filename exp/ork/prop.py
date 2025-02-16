@@ -2,13 +2,15 @@ import collections
 import collections.abc
 import astropy.units as u
 import astropy.time
+import astropy.table
 from astropy.timeseries import TimeSeries
 import orekit
 from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit
 from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState, EphemerisGenerator
-from org.orekit.propagation.events import AltitudeDetector
+from org.orekit.propagation.events import AltitudeDetector, EclipseDetector, EventsLogger
+from org.orekit.propagation.events.handlers import ContinueOnEvent
 import org.orekit.forces.gravity as okgrav
 
 import astro
@@ -17,7 +19,7 @@ import element
 import ork.force
 import ork.posvel
 
-defev = {'altitude': 125.0*u.km, 'eclipse': False, 'visibility': False}
+defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
 
 def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
     """Make a generator for an ephemeris
@@ -40,7 +42,8 @@ def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
 
     Returns
     -------
-    An Orekit object that is passed to `propagate()` as the first argument
+    An Orekit object that is passed to `propagate()` as the first argument, if no event other than altitude is included in `events`.
+    A Dict of generator (`'ephgen'`) to pass to `propagate()`, EclipseDetector (`'eclipsedet'`), and a timetable of umbra transitions (`'umbra') if `'umbra'` is included in `events`.
 
     """
 
@@ -88,13 +91,26 @@ def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
 
     # Events
     okprop.addEventDetector(AltitudeDetector(float(events['altitude'].si.value), forceenv['sphalt']))
+    ret = {}
+    if events['eclipse']:
+        ret['eclipsedet'] = EclipseDetector(forceenv['sun'], forceenv['sunrad'], forceenv['earth'])
+        handled = ret['eclipsedet'].withUmbra().withHandler(ContinueOnEvent())
+        logger = EventsLogger()
+        loggeddet = logger.monitorDetector(handled)
+        okprop.addEventDetector(loggeddet)
 
     # Propagate
     propagated = okprop.propagate(ork0.date, ork0.date.shiftedBy(astro.timesec(proptime)))
-    ephgen = generator.getGeneratedEphemeris();
-
-    return(ephgen)
-# end mkephem
+    if events['eclipse']:
+        ret['ephgen'] = generator.getGeneratedEphemeris();
+        loggedevents = logger.getLoggedEvents()
+        ret['umbra'] = posvel.tsephem([ev.state.pvt()[0] for ev in loggedevents],
+                               [ev.state.pvt()[1] for ev in loggedevents])
+        ret['umbra']['entering'] = [ev.increasing for ev in loggedevents]
+        ret['events'] = loggedevents
+    else:
+        ret = generator.getGeneratedEphemeris();
+    return ret
 
 def propagate(generator, reltimes, include_init=True):
     '''From an existing ephemeris generator, propagate to the time(s)
@@ -103,24 +119,33 @@ def propagate(generator, reltimes, include_init=True):
     single time, then a PVT is returned. If `include`_init is true,
     then include the initial PVT in the ephemeris table.
     '''
+    if type(generator) is BoundedPropagator:
+        gen = generator
+    else:
+        gen = generator['ephgen']
+        ecld = generator['eclipsedet']
+
     rts = astro.timesec(reltimes)
     if isinstance(rts, collections.abc.Iterable):
-        states = [generator.propagate(generator.getMinDate().shiftedBy(rt)).orbit for rt in rts]
-        pvts = [st.pvt() for st in states]
+        states = [gen.propagate(gen.getMinDate().shiftedBy(rt)) for rt in rts]
+        pvts = [st.orbit.pvt() for st in states]
         times = collections.deque([pvt[1] for pvt in pvts])
         dat = collections.deque([pvt[0] for pvt in pvts])
         if include_init:
             pvt0 = generator.initialState.pVCoordinates.pvt()
             dat.appendleft(pvt0[0])
             times.appendleft(pvt0[1])
-        datdict = {posvel._eph_pos: [d[posvel._eph_pos] for d in dat], \
-                   posvel._eph_vel: [d[posvel._eph_vel] for d in dat]}
-        ts = TimeSeries(time=times, data=datdict)
-        ts[posvel._eph_pos].info.format = posvel._pos_format
-        ts[posvel._eph_vel].info.format = posvel._vel_format
-        return ts
+        return posvel.tsephem(dat, times)
     else:
-        return generator.propagate(generator.getMinDate().shiftedBy(rts)).orbit.pvt()
+        # This includes the value of the event function "pvut" = position, velocity, umbra and time
+        ss = gen.propagate(gen.getMinDate().shiftedBy(rts))
+        pvt = ss.orbit.pvt()
+        if 'ecld' in locals():
+            pvtdict = astro.splitsq(pvt[0])
+            pvtdict['umbra'] = ecld.g(ss)*u.dimensionless_unscaled
+            return (astro.makesq(pvtdict), pvt[1])
+        else:
+            return pvt
 
 # The following return AstroPy objects
 SpacecraftState.pvt = lambda self, unitlookup=astro.prefunits: ork.posvel._pvtork(self.pVCoordinates, unitlookup)

@@ -5,6 +5,7 @@ AstroPy definitions
 import warnings
 import astropy.units as u
 import astropy.table
+import astropy.time
 import numpy as np
 import collections.abc
 
@@ -37,7 +38,21 @@ def timesec(t):
         pt = float(t) # assume seconds
     return(pt)
 
+def tc(t):
+    """Convert a u.Quantity with physical dimension time to a string of duration (time interval) components
 
+    tcomponents(12*u.day + 17.3*u.hour + 5*u.min + 33.1*u.s)
+    '12d 17hr 23min 33.1s'
+    """
+    return astropy.time.TimeDelta(t).quantity_str
+
+def tq(compstr):
+    """Convert a string of duration (time interval) components to a u.Quantity with physical dimension time
+
+    tquantity('12d 17hr 23min 33.1s')
+    <Quantity 1099413.1 s>
+    """
+    return astropy.time.TimeDelta(compstr).to_value('sec')*u.s
 
 # sq2split = splitsq(sq2)
 # sq2sq = makesq(*sq2split)

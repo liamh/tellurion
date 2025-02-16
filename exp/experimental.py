@@ -81,6 +81,15 @@ demoa.prop.check.eph_has_pvt0 = posvel.pvt(demoa.prop.ephem, 0) == demoa.init.pv
 # pvt1h, ork.posvel._pvtork(kep1h) are equal but can't be compared, u.allclose does not work on the pv part
 # https://github.com/astropy/astropy/issues/17602, it is a numpy issue https://github.com/numpy/numpy/issues/28104
 
+# Eclipsing
+demoa.prop.eclipse = Munch()
+demoa.prop.eclipse.events = {'altitude': 125.0*u.km, 'eclipse': ['umbra'], 'visibility': []}
+demoa.prop.eclipse.genev = ork.prop.generate(demoa.init.pvt, 1*u.day, ork.force.deffe, demoa.prop.eclipse.events)
+demoa.prop.eclipse.umbra = demoa.prop.eclipse.genev['umbra']
+demoa.prop.eclipse.um12h = ork.prop.propagate(demoa.prop.eclipse.genev, 12*u.hour)
+demoa.prop.eclipse.um12h05m = ork.prop.propagate(demoa.prop.eclipse.genev, astro.tq('12hr 5min'))
+demoa.prop.eclipse.pvu12h05m = astro.splitsq(demoa.prop.eclipse.um12h05m[0])
+
 ################ Propagation Kepler element
 
 demob = Munch()
@@ -110,7 +119,7 @@ demoa.tssel.pvt15m = posvel.pvt(demoa.prop.ephem, 3) # PVT for 15min by index
 demoa.tssel.pvt35m = posvel.pvt(demoa.prop.ephem,'2025-01-01 00:35:00') # PVT for 35min by time
 demoa.tssel.pvt45m = posvel.pvt(demoa.prop.ephem, 45*u.min) # PVT for 45min by relative time
 demoa.tssel.pvt1h = posvel.pvt(demoa.prop.ephem) # PVT at the end of the ephemeris
-demoa.tssel.pvtshift = posvel.pvt(demoa.prop.pvt12h,1*u.day) # Shift the same posvel to 1 day later
+#demoa.tssel.pvtshift = posvel.pvt(demoa.prop.pvt12h,1*u.day) # Shift the same posvel to 1 day later
 demoa.tssel.kep1h = ork.element.kepler(demoa.tssel.pvt1h)  # Convert PVT to Kepler elements
 
 ################ Propagation with perturbations

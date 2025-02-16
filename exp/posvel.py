@@ -21,8 +21,17 @@ _eph_pos = 'position'
 _eph_vel = 'velocity'
 _ephemeris_columns = [_eph_time, _eph_pos, _eph_vel]
 
+# These should be conditional on the units used
 _pos_format = '10.3f'
 _vel_format = '10.6f'
+
+def tsephem(data, times):
+    datdict = {_eph_pos: [d[_eph_pos] for d in data], \
+               _eph_vel: [d[_eph_vel] for d in data]}
+    ts = TimeSeries(time=times, data=datdict)
+    ts[_eph_pos].info.format = _pos_format
+    ts[_eph_vel].info.format = _vel_format
+    return ts
 
 ##################################################
 ####   Tests for posvel and related types     ####

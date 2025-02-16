@@ -30,6 +30,7 @@ def setgravity(degree, order, mass = 100.0):
         'earthangspd': Constants.IERS2010_EARTH_ANGULAR_VELOCITY,
         'earthflat': Constants.IERS2010_EARTH_FLATTENING,
         'sun': CelestialBodyFactory.getSun(),
+        'sunrad': Constants.SUN_RADIUS
     }
     eg = GravityFieldFactory.getNormalizedProvider(degree, order)
     force = {'gravity': eg,
