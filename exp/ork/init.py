@@ -22,11 +22,23 @@ if 'OKNOVERPRINT' not in os.environ:  # To suppresss version printing: OKNOVERPR
     print ('Java version:',_vm.java_version)
     print ('Numpy version:', np.__version__)
     print ('Astropy version:', astropy.__version__)
-#    print ('Skyfield version:', skyfield.VERSION)
     print ('Orekit version:', orekit.VERSION)
 
-# Load the Orekit data file
+# Orekit data path
 if 'OREKITDATA' in os.environ:  # set in shell: export OREKITDATA=$(locate orekit-data.zip)
-    pyhelpers.setup_orekit_curdir(os.environ['OREKITDATA'])
-else: # Look in the project directory at the top level
+    orkdatapath = os.environ['OREKITDATA']
+else:
+    thisdir = pathlib.Path(os.path.dirname(os.path.realpath(__file__)))
+    envsh = thisdir.parent.absolute().parent.absolute().joinpath("env.sh")
+    if pathlib.Path.exists(envsh):
+        with open(envsh) as fp:
+            lines = [ln for ln in fp]
+            orkdatapath = lines[1].split('=')[1].rstrip()
+    else:
+        orkdatapath = None
+
+# Load the Orekit data file
+if orkdatapath == None:
     pyhelpers.setup_orekit_curdir(pathlib.Path("").parent.absolute().parent.absolute()._str)
+else:
+    pyhelpers.setup_orekit_curdir(orkdatapath)

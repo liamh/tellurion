@@ -6,15 +6,8 @@ demoa.init.keys()
 demoa.prop.keys()
 """
 
-
-import os
-if os.getenv("OREKITDATA") == None:
-    raise ValueError("You need to source env.sh for Orekit to work")
-
 import numpy as np
 import astropy.units as u
-from astropy.time import TimeDelta
-from astropy.timeseries import TimeSeries
 from munch import Munch
 import posvel
 import astro
@@ -143,7 +136,7 @@ democ.kep = element.kepler({"sma":6600.0, "ecc":0.0, "inc":42.0, "argper":66.0, 
 democ.pvt = ork.posvel.pvt(*democ.kep) # Convert Kepler elements to PVT
 democ.gen = ork.prop.generate(democ.pvt, 10*u.day, demoa.prop.fe4x4hpB01) # Ask for 10 days, but it only lasts about 6
 democ.tspan = democ.gen.timerange() # <Quantity 518050.232645 s> ; time until altitude threshold is hit
-democ.tspan_dhms = TimeDelta(democ.tspan).quantity_str # '5d 23hr 54min 10.233s'
+democ.tspan_dhms = astro.tc(democ.tspan) # '5d 23hr 54min 10.233s'
 democ.nhours = np.floor(democ.tspan.to(u.hour)) # Step by an hour for 143 hours, the maximum integer hour
 democ.step1hmax = np.linspace(1.0*u.hour, democ.nhours, np.int64(democ.nhours))
 democ.eph1hmax = ork.prop.propagate(democ.gen, democ.step1hmax, True) # Ephemeris every hour until it decays
