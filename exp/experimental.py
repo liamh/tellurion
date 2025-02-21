@@ -82,6 +82,8 @@ demoa.prop.eclipse.umbra = demoa.prop.eclipse.genev['umbra']
 demoa.prop.eclipse.um12h = ork.prop.propagate(demoa.prop.eclipse.genev, 12*u.hour)
 demoa.prop.eclipse.um12h05m = ork.prop.propagate(demoa.prop.eclipse.genev, astro.tq('12hr 5min'))
 demoa.prop.eclipse.pvu12h05m = astro.splitsq(demoa.prop.eclipse.um12h05m[0])
+# ork.prop.propagate2(demoa.prop.eclipse.genev, prop5m1h, True)  # Propagate to each step, and include the initial state in the
+
 
 ################ Propagation Kepler element
 

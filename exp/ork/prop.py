@@ -1,5 +1,6 @@
 import collections
 import collections.abc
+import numpy as np
 import astropy.units as u
 import astropy.time
 import astropy.table
@@ -136,6 +137,38 @@ def propagate(generator, reltimes, include_init=True):
             dat.appendleft(pvt0[0])
             times.appendleft(pvt0[1])
         return posvel.tsephem(dat, times)
+    else:
+        # This includes the value of the event function "pvut" = position, velocity, umbra and time
+        ss = gen.propagate(gen.getMinDate().shiftedBy(rts))
+        pvt = ss.orbit.pvt()
+        if 'ecld' in locals():
+            pvtdict = astro.splitsq(pvt[0])
+            pvtdict['umbra'] = ecld.g(ss)*u.dimensionless_unscaled
+            return (astro.makesq(pvtdict), pvt[1])
+        else:
+            return pvt
+
+# The following verision returns a tuple of (Quantity, Time), each with the same shape (number of rows)
+def propagate2(generator, reltimes, include_init=True):
+    '''From an existing ephemeris generator, propagate to the time(s)
+    relative to epoch of the initial state. If an list of relative
+    times is given, an ephemeris table is returned; if reltimes is a
+    single time, then a PVT is returned. If `include`_init is true,
+    then include the initial PVT in the ephemeris table.
+    '''
+    if type(generator) is BoundedPropagator:
+        gen = generator
+    else:
+        gen = generator['ephgen']
+        ecld = generator['eclipsedet']
+
+    rts = astro.timesec(reltimes)
+    if isinstance(rts, collections.abc.Iterable):
+        if include_init:
+            reltimes = np.insert(reltimes, 0, 0.0)
+        data = [propagate2(generator, rt)[0] for rt in reltimes]
+        return (u.Quantity(np.asarray(data), data[0].unit),
+                ork.posvel.okad(gen.getMinDate()) + astropy.time.TimeDelta(reltimes))
     else:
         # This includes the value of the event function "pvut" = position, velocity, umbra and time
         ss = gen.propagate(gen.getMinDate().shiftedBy(rts))

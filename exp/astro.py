@@ -192,3 +192,11 @@ def hcat(ts1, ts2):
     if not(all(ts1['time'].__eq__(ts2['time']))):
         warnings.warn("Times are not all equal; using times from first set")
     return astropy.table.hstack([ts1, striptime(ts2)])
+
+def ts(data, times):
+    datdict = {_eph_pos: [d[_eph_pos] for d in data], \
+               _eph_vel: [d[_eph_vel] for d in data]}
+    ts = TimeSeries(time=times, data=datdict)
+    ts[_eph_pos].info.format = _pos_format
+    ts[_eph_vel].info.format = _vel_format
+    return ts
