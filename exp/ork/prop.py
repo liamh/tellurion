@@ -21,6 +21,7 @@ import ork.force
 import ork.posvel
 
 defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
+sunstate = ['umbra', 'penumbra>umbra', 'umbra>penumbra', 'penumbra', 'fullsun>penumbra', 'punumbra>fullsun', 'fullsun']
 
 def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
     """Make a generator for an ephemeris
@@ -105,14 +106,69 @@ def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
     if events['eclipse']:
         ret['ephgen'] = generator.getGeneratedEphemeris();
         loggedevents = logger.getLoggedEvents()
-        ret['umbra'] = posvel.tsephem([ev.state.pvt()[0] for ev in loggedevents],
-                               [ev.state.pvt()[1] for ev in loggedevents])
-        ret['umbra']['entering'] = [ev.increasing for ev in loggedevents]
-        ret['events'] = loggedevents
+        pvts = [augmentpvt(ev.state.pvt(), ev.increasing, \
+                           ('umbra>penumbra', 'penumbra>umbra'), 'sunlight')
+                        for ev in loggedevents]
+        pvs = [pvt[0] for pvt in pvts]
+        tms = [pvt[1] for pvt in pvts]
+        ret['sun transition'] = (u.Quantity(np.asarray(pvs), pvs[0].unit), \
+                         astropy.time.Time([tm.value for tm in tms]))
     else:
         ret = generator.getGeneratedEphemeris();
     return ret
 
+# The following verision returns a tuple of (Quantity, Time), each with the same shape (number of rows)
+def propagate2(generator, reltimes, include_init=True):
+    '''From an existing ephemeris generator, propagate to the time(s)
+    relative to epoch of the initial state. If an list of relative
+    times is given, an ephemeris table is returned; if reltimes is a
+    single time, then a PVT is returned. If `include`_init is true,
+    then include the initial PVT in the ephemeris table.
+    '''
+    if type(reltimes) is u.Quantity and u.get_physical_type(reltimes) == 'time':
+        rtshape = reltimes.shape
+        rtscalar = rtshape == ()
+    else:
+        raise("Reltimes must be a u.Quantity with physical type 'time'")
+
+    if type(generator) is BoundedPropagator:
+        gen = generator
+    else:
+        gen = generator['ephgen']
+        ecld = generator['eclipsedet']
+
+    if rtscalar:
+        # This includes the value of the event function "pvut" = position, velocity, umbra and time
+        ss = gen.propagate(gen.getMinDate().shiftedBy(float(reltimes.to(u.s).value)))
+        pvt = ss.orbit.pvt()
+        if 'ecld' in locals():
+            return augmentpvt(pvt, ecld.g(ss), ('penumbra', 'umbra'), 'sunlight')
+        else:
+            return pvt
+    else:
+        if include_init:
+            reltimes = np.insert(reltimes, 0, 0.0)
+        data = [propagate2(generator, rt)[0] for rt in reltimes]
+        return (u.Quantity(np.asarray(data), data[0].unit),
+                ork.posvel.okad(gen.getMinDate()) + astropy.time.TimeDelta(reltimes))
+
+def augmentpvt(pvt, indicator, negposnames, fieldname):
+    '''Augment the posvel with a field `fieldname` using the index in
+    sunstate that matches the name in `negposnames` (a tuple of size
+    2) dependening on whether the `indicator` is negative or
+    positive.
+    '''
+    pvtdict = astro.splitsq(pvt[0])
+    if indicator <= 0.0:
+        fv = sunstate.index(negposnames[0])*u.dimensionless_unscaled
+    else:
+        fv = sunstate.index(negposnames[1])*u.dimensionless_unscaled
+    pvtdict[fieldname] = fv
+    return (astro.makesq(pvtdict), pvt[1])
+
+########################################
+### OLD VERSION pre-umbra handling
+########################################
 def propagate(generator, reltimes, include_init=True):
     '''From an existing ephemeris generator, propagate to the time(s)
     relative to epoch of the initial state. If an list of relative
@@ -148,37 +204,9 @@ def propagate(generator, reltimes, include_init=True):
         else:
             return pvt
 
-# The following verision returns a tuple of (Quantity, Time), each with the same shape (number of rows)
-def propagate2(generator, reltimes, include_init=True):
-    '''From an existing ephemeris generator, propagate to the time(s)
-    relative to epoch of the initial state. If an list of relative
-    times is given, an ephemeris table is returned; if reltimes is a
-    single time, then a PVT is returned. If `include`_init is true,
-    then include the initial PVT in the ephemeris table.
-    '''
-    if type(generator) is BoundedPropagator:
-        gen = generator
-    else:
-        gen = generator['ephgen']
-        ecld = generator['eclipsedet']
 
-    rts = astro.timesec(reltimes)
-    if isinstance(rts, collections.abc.Iterable):
-        if include_init:
-            reltimes = np.insert(reltimes, 0, 0.0)
-        data = [propagate2(generator, rt)[0] for rt in reltimes]
-        return (u.Quantity(np.asarray(data), data[0].unit),
-                ork.posvel.okad(gen.getMinDate()) + astropy.time.TimeDelta(reltimes))
-    else:
-        # This includes the value of the event function "pvut" = position, velocity, umbra and time
-        ss = gen.propagate(gen.getMinDate().shiftedBy(rts))
-        pvt = ss.orbit.pvt()
-        if 'ecld' in locals():
-            pvtdict = astro.splitsq(pvt[0])
-            pvtdict['umbra'] = ecld.g(ss)*u.dimensionless_unscaled
-            return (astro.makesq(pvtdict), pvt[1])
-        else:
-            return pvt
+
+
 
 # The following return AstroPy objects
 SpacecraftState.pvt = lambda self, unitlookup=astro.prefunits: ork.posvel._pvtork(self.pVCoordinates, unitlookup)
