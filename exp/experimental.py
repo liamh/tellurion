@@ -78,11 +78,88 @@ demoa.prop.check.eph_has_pvt0 = posvel.pvt(demoa.prop.ephem, 0) == demoa.init.pv
 demoa.prop.eclipse = Munch()
 demoa.prop.eclipse.events = {'altitude': 125.0*u.km, 'eclipse': ['umbra'], 'visibility': []}
 demoa.prop.eclipse.genev = ork.prop.generate(demoa.init.pvt, 1*u.day, ork.force.deffe, demoa.prop.eclipse.events)
-demoa.prop.eclipse.umbra = demoa.prop.eclipse.genev['sun transition']
+demoa.prop.eclipse.suntrans = demoa.prop.eclipse.genev['sun transition']
 demoa.prop.eclipse.um12h = ork.prop.propagate(demoa.prop.eclipse.genev, 12*u.hour)
 demoa.prop.eclipse.um12h05m = ork.prop.propagate(demoa.prop.eclipse.genev, astro.tq('12hr 5min'))
 demoa.prop.eclipse.pvu12h05m = astro.splitsq(demoa.prop.eclipse.um12h05m[0])
-# ork.prop.propagate2(demoa.prop.eclipse.genev, prop5m1h, True)  # Propagate to each step, and include the initial state in the
+prop5m3h = np.linspace(5.0*u.minute, 180.0*u.minute, 36) # Step every 5 minutes for an hour
+p5m3h = ork.prop.propagate2(demoa.prop.eclipse.genev, prop5m3h, True)  # Propagate to each step, and include the initial state in the
+# <Quantity [[-0.01778085, -0.01778085],   datetime.datetime(2025, 1, 1, 0, 0)
+#            [-0.34137358, -0.34137358],   datetime.datetime(2025, 1, 1, 0, 5)
+#            [-0.6424991 , -0.6424991 ],   datetime.datetime(2025, 1, 1, 0, 10)
+#            [-0.87488452, -0.87488452],   datetime.datetime(2025, 1, 1, 0, 15)
+#            [-0.88653962, -0.88653962],   datetime.datetime(2025, 1, 1, 0, 20)
+#            [-0.66015284, -0.66015284],   datetime.datetime(2025, 1, 1, 0, 25)
+#            [-0.35895314, -0.35895314],   datetime.datetime(2025, 1, 1, 0, 30)
+#            [-0.03922183, -0.03922183],   datetime.datetime(2025, 1, 1, 0, 35)
+#            [ 0.28506905,  0.28506905],   datetime.datetime(2025, 1, 1, 0, 40) FULL SUN
+#            [ 0.60834213,  0.60834213],   datetime.datetime(2025, 1, 1, 0, 45)
+#            [ 0.92541815,  0.92541815],   datetime.datetime(2025, 1, 1, 0, 50)
+#            [ 1.2253585 ,  1.2253585 ],   datetime.datetime(2025, 1, 1, 0, 55)
+#            [ 1.46916708,  1.46916708],   datetime.datetime(2025, 1, 1, 1, 0)
+#            [ 1.51652395,  1.51652395],   datetime.datetime(2025, 1, 1, 1, 5)
+#            [ 1.30774431,  1.30774431],   datetime.datetime(2025, 1, 1, 1, 10)
+#            [ 1.00577482,  1.00577482],   datetime.datetime(2025, 1, 1, 1, 15)
+#            [ 0.67814934,  0.67814934],   datetime.datetime(2025, 1, 1, 1, 20)
+#            [ 0.34329324,  0.34329324],   datetime.datetime(2025, 1, 1, 1, 25)
+#            [ 0.00987637,  0.00987637],   datetime.datetime(2025, 1, 1, 1, 30)
+#            [-0.31478495, -0.31478495],   datetime.datetime(2025, 1, 1, 1, 35) UMBRA
+#            [-0.61863019, -0.61863019],   datetime.datetime(2025, 1, 1, 1, 40)
+#            [-0.86068561, -0.86068561],   datetime.datetime(2025, 1, 1, 1, 45)
+#            [-0.89694722, -0.89694722],   datetime.datetime(2025, 1, 1, 1, 50)
+#            [-0.68321815, -0.68321815],   datetime.datetime(2025, 1, 1, 1, 55)
+#            [-0.38509842, -0.38509842],   datetime.datetime(2025, 1, 1, 2, 0)
+#            [-0.06622372, -0.06622372],   datetime.datetime(2025, 1, 1, 2, 5)
+#            [ 0.25789154,  0.25789154],   datetime.datetime(2025, 1, 1, 2, 10) FULL SUN
+#            [ 0.58137472,  0.58137472],   datetime.datetime(2025, 1, 1, 2, 15)
+#            [ 0.89919435,  0.89919435],   datetime.datetime(2025, 1, 1, 2, 20)
+#            [ 1.2012902 ,  1.2012902 ],   datetime.datetime(2025, 1, 1, 2, 25)
+#            [ 1.45307034,  1.45307034],   datetime.datetime(2025, 1, 1, 2, 30)
+#            [ 1.52401611,  1.52401611],   datetime.datetime(2025, 1, 1, 2, 35)
+#            [ 1.33028103,  1.33028103],   datetime.datetime(2025, 1, 1, 2, 40)
+#            [ 1.03230662,  1.03230662],   datetime.datetime(2025, 1, 1, 2, 45)
+#            [ 0.70592575,  0.70592575],   datetime.datetime(2025, 1, 1, 2, 50)
+#            [ 0.37133659,  0.37133659],   datetime.datetime(2025, 1, 1, 2, 55)
+#            [ 0.03758472,  0.03758472]]>  datetime.datetime(2025, 1, 1, 3, 0)]>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ################ Propagation Kepler element

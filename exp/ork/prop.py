@@ -21,7 +21,7 @@ import ork.force
 import ork.posvel
 
 defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
-sunstate = ['umbra', 'penumbra>umbra', 'umbra>penumbra', 'penumbra', 'fullsun>penumbra', 'punumbra>fullsun', 'fullsun']
+sunstate = ['umbra', 'penumbra>umbra', 'umbra>penumbra', 'penumbra', 'fullsun>penumbra', 'penumbra>fullsun', 'fullsun']
 
 def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
     """Make a generator for an ephemeris
@@ -94,28 +94,79 @@ def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
     # Events
     okprop.addEventDetector(AltitudeDetector(float(events['altitude'].si.value), forceenv['sphalt']))
     ret = {}
-    if events['eclipse']:
-        ret['eclipsedet'] = EclipseDetector(forceenv['sun'], forceenv['sunrad'], forceenv['earth'])
-        handled = ret['eclipsedet'].withUmbra().withHandler(ContinueOnEvent())
-        logger = EventsLogger()
-        loggeddet = logger.monitorDetector(handled)
-        okprop.addEventDetector(loggeddet)
+    if events['eclipse']: # Only includes earth as occluding body
+        (ret['umbradet'], logger_umb) = make_eclipsedet(okprop, forceenv, True)
+        (ret['penumbradet'], logger_pen) = make_eclipsedet(okprop, forceenv, False)
 
     # Propagate
     propagated = okprop.propagate(ork0.date, ork0.date.shiftedBy(astro.timesec(proptime)))
     if events['eclipse']:
         ret['ephgen'] = generator.getGeneratedEphemeris();
-        loggedevents = logger.getLoggedEvents()
-        pvts = [augmentpvt(ev.state.pvt(), ev.increasing, \
-                           ('umbra>penumbra', 'penumbra>umbra'), 'sunlight')
-                        for ev in loggedevents]
-        pvs = [pvt[0] for pvt in pvts]
-        tms = [pvt[1] for pvt in pvts]
-        ret['sun transition'] = (u.Quantity(np.asarray(pvs), pvs[0].unit), \
-                         astropy.time.Time([tm.value for tm in tms]))
+        umbra = eclipse_transitions(logger_umb, ('umbra>penumbra', 'penumbra>umbra'))
+        penumbra = eclipse_transitions(logger_pen, ('penumbra>fullsun', 'fullsun>penumbra'))
+        ret['sun transition'] = (umbra, penumbra)
     else:
         ret = generator.getGeneratedEphemeris();
     return ret
+
+# demoa.prop.eclipse.suntrans[0][1][0:5] # umbra transitions
+ # datetime.datetime(2025, 1, 1, 0, 35, 36, 376969)
+ # datetime.datetime(2025, 1, 1, 1, 30, 8, 972149)
+ # datetime.datetime(2025, 1, 1, 2, 6, 1, 462955)
+ # datetime.datetime(2025, 1, 1, 3, 0, 34, 113826)
+ # datetime.datetime(2025, 1, 1, 3, 36, 26, 547286)
+# demoa.prop.eclipse.suntrans[0][0]['sunlight'][0:5]
+#  <Quantity [1., 2., 1., 2., 1.]>
+# demoa.prop.eclipse.suntrans[1][1][0:5] # penumbra transitions
+ # datetime.datetime(2025, 1, 1, 0, 35, 45, 142205)
+ # datetime.datetime(2025, 1, 1, 1, 30, 0, 379634)
+ # datetime.datetime(2025, 1, 1, 2, 6, 10, 229761)
+ # datetime.datetime(2025, 1, 1, 3, 0, 25, 519718)
+ # datetime.datetime(2025, 1, 1, 3, 36, 35, 315610)
+# demoa.prop.eclipse.suntrans[1][0]['sunlight'][0:5]
+#  <Quantity [4., 5., 4., 5., 4.]>
+
+# Order these
+ # umbra 0 at 0h0m
+ # 1 @ datetime.datetime(2025, 1, 1, 0, 35, 36, 376969)
+ # should be penumbra 3 at 0h35m40s
+ # 4 @ datetime.datetime(2025, 1, 1, 0, 35, 45, 142205)
+ # should be fullsun 6 at 1h00m
+ # 5 @ datetime.datetime(2025, 1, 1, 1, 30, 0, 379634)
+ # should be penumbra 3 at 1h30m5s
+ # 2 @ datetime.datetime(2025, 1, 1, 1, 30, 8, 972149)
+ # should be umbra 0 at 2h0m
+ # 1 @ datetime.datetime(2025, 1, 1, 2, 6, 1, 462955)
+ # 4 @ datetime.datetime(2025, 1, 1, 2, 6, 10, 229761)
+ # 5 @ datetime.datetime(2025, 1, 1, 3, 0, 25, 519718)
+ # 2 @ datetime.datetime(2025, 1, 1, 3, 0, 34, 113826)
+ # 1 @ datetime.datetime(2025, 1, 1, 3, 36, 26, 547286)
+ # 4 @ datetime.datetime(2025, 1, 1, 3, 36, 35, 315610)
+
+
+# fnval > 0 ork.prop.propagate(demoa.prop.eclipse.genev, TimeDelta('1hr 25min').datetime.seconds*u.s)
+
+def make_eclipsedet(propagator, forceenv, umbra):
+    '''Make an eclipse detector for either umbra (`umbra=True`) or
+    penumbra (`umbra=False`) and addit to the `propagator`.'''
+    eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'], forceenv['earth'])
+    logger = EventsLogger()
+    if umbra:
+        handled = eclipsedet.withUmbra().withHandler(ContinueOnEvent())
+    else:
+        handled = eclipsedet.withPenumbra().withHandler(ContinueOnEvent())
+    loggeddet = logger.monitorDetector(handled)
+    propagator.addEventDetector(loggeddet)
+    return (eclipsedet, logger)
+
+def eclipse_transitions(logger, incdec_tuple): # ('umbra>penumbra', 'penumbra>umbra')
+    loggedevents = logger.getLoggedEvents()
+    pvts = [augmentpvt(ev.state.pvt(), ev.increasing, incdec_tuple, 'sunlight')
+            for ev in loggedevents]
+    pvs = [pvt[0] for pvt in pvts]
+    tms = [pvt[1] for pvt in pvts]
+    return (u.Quantity(np.asarray(pvs), pvs[0].unit), \
+            astropy.time.Time([tm.value for tm in tms]))
 
 # The following verision returns a tuple of (Quantity, Time), each with the same shape (number of rows)
 def propagate2(generator, reltimes, include_init=True):
@@ -135,14 +186,16 @@ def propagate2(generator, reltimes, include_init=True):
         gen = generator
     else:
         gen = generator['ephgen']
-        ecld = generator['eclipsedet']
+        umbd = generator['umbradet']
+        pend = generator['penumbradet']
 
     if rtscalar:
         # This includes the value of the event function "pvut" = position, velocity, umbra and time
         ss = gen.propagate(gen.getMinDate().shiftedBy(float(reltimes.to(u.s).value)))
         pvt = ss.orbit.pvt()
-        if 'ecld' in locals():
-            return augmentpvt(pvt, ecld.g(ss), ('penumbra', 'umbra'), 'sunlight')
+        if 'umbd' in locals():
+            # return augmentpvt(pvt, umbd.g(ss), ('penumbra', 'umbra'), 'sunlight')
+            return augmentpvt(pvt, [umbd.g(ss), pend.g(ss)], None, 'sunlight')
         else:
             return pvt
     else:
@@ -159,11 +212,19 @@ def augmentpvt(pvt, indicator, negposnames, fieldname):
     positive.
     '''
     pvtdict = astro.splitsq(pvt[0])
-    if indicator <= 0.0:
-        fv = sunstate.index(negposnames[0])*u.dimensionless_unscaled
-    else:
-        fv = sunstate.index(negposnames[1])*u.dimensionless_unscaled
-    pvtdict[fieldname] = fv
+    if type(indicator) is list:
+        if indicator[0] > 0.0 and indicator[1] > 0.0:
+            fv = sunstate.index('fullsun')*u.dimensionless_unscaled
+        elif indicator[0]*indicator[1] < 0.0:
+            fv = sunstate.index('penumbra')*u.dimensionless_unscaled
+        else:
+            fv = sunstate.index('umbra')*u.dimensionless_unscaled
+    else: # Transition
+        if indicator <= 0.0:
+            fv = sunstate.index(negposnames[0])*u.dimensionless_unscaled
+        else:
+            fv = sunstate.index(negposnames[1])*u.dimensionless_unscaled
+            pvtdict[fieldname] = fv
     return (astro.makesq(pvtdict), pvt[1])
 
 ########################################
@@ -180,7 +241,7 @@ def propagate(generator, reltimes, include_init=True):
         gen = generator
     else:
         gen = generator['ephgen']
-        ecld = generator['eclipsedet']
+        ecld = generator['umbradet']
 
     rts = astro.timesec(reltimes)
     if isinstance(rts, collections.abc.Iterable):
