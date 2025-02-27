@@ -20,6 +20,7 @@ _eph_time = 'time'
 _eph_pos = 'position'
 _eph_vel = 'velocity'
 _ephemeris_columns = [_eph_time, _eph_pos, _eph_vel]
+_eph_pos_xyz = ('px','py','pz')
 
 # These should be conditional on the units used
 _pos_format = '10.3f'
@@ -32,6 +33,12 @@ def tsephem(data, times):
     ts[_eph_pos].info.format = _pos_format
     ts[_eph_vel].info.format = _vel_format
     return ts
+
+def posxyz(ephem):
+    '''Position only, separate x, y, z, components'''
+    txyz = TimeSeries(time=ephem['time'], data=ephem[_eph_pos])
+    txyz.rename_columns(('col0','col1','col2'), _eph_pos_xyz)
+    return txyz
 
 ##################################################
 ####   Tests for posvel and related types     ####

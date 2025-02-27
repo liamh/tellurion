@@ -76,7 +76,7 @@ demoa.prop.check.eph_has_pvt0 = posvel.pvt(demoa.prop.ephem, 0) == demoa.init.pv
 
 # Eclipsing
 demoa.prop.eclipse = Munch()
-demoa.prop.eclipse.events = {'altitude': 125.0*u.km, 'eclipse': ['umbra'], 'visibility': []}
+demoa.prop.eclipse.events = {'altitude': 125.0*u.km, 'eclipse': True, 'visibility': []}
 demoa.prop.eclipse.genev = ork.prop.generate(demoa.init.pvt, 1*u.day, ork.force.deffe, demoa.prop.eclipse.events)
 demoa.prop.eclipse.suntrans = demoa.prop.eclipse.genev['sun transition']
 demoa.prop.eclipse.um12h = ork.prop.propagate(demoa.prop.eclipse.genev, 12*u.hour)

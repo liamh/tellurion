@@ -1,10 +1,10 @@
+import operator
 import collections
 import collections.abc
 import numpy as np
 import astropy.units as u
 import astropy.time
 import astropy.table
-from astropy.timeseries import TimeSeries
 import orekit
 from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit
 from org.orekit.propagation.numerical import NumericalPropagator
@@ -109,46 +109,15 @@ def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
         ret['ephgen'] = generator.getGeneratedEphemeris();
         umbra = eclipse_transitions(logger_umb, 'umbra')
         penumbra = eclipse_transitions(logger_pen, 'penumbra')
-        ret['sun transition'] = (umbra, penumbra)
+        suntr = sorted(umbra + penumbra, key=operator.itemgetter(2))
+        pvs = u.Quantity([m[0] for m in suntr])
+        times = astropy.time.Time([m[2] for m in suntr])
+        txyz = posvel.posxyz(posvel.tsephem(pvs, times))
+        txyz['suntrans'] = [m[1] for m in suntr]
+        ret['sun transition'] = txyz
     else:
         ret = generator.getGeneratedEphemeris();
     return ret
-
-# demoa.prop.eclipse.suntrans[0][1][0:5] # umbra transitions
- # datetime.datetime(2025, 1, 1, 0, 35, 36, 376969)
- # datetime.datetime(2025, 1, 1, 1, 30, 8, 972149)
- # datetime.datetime(2025, 1, 1, 2, 6, 1, 462955)
- # datetime.datetime(2025, 1, 1, 3, 0, 34, 113826)
- # datetime.datetime(2025, 1, 1, 3, 36, 26, 547286)
-# demoa.prop.eclipse.suntrans[0][0]['sunlight'][0:5]
-#  <Quantity [1., 2., 1., 2., 1.]>
-# demoa.prop.eclipse.suntrans[1][1][0:5] # penumbra transitions
- # datetime.datetime(2025, 1, 1, 0, 35, 45, 142205)
- # datetime.datetime(2025, 1, 1, 1, 30, 0, 379634)
- # datetime.datetime(2025, 1, 1, 2, 6, 10, 229761)
- # datetime.datetime(2025, 1, 1, 3, 0, 25, 519718)
- # datetime.datetime(2025, 1, 1, 3, 36, 35, 315610)
-# demoa.prop.eclipse.suntrans[1][0]['sunlight'][0:5]
-#  <Quantity [4., 5., 4., 5., 4.]>
-
-
-# Order these
- # umbra 0 at 0h10m
- # 101 @ datetime.datetime(2025, 1, 1, 0, 35, 36, 376969)
- # penumbra 1 at 0h35m40s
- # 112 @ datetime.datetime(2025, 1, 1, 0, 35, 45, 142205)
- # fullsun 2 at 1h00m
- # 121 @ datetime.datetime(2025, 1, 1, 1, 30, 0, 379634)
- # penumbra 1 at 1h30m5s
- # 110 @ datetime.datetime(2025, 1, 1, 1, 30, 8, 972149)
- # should be umbra 0 at 2h0m
- # 101 @ datetime.datetime(2025, 1, 1, 2, 6, 1, 462955)
- # 112 @ datetime.datetime(2025, 1, 1, 2, 6, 10, 229761)
- # 121 @ datetime.datetime(2025, 1, 1, 3, 0, 25, 519718)
- # 110 @ datetime.datetime(2025, 1, 1, 3, 0, 34, 113826)
- # 101 @ datetime.datetime(2025, 1, 1, 3, 36, 26, 547286)
- # 112 @ datetime.datetime(2025, 1, 1, 3, 36, 35, 315610)
-
 
 # fnval > 0 ork.prop.propagate(demoa.prop.eclipse.genev, TimeDelta('1hr 25min').datetime.seconds*u.s)
 
@@ -171,21 +140,22 @@ def eclipse_transitions(logger, which):
     def suntrans(ev):
         if which == 'penumbra':
             if ev.increasing:
-                return 112.0
+                return 'ps' # Transition from penumbra to full sunlight
             else:
-                return 121.0
-        else:
+                return 'sp' # Transition from full sunlight to penumbra
+        else:  # umbra
             if ev.increasing:
-                return 101.0
+                return 'up' # Transition from umbra to penumbra
             else:
-                return 110.0
+                return 'pu' # Transition from penumbra to umbra
 
-    pvts = [augmentpvt(ev.state.pvt(), suntrans(ev), 'sunlight')
-            for ev in loggedevents]
-    pvs = [pvt[0] for pvt in pvts]
-    tms = [pvt[1] for pvt in pvts]
-    return (u.Quantity(np.asarray(pvs), pvs[0].unit), \
-            astropy.time.Time([tm.value for tm in tms]))
+    def pvet(ev):
+        '''A 3-tuple of posvel, sun transition (2-character string with prior and posterior sun state), and time.'''
+        pvt = ev.state.pvt()
+        st = suntrans(ev)
+        return (pvt[0], st, pvt[1])
+
+    return [pvet(ev) for ev in loggedevents]
 
 # The following verision returns a tuple of (Quantity, Time), each with the same shape (number of rows)
 def propagate2(generator, reltimes, include_init=True):
