@@ -114,6 +114,9 @@ def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
         times = astropy.time.Time([m[2] for m in suntr])
         txyz = posvel.posxyz(posvel.tsephem(pvs, times))
         txyz['suntrans'] = [m[1] for m in suntr]
+        elapsed = [dt.quantity_str for dt in np.diff(txyz['time'])]
+        elapsed.insert(0,'')
+        txyz['elapsed'] = elapsed
         ret['sun transition'] = txyz
     else:
         ret = generator.getGeneratedEphemeris();
@@ -123,7 +126,7 @@ def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
 
 def make_eclipsedet(propagator, forceenv, umbra):
     '''Make an eclipse detector for either umbra (`umbra=True`) or
-    penumbra (`umbra=False`) and addit to the `propagator`.'''
+    penumbra (`umbra=False`) and add it to the `propagator`.'''
     eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'], forceenv['earth'])
     logger = EventsLogger()
     if umbra:
@@ -193,26 +196,26 @@ def propagate2(generator, reltimes, include_init=True):
             # shadow and positive when exiting.
             umbsl = umbd.g(ss)
             pensl = pend.g(ss)
+
             if umbsl < 0.0 and pensl < 0.0:
-                sunstate = 0.0
+                sunstate = 'u'
             elif umbsl*pensl < 0.0:
-                sunstate = 1.0
+                sunstate = 'p'
             else:
-                sunstate = 2.0
-            return augmentpvt(pvt, sunstate, 'sunlight')
+                sunstate = 's'
+            return pvt + (sunstate,)
         else:
             return pvt
     else:
         if include_init:
             reltimes = np.insert(reltimes, 0, 0.0)
-        data = [propagate2(generator, rt)[0] for rt in reltimes]
-        return (u.Quantity(np.asarray(data), data[0].unit),
-                ork.posvel.okad(gen.getMinDate()) + astropy.time.TimeDelta(reltimes))
-
-def augmentpvt(pvt, value, fieldname):
-    pvtdict = astro.splitsq(pvt[0])
-    pvtdict[fieldname] = value*u.dimensionless_unscaled
-    return (astro.makesq(pvtdict), pvt[1])
+        data = [propagate2(generator, rt) for rt in reltimes]
+        pvs = [d[0] for d in data]
+        pvsq = u.Quantity(np.asarray(pvs), pvs[0].unit)
+        times = ork.posvel.okad(gen.getMinDate()) + astropy.time.TimeDelta(reltimes)
+        ephem = posvel.posxyz(posvel.tsephem(pvsq, times))
+        ephem['sunlight'] = [d[2] for d in data]
+        return ephem
 
 ########################################
 ### OLD VERSION pre-umbra handling
