@@ -59,6 +59,7 @@ def isdttm(obj):
     return type(obj) is astropy.time.Time
 
 def isreltime(obj):
+    """Object is a relative time: is a u.Quantity with physical type 'time'"""
     return type(obj) is u.Quantity and u.get_physical_type(obj) == u.get_physical_type('time')
 
 def ispvt(obj):

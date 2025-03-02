@@ -23,7 +23,9 @@ import ork.posvel
 defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
 
 def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
-    """Make a generator for an ephemeris
+    """Make a generator for an ephemeris, optionally include eclipse
+    information. The result of this function is passed as the first
+    argument to `propagate()`.
 
     Parameters
     ----------
@@ -46,12 +48,13 @@ def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
     An Orekit object that is passed to `propagate()` as the first
     argument, if no event other than altitude is included in `events`.
 
-    A Dict of generator (`'ephgen'`) to pass to `propagate()`,
-    EclipseDetector (`'eclipsedet'`), and a timetable of sun
-    transitions `'sun transition'`, which are three-digit numbers
-    beginning with 1, the second digit is the prior sun state (0 =
-    total eclipse, 1 = partial eclipse, 2 = full sun), and the third
-    digit is the posterior sun state.
+    If eclipse detection is added to `events`, then a dictionary with
+    the generator `['ephgen']`, and an ephemeris table `['sun
+    transitions']` with xyz positions is returned. The latter has a
+    two-character string 'suntrans', and elapsed time from the
+    previous transition 'elapsed'. There are also two detectors used
+    by `propagate()` in the dictionary.
+
     """
 
     if posvel.ispvt(initstate):
@@ -99,13 +102,55 @@ def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
     # Events
     okprop.addEventDetector(AltitudeDetector(float(events['altitude'].si.value), forceenv['sphalt']))
     ret = {}
+
+    def make_eclipsedet(propagator, forceenv, umbra):
+        '''Make an eclipse detector for either umbra (`umbra=True`) or penumbra (`umbra=False`) and add it to the `propagator`.'''
+        logger = EventsLogger()
+        if umbra:
+            # Not necessary to have .withUmbra(), it is already set that way
+            eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'], forceenv['earth']).withUmbra()
+            handled = eclipsedet.withHandler(ContinueOnEvent())
+        else:
+            # Necessary to have withPenumbra(), as it is not changed in the instance
+            eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'], forceenv['earth']).withPenumbra()
+            handled = eclipsedet.withHandler(ContinueOnEvent())
+        loggeddet = logger.monitorDetector(handled)
+        propagator.addEventDetector(loggeddet)
+        return (eclipsedet, logger)
+
     if events['eclipse']: # Only includes earth as occluding body
         (ret['umbradet'], logger_umb) = make_eclipsedet(okprop, forceenv, True)
         (ret['penumbradet'], logger_pen) = make_eclipsedet(okprop, forceenv, False)
 
     # Propagate
     propagated = okprop.propagate(ork0.date, ork0.date.shiftedBy(astro.timesec(proptime)))
+
+    def eclipse_transitions(logger, which):
+        '''Find the transitions in and out of eclipse'''
+        loggedevents = logger.getLoggedEvents()
+        def suntrans(ev):
+            if which == 'penumbra':
+                if ev.increasing:
+                    return 'ps' # Transition from penumbra to full sunlight
+                else:
+                    return 'sp' # Transition from full sunlight to penumbra
+            else:  # umbra
+                if ev.increasing:
+                    return 'up' # Transition from umbra to penumbra
+                else:
+                    return 'pu' # Transition from penumbra to umbra
+        def pvet(ev):
+            '''A 3-tuple of posvel, sun transition (2-character string with prior and posterior sun state), and time.'''
+            pvt = ev.state.pvt()
+            st = suntrans(ev)
+            return (pvt[0], st, pvt[1])
+        return [pvet(ev) for ev in loggedevents]
+
     if events['eclipse']:
+        # Return a dictionary with the generator ['ephgen'], and an
+        # ephemeris table ['sun transitions'] with xyz positions,
+        # two-character string 'suntrans', and elapsed time from the
+        # previous transition 'elapsed'
         ret['ephgen'] = generator.getGeneratedEphemeris();
         umbra = eclipse_transitions(logger_umb, 'umbra')
         penumbra = eclipse_transitions(logger_pen, 'penumbra')
@@ -122,68 +167,30 @@ def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
         ret = generator.getGeneratedEphemeris();
     return ret
 
-# fnval > 0 ork.prop.propagate(demoa.prop.eclipse.genev, TimeDelta('1hr 25min').datetime.seconds*u.s)
-
-def make_eclipsedet(propagator, forceenv, umbra):
-    '''Make an eclipse detector for either umbra (`umbra=True`) or
-    penumbra (`umbra=False`) and add it to the `propagator`.'''
-    eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'], forceenv['earth'])
-    logger = EventsLogger()
-    if umbra:
-        handled = eclipsedet.withUmbra().withHandler(ContinueOnEvent())
-    else:
-        handled = eclipsedet.withPenumbra().withHandler(ContinueOnEvent())
-    loggeddet = logger.monitorDetector(handled)
-    propagator.addEventDetector(loggeddet)
-    return (eclipsedet, logger)
-
-def eclipse_transitions(logger, which):
-    loggedevents = logger.getLoggedEvents()
-
-    def suntrans(ev):
-        if which == 'penumbra':
-            if ev.increasing:
-                return 'ps' # Transition from penumbra to full sunlight
-            else:
-                return 'sp' # Transition from full sunlight to penumbra
-        else:  # umbra
-            if ev.increasing:
-                return 'up' # Transition from umbra to penumbra
-            else:
-                return 'pu' # Transition from penumbra to umbra
-
-    def pvet(ev):
-        '''A 3-tuple of posvel, sun transition (2-character string with prior and posterior sun state), and time.'''
-        pvt = ev.state.pvt()
-        st = suntrans(ev)
-        return (pvt[0], st, pvt[1])
-
-    return [pvet(ev) for ev in loggedevents]
-
-# The following verision returns a tuple of (Quantity, Time), each with the same shape (number of rows)
 def propagate(generator, reltimes, include_init=True):
     '''From an existing ephemeris generator, propagate to the time(s)
-    relative to epoch of the initial state. If an list of relative
-    times is given, an ephemeris table is returned; if reltimes is a
-    single time, then a PVT is returned. If `include`_init is true,
-    then include the initial PVT in the ephemeris table.
+    relative to epoch of the initial state. The relative times must
+    satisfy posvel.isreltime(reltimes), and if the size
+    prop5m1h.shape[0] > 0, an ephemeris table is returned. If reltimes
+    is a single time, then a PVT is returned. If `include`_init is
+    true, then include the initial PVT in the ephemeris table.
 
     If an eclipse detector has been added, the `'sunlight'` value will
     be one of 'u' (umbra, or total eclipse), 'p' (penumbra, or partial
     eclipse, or 's' (full sun).
     '''
-    if type(reltimes) is u.Quantity and u.get_physical_type(reltimes) == 'time':
+    if posvel.isreltime(reltimes):
         rtshape = reltimes.shape
         rtscalar = rtshape == ()
     else:
-        raise("Reltimes must be a u.Quantity with physical type 'time'")
+        raise("Reltimes must be a relative time or times: a u.Quantity with physical type 'time'")
 
     if type(generator) is BoundedPropagator:
         gen = generator
     else:
         gen = generator['ephgen']
-        umbd = generator['umbradet'].withUmbra()  # Not necessary to have .withUmbra(), it is already set that way
-        pend = generator['penumbradet'].withPenumbra() # Necessary to have withPenumbra(), as it is not changed in the instance
+        umbd = generator['umbradet']
+        pend = generator['penumbradet']
 
     if rtscalar:
         # This includes the value of the event function "pvut" = position, velocity, umbra and time
