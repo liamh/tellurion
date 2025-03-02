@@ -79,9 +79,9 @@ demoa.prop.eclipse = Munch()
 demoa.prop.eclipse.events = {'altitude': 125.0*u.km, 'eclipse': True, 'visibility': []}
 demoa.prop.eclipse.genev = ork.prop.generate(demoa.init.pvt, 1*u.day, ork.force.deffe, demoa.prop.eclipse.events)
 demoa.prop.eclipse.suntrans = demoa.prop.eclipse.genev['sun transition']
-demoa.prop.eclipse.ephem = ork.prop.propagate2(demoa.prop.eclipse.genev, np.linspace(5.0*u.minute, 5*60.0*u.minute, 60))
-demoa.prop.eclipse.um12h = ork.prop.propagate2(demoa.prop.eclipse.genev, 12*u.hour)
-demoa.prop.eclipse.um12h05m = ork.prop.propagate2(demoa.prop.eclipse.genev, astro.tq('12hr 5min'))
+demoa.prop.eclipse.ephem = ork.prop.propagate(demoa.prop.eclipse.genev, np.linspace(5.0*u.minute, 5*60.0*u.minute, 60))
+demoa.prop.eclipse.um12h = ork.prop.propagate(demoa.prop.eclipse.genev, 12*u.hour)
+demoa.prop.eclipse.um12h05m = ork.prop.propagate(demoa.prop.eclipse.genev, astro.tq('12hr 5min'))
 
 ################ Propagation Kepler element
 
