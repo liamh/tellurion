@@ -14,10 +14,9 @@ from org.orekit.bodies import GeodeticPoint
 from org.orekit.frames import TopocentricFrame
 import org.orekit.models.earth as oearth
 
-import geog
-import posvel
-import ork.force
-import ork.posvel
+from .. import posvel
+from . import force
+from . import posvel as oposvel
 
 def geodpt(earthloc):
     '''Create the Orekit GeodeticPoint from an AstroPy EarthLocation'''
@@ -27,7 +26,7 @@ def geodpt(earthloc):
     altitude_m = float(geod.height.si.value)
     return GeodeticPoint(lat_rdn, lon_rdn, altitude_m)
 
-def eciobs(loc, observation=None, name='eci obs', forceenv=ork.force.deffe):
+def eciobs(loc, observation=None, name='eci obs', forceenv=force.deffe):
     '''Find the ECI position and time of the observations made from
     the location. If observation is a Time or multiple times, find the site
     vector(s). Uses Orekit.'''
@@ -52,6 +51,6 @@ def eciobs(loc, observation=None, name='eci obs', forceenv=ork.force.deffe):
         ts[name].info.format = posvel._pos_format
         return ts
     else:
-        posv3d = tf.getPVCoordinates(ork.posvel.okad(dttm), forceenv['celestialframe']).getPosition()
+        posv3d = tf.getPVCoordinates(oposvel.okad(dttm), forceenv['celestialframe']).getPosition()
         pos = posvel.makepos(posv3d.quant(u.m))
         return posvel.makept(pos, dttm)

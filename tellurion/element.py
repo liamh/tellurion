@@ -3,7 +3,7 @@ import astropy.units as u
 import astropy.constants # astropy.constants.R_earth
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
-import astro
+from . import astro
 
 # kep1 = kepler({"ecc":0.1, "sma":8000.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25})
 # kep2 = kepler({"zper":250.0, "zapo":350.0, "inc":22.0, "argper":66.0, "raan":68.0, "ma":7.25})

@@ -9,8 +9,7 @@ import astropy.time
 from astropy.timeseries import TimeSeries
 import astropy.table.row
 import astropy.coordinates as coord
-# from . import astro
-import astro
+from . import astro
 
 ##################################################
 ####   Constants used to define field names   ####

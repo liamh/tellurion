@@ -9,11 +9,11 @@ from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType, CircularOrbit
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.orekit.orbits import KeplerianOrbit, PositionAngleType
 
-import astro
-import posvel
-import element
-import ork.force
-import ork.posvel
+from .. import astro
+from .. import posvel
+from .. import element
+from . import force
+from . import posvel as oposvel
 
 ########################################
 ####  Convert PVT to Kepler elset   ####
@@ -21,7 +21,7 @@ import ork.posvel
 
 def kepler(pvt, units=(astro.prefunits['length'], astro.prefunits['angle'])):
     '''Convert Cartesian PVT to a Kepler orbital element set'''
-    return ork.posvel.tspvc(*pvt).kepler(units)
+    return oposvel.tspvc(*pvt).kepler(units)
 
 ########################################
 ####    Element values              ####
@@ -33,7 +33,7 @@ def tselements(ephem, elements):
                       data=[dict(zip(elements, elementval(ephrow, elements)))
                             for ephrow in ephem])
 
-def elementval (orbit, elt, earthrad=ork.force.deffe["earthrad"]):
+def elementval (orbit, elt, earthrad=force.deffe["earthrad"]):
     """
     Compute the orbital element from the orbit
     Arguments
@@ -42,7 +42,7 @@ def elementval (orbit, elt, earthrad=ork.force.deffe["earthrad"]):
       earthrad: the radius of the earth, necessary to provide for altitudes of perigee and apogee
     """
     if posvel.isephrow(orbit):
-        return elementval(ork.posvel.tspvc(orbit), elt, earthrad)
+        return elementval(oposvel.tspvc(orbit), elt, earthrad)
     elif isinstance(orbit, collections.abc.Iterable):
         return [elementval(orb, elt) for orb in orbit]
     else:
@@ -98,7 +98,7 @@ def _makekep(elvald):
 ####    Make Kepler element set     ####
 ########################################
 
-def keplerianorbit(oes, epoch, units=(astro.prefunits['length'], astro.prefunits['angle']), fe=ork.force.deffe):
+def keplerianorbit(oes, epoch, units=(astro.prefunits['length'], astro.prefunits['angle']), fe=force.deffe):
     '''Make a org.orekit.orbits.KeplerianOrbit from orbital elements as a u.Quantity or Dict'''
     if type(oes) is dict:
         oes = element.kepler(oes, None, units)
@@ -112,14 +112,14 @@ def keplerianorbit(oes, epoch, units=(astro.prefunits['length'], astro.prefunits
                               float(oessi['argper']), float(oessi['raan']), \
                               float(oessi['ma']), PositionAngleType.MEAN, \
                               fe['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                              ork.posvel.okad(epoch),   # Sets the date of the orbital parameters
+                              oposvel.okad(epoch),   # Sets the date of the orbital parameters
                               fe['earthmu'])   # Sets the central attraction coefficient (m³/s²)
     elif 'ta' in oessi.dtype.names:
         return KeplerianOrbit(float(oessi['sma']), float(oessi['ecc']), float(oessi['inc']), \
                               float(oessi['argper']), float(oessi['raan']), \
                               float(oessi['ma']), PositionAngleType.TRUE, \
                               fe['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                              ork.posvel.okad(epoch),   # Sets the date of the orbital parameters
+                              oposvel.okad(epoch),   # Sets the date of the orbital parameters
                               fe['earthmu'])   # Sets the central attraction coefficient (m³/s²)
     else:
         raise ValueError('Time element (ma or ta) required in element set')
@@ -133,7 +133,7 @@ def _kepler(orkobj, units=(astro.prefunits['length'], astro.prefunits['angle']))
                            'argper': elementval(orkobj, 'argper'),
                            'raan': elementval(orkobj, 'raan'),
                            'ma': elementval(orkobj, 'ma')},
-                          ork.posvel.okad(orkobj.getDate()),
+                          oposvel.okad(orkobj.getDate()),
                           units)
 
 ########################################
@@ -142,16 +142,16 @@ def _kepler(orkobj, units=(astro.prefunits['length'], astro.prefunits['angle']))
 
 
 # Convert to KeplerianOrbit (Orekit)
-TimeStampedPVCoordinates.keplerianorbit = lambda self, gravity=ork.force.deffe: self.cartesianorbit(gravity).keplerianorbit()
+TimeStampedPVCoordinates.keplerianorbit = lambda self, gravity=force.deffe: self.cartesianorbit(gravity).keplerianorbit()
 Orbit.keplerianorbit = lambda self: KeplerianOrbit.cast_(OrbitType.KEPLERIAN.convertType(self))
 
 # Convert to kepler (u.Quantity)
 TimeStampedPVCoordinates.kepler = \
     lambda self, units=(astro.prefunits['length'], astro.prefunits['angle']): \
-        self.cartesianorbit(ork.force.deffe).kepler(units)
+        self.cartesianorbit(force.deffe).kepler(units)
 Orbit.kepler = lambda self, units=(astro.prefunits['length'], astro.prefunits['angle']): _kepler(self, units)
 
 # Circular orbit
 TimeStampedPVCoordinates.circularorbit = \
-    lambda self, gravity=ork.force.deffe: CircularOrbit(self, gravity['celestialframe'], gravity['earthmu'])
+    lambda self, gravity=force.deffe: CircularOrbit(self, gravity['celestialframe'], gravity['earthmu'])
 Orbit.circularorbit = lambda self: CircularOrbit(self)

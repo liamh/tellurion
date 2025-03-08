@@ -14,13 +14,10 @@ from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
 import orekit.pyhelpers as pyhelp
 import org.orekit.time
 
-#from .
-import astro
-#from .
-import posvel
-#from .
-import ork.force
-import ork.posvel
+from .. import astro
+from .. import posvel
+from . import force
+from . import element
 
 ########################################
 #### Convert element set to PVT     ####
@@ -28,7 +25,7 @@ import ork.posvel
 
 def pvt(elset, time):
     '''Convert an orbital element set to Cartesian PVT'''
-    return ork.element.keplerianorbit(elset, time).pvt()
+    return element.keplerianorbit(elset, time).pvt()
 
 ########################################
 ####    Vector3D                    ####
@@ -99,6 +96,6 @@ def tspvc(pv, time=None):
 ####       Convert Cartesian        ####
 ########################################
 
-TimeStampedPVCoordinates.cartesianorbit = lambda self, fe=ork.force.deffe: \
+TimeStampedPVCoordinates.cartesianorbit = lambda self, fe=force.deffe: \
     CartesianOrbit(self, fe['celestialframe'], fe['earthmu'])
 Orbit.cartesianorbit = lambda self: CartesianOrbit.cast_(OrbitType.CARTESIAN.convertType(self))

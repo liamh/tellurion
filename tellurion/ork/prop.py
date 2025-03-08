@@ -14,15 +14,16 @@ from org.orekit.propagation.events import AltitudeDetector, EclipseDetector, Eve
 from org.orekit.propagation.events.handlers import ContinueOnEvent
 import org.orekit.forces.gravity as okgrav
 
-import astro
-import posvel
-import element
-import ork.force
-import ork.posvel
+from .. import astro
+from .. import posvel
+from .. import element
+from . import force
+from . import posvel as oposvel
+from . import element as oelement
 
 defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
 
-def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
+def generate(initstate, proptime, forceenv=force.deffe, events=defev):
     """Make a generator for an ephemeris, optionally include eclipse
     information. The result of this function is passed as the first
     argument to `propagate()`.
@@ -59,15 +60,15 @@ def generate(initstate, proptime, forceenv=ork.force.deffe, events=defev):
 
     if posvel.ispvt(initstate):
         pvt0 = initstate
-        ork0 = ork.posvel.tspvc(*pvt0).cartesianorbit(forceenv)
+        ork0 = oposvel.tspvc(*pvt0).cartesianorbit(forceenv)
     elif posvel.ispv(initstate):
         pvt0 = posvel.pvt((initstate, posvel.nowutc()))
-        ork0 = ork.posvel.tspvc(*pvt0).cartesianorbit(forceenv)
+        ork0 = oposvel.tspvc(*pvt0).cartesianorbit(forceenv)
     elif element.iskepels(initstate):
         if type(initstate) is tuple:
-            ork0 = ork.element.keplerianorbit(*initstate)
+            ork0 = oelement.keplerianorbit(*initstate)
         else:
-            ork0 = ork.element.keplerianorbit(initstate, posvel.nowutc())
+            ork0 = oelement.keplerianorbit(initstate, posvel.nowutc())
     elif hasattr(initstate, 'cartesianorbit'):
         ork0 = initstate.cartesianorbit()
     else:
@@ -228,7 +229,7 @@ def propagate(generator, reltimes, include_init=True):
         return ephem
 
 # The following return AstroPy objects
-SpacecraftState.pvt = lambda self, unitlookup=astro.prefunits: ork.posvel._pvtork(self.pVCoordinates, unitlookup)
+SpacecraftState.pvt = lambda self, unitlookup=astro.prefunits: oposvel._pvtork(self.pVCoordinates, unitlookup)
 BoundedPropagator.pvt = lambda self: self.initialState.pvt()
 SpacecraftState.kepler = lambda self: self.orbit.kepler()
 BoundedPropagator.kepler  = lambda self: self.initialState.kepler()
@@ -241,4 +242,4 @@ BoundedPropagator.keplerianorbit  = lambda self: self.initialState.keplerianorbi
 # The time difference between the earliest (usually the initial time)
 # and the latest; not always what is requested as atmospheric drag can
 # shorten the timespan
-BoundedPropagator.timerange = lambda self: (ork.posvel.okad(self.maxDate)-ork.posvel.okad(self.minDate)).to(u.s)
+BoundedPropagator.timerange = lambda self: (oposvel.okad(self.maxDate)-oposvel.okad(self.minDate)).to(u.s)

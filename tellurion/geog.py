@@ -9,8 +9,8 @@ import astropy.units as u
 import astropy.coordinates as coord
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
-import posvel
-import geonames
+from . import posvel
+from . import geonames
 
 # List of sites: astropy.coordinates.EarthLocation.get_site_names()
 
