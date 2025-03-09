@@ -10,7 +10,7 @@ import numpy as np
 import astropy.units as u
 from munch import Munch
 
-import tellurion as tell
+import tellurion.core as tell
 import tellurion.ork as tork
 
 ################ General

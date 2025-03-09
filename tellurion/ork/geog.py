@@ -14,7 +14,7 @@ from org.orekit.bodies import GeodeticPoint
 from org.orekit.frames import TopocentricFrame
 import org.orekit.models.earth as oearth
 
-from .. import posvel
+from ..core import posvel
 from . import force
 from . import posvel as oposvel
 

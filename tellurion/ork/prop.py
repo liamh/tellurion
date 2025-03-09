@@ -14,9 +14,9 @@ from org.orekit.propagation.events import AltitudeDetector, EclipseDetector, Eve
 from org.orekit.propagation.events.handlers import ContinueOnEvent
 import org.orekit.forces.gravity as okgrav
 
-from .. import astro
-from .. import posvel
-from .. import element
+from ..core import astro
+from ..core import posvel
+from ..core import element
 from . import force
 from . import posvel as oposvel
 from . import element as oelement

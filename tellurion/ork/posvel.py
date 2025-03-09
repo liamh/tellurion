@@ -14,8 +14,8 @@ from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
 import orekit.pyhelpers as pyhelp
 import org.orekit.time
 
-from .. import astro
-from .. import posvel
+from ..core import astro
+from ..core import posvel
 from . import force
 from . import element
 

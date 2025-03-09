@@ -1,2 +1,4 @@
 /env.sh
 __pycache__
+*.db
+.ipynb_checkpoints

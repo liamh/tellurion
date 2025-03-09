@@ -9,9 +9,9 @@ from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType, CircularOrbit
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.orekit.orbits import KeplerianOrbit, PositionAngleType
 
-from .. import astro
-from .. import posvel
-from .. import element
+from ..core import astro
+from ..core import posvel
+from ..core import element
 from . import force
 from . import posvel as oposvel
 
