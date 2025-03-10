@@ -1,23 +1,22 @@
 import os
 import astropy.units as u
 import spacetrack
-import astro
-import posvel
-import org.orekit.propagation.analytical.tle as tle
+from . import astro
+from . import posvel
 
 # Set stclient using registered space-track.org username and password
-# stclient = spacetrack.SpaceTrackClient(identity="myemail@example.com", password="mypw")
+# Place these lines with correct username and password in ~/.ipython/profile_default/startup/50-spacetrack.py
+#   import spacetrack
+#   stclient = spacetrack.SpaceTrackClient(identity="myemail@example.com", password="mypw")
 
-# from experimental import *
-# from ork.st import *
-# isssent = spacetrack_latest(stclient, [25544, 41335])
-# (iss, sentinel3a) = (isssent[0], isssent[1])
-# isskep = astro.makesq(iss[0][0])
+# Example with Sentinel 3A
+# sentst = tell.spacetrack_latest(stclient, 41335)
+# sentkep = tell.makesq(sentst[0][0])  # Keplerian elements
 # NOT AN ACCURATE COMPUTATION OF CARTESIAN POSITION, IT ASSUMES KEPLER ELEMENTS ARE OSCULATING:
-# iss_badpvt = ork.element.keplerianorbit(isskep, iss[0][1]).pvt()
-#
-# A better choice would be to use Orekit to propagate/convert
-# isstle = tle_latest(stclient, 25544)
+# sent_badpvt = tork.keplerianorbit(sentkep, sentst[0][1]).pvt()
+# A better choice would be to use Orekit to propagate/convert; see ork/tle.py for `sent_goodpvt`.
+# tell.posdiff(sent_goodpvt[0], sent_badpvt[0])
+# <Quantity 38.40421256 km>
 
 def satdata(stdict):
     epoch = posvel.dttm(stdict['EPOCH']) + float(stdict['EPOCH_MICROSECONDS'])*u.microsecond
@@ -49,9 +48,3 @@ def spacetrack_latest(stclient, satnums):
         return ret[0]
     else:
         return ret
-
-# Uses Orekit
-def tle_latest(stclient, satnum):
-    sattle = stclient.tle_latest(norad_cat_id=satnum, ordinal=1, format='tle')
-    sat2lines = sattle.split("\n")
-    return tle.TLE(sat2lines[0], sat2lines[1])

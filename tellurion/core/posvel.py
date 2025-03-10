@@ -179,3 +179,6 @@ def makept(pos, dttm, frame='gcrs'):
 def magdiff(a, b):
     '''Magnitude of the difference of two vectors'''
     return u.Quantity([np.linalg.norm(ai - bi) for (ai, bi) in zip(a, b)])
+
+def posdiff(a, b):
+    return np.linalg.norm(a[_eph_pos]-b[_eph_pos])
