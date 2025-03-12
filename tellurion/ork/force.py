@@ -4,7 +4,6 @@ import astropy.units as u
 from org.orekit.utils import Constants
 from org.orekit.forces.gravity.potential import GravityFieldFactory
 from org.orekit.forces.gravity import HolmesFeatherstoneAttractionModel
-from orekit import JArray_double
 from org.orekit.forces.drag import AbstractDragForceModel, DragForce
 from org.orekit.models.earth.atmosphere import Atmosphere, HarrisPriester, DTM2000, NRLMSISE00
 from org.orekit.models.earth.atmosphere.data import CssiSpaceWeatherData
@@ -34,9 +33,9 @@ def setgravity(degree, order, mass = 100.0):
     }
     eg = GravityFieldFactory.getNormalizedProvider(degree, order)
     force = {'gravity': eg,
-             'gravity-degree-order': [eg.maxDegree, eg.maxOrder],
-             'earthrad': eg.ae,
-             'earthmu': eg.mu,
+             'gravity-degree-order': [eg.getMaxDegree(), eg.getMaxOrder()],
+             'earthrad': eg.getAe(),
+             'earthmu': eg.getMu(),
              'mass': mass} # Needed by several forces but not gravity
     # Define spherical altitude for convience, not specifically force related, but uses the definitions
     return celestdflt | force | \

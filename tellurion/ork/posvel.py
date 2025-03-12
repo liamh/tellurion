@@ -11,7 +11,7 @@ from astropy.timeseries import TimeSeries
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType
-import orekit.pyhelpers as pyhelp
+import orekit_jpype.pyhelpers as pyhelp
 import org.orekit.time
 
 from ..core import astro
