@@ -18,6 +18,7 @@ from ..core import astro
 from ..core import posvel
 from . import force
 from . import element
+from . import prop
 
 ########################################
 #### Convert element set to PVT     ####
@@ -25,14 +26,15 @@ from . import element
 
 def pvt(elset, time):
     '''Convert an orbital element set to Cartesian PVT'''
-    return element.keplerianorbit(elset, time).pvt()
+    return prop.pvt(element.keplerianorbit(elset, time))
 
 ########################################
 ####    Vector3D                    ####
 ########################################
 
-def v3d(arg):
-    '''Make a Vector3D from the argument'''
+def v3d(arg, unit=u.dimensionless_unscaled):
+    '''Make a Vector3D from the argument; if the argument is a
+    Vector3D, return the components as a u.Quantity'''
     # match/case will not work because `case list` causes an error
     argtype = type(arg)
     if argtype == list:
@@ -40,9 +42,7 @@ def v3d(arg):
     elif argtype == np.ndarray:
         return Vector3D(arg.tolist())
     elif argtype == Vector3D:
-        return arg
-
-Vector3D.quant = lambda self, unit: u.Quantity([self.x, self.y, self.z], unit)
+        return u.Quantity([self.x, self.y, self.z], unit)
 
 ########################################
 ####  PVT tuple to and from Orekit  ####
@@ -70,9 +70,6 @@ def _pvtork(pvc, unitlookup):
         return pv, okad(pvc.date)
     else:
         return pv
-TimeStampedPVCoordinates.pvt = lambda self, unitlookup=astro.prefunits: _pvtork(self, unitlookup)
-PVCoordinates.pvt = lambda self, unitlookup=astro.prefunits: _pvtork(self, unitlookup)
-Orbit.pvt = lambda self, unitlookup=astro.prefunits: _pvtork(self.pVCoordinates, unitlookup)
 
 def tspvc(pv, time=None):
     '''Convert PVT or ephemeris row to TimeStampedPVCoordinates or PV to PVCoordinates'''

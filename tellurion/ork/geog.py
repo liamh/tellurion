@@ -52,5 +52,5 @@ def eciobs(loc, observation=None, name='eci obs', forceenv=force.deffe):
         return ts
     else:
         posv3d = tf.getPVCoordinates(oposvel.okad(dttm), forceenv['celestialframe']).getPosition()
-        pos = posvel.makepos(posv3d.quant(u.m))
+        pos = posvel.makepos(oposvel.v3d(posv3d,u.m))
         return posvel.makept(pos, dttm)

@@ -142,16 +142,16 @@ def _kepler(orkobj, units=(astro.prefunits['length'], astro.prefunits['angle']))
 
 
 # Convert to KeplerianOrbit (Orekit)
-TimeStampedPVCoordinates.keplerianorbit = lambda self, gravity=force.deffe: self.cartesianorbit(gravity).keplerianorbit()
-Orbit.keplerianorbit = lambda self: KeplerianOrbit.cast_(OrbitType.KEPLERIAN.convertType(self))
+#TimeStampedPVCoordinates.keplerianorbit = lambda self, gravity=force.deffe: self.cartesianorbit(gravity).keplerianorbit()
+# Orbit.keplerianorbit = lambda self: KeplerianOrbit.cast_(OrbitType.KEPLERIAN.convertType(self))
 
 # Convert to kepler (u.Quantity)
-TimeStampedPVCoordinates.kepler = \
-    lambda self, units=(astro.prefunits['length'], astro.prefunits['angle']): \
-        self.cartesianorbit(force.deffe).kepler(units)
-Orbit.kepler = lambda self, units=(astro.prefunits['length'], astro.prefunits['angle']): _kepler(self, units)
+#TimeStampedPVCoordinates.kepler = \
+#    lambda self, units=(astro.prefunits['length'], astro.prefunits['angle']): \
+#        self.cartesianorbit(force.deffe).kepler(units)
+#Orbit.kepler = lambda self, units=(astro.prefunits['length'], astro.prefunits['angle']): _kepler(self, units)
 
 # Circular orbit
-TimeStampedPVCoordinates.circularorbit = \
-    lambda self, gravity=force.deffe: CircularOrbit(self, gravity['celestialframe'], gravity['earthmu'])
-Orbit.circularorbit = lambda self: CircularOrbit(self)
+# TimeStampedPVCoordinates.circularorbit = \
+#    lambda self, gravity=force.deffe: CircularOrbit(self, gravity['celestialframe'], gravity['earthmu'])
+#Orbit.circularorbit = lambda self: CircularOrbit(self)

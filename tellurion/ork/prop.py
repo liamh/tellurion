@@ -5,7 +5,7 @@ import numpy as np
 import astropy.units as u
 import astropy.time
 import astropy.table
-import orekit
+import orekit_jpype as orekit
 from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit
 from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
@@ -228,18 +228,7 @@ def propagate(generator, reltimes, include_init=True):
             ephem = posvel.tsephem(pvsq, times)
         return ephem
 
-# The following return AstroPy objects
-SpacecraftState.pvt = lambda self, unitlookup=astro.prefunits: oposvel._pvtork(self.pVCoordinates, unitlookup)
-BoundedPropagator.pvt = lambda self: self.initialState.pvt()
-SpacecraftState.kepler = lambda self: self.orbit.kepler()
-BoundedPropagator.kepler  = lambda self: self.initialState.kepler()
-# The following return Orekit objects
-SpacecraftState.cartesianorbit = lambda self: CartesianOrbit.cast_(OrbitType.CARTESIAN.convertType(self))
-BoundedPropagator.cartesianorbit  = lambda self: self.initialState.cartesianorbit()
-SpacecraftState.keplerianorbit = lambda self: self.orbit.keplerianorbit()
-BoundedPropagator.keplerianorbit  = lambda self: self.initialState.keplerianorbit()
-
 # The time difference between the earliest (usually the initial time)
 # and the latest; not always what is requested as atmospheric drag can
 # shorten the timespan
-BoundedPropagator.timerange = lambda self: (oposvel.okad(self.maxDate)-oposvel.okad(self.minDate)).to(u.s)
+# BoundedPropagator.timerange = lambda self: (oposvel.okad(self.maxDate)-oposvel.okad(self.minDate)).to(u.s)
