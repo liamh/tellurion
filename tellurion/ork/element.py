@@ -13,7 +13,7 @@ from ..core import astro
 from ..core import posvel
 from ..core import element
 from . import force
-from . import posvel as oposvel
+from . import convert
 
 ########################################
 ####  Convert PVT to Kepler elset   ####
@@ -42,11 +42,11 @@ def elementval (orbit, elt, earthrad=force.deffe["earthrad"]):
       earthrad: the radius of the earth, necessary to provide for altitudes of perigee and apogee
     """
     if posvel.isephrow(orbit):
-        return elementval(oposvel.tspvc(orbit), elt, earthrad)
+        return elementval(convert.tspvc(orbit), elt, earthrad)
     elif isinstance(orbit, collections.abc.Iterable):
         return [elementval(orb, elt) for orb in orbit]
     else:
-        orbkep = orbit.keplerianorbit()
+        orbkep = convert.keplerianorbit(orbit)
         if isinstance(elt, list):
             return [_elget(orbkep, el, earthrad) for el in elt]
         else:
@@ -124,34 +124,3 @@ def keplerianorbit(oes, epoch, units=(astro.prefunits['length'], astro.prefunits
     else:
         raise ValueError('Time element (ma or ta) required in element set')
     return
-
-def _kepler(orkobj, units=(astro.prefunits['length'], astro.prefunits['angle'])):
-    '''Make a kepler u.Quantity from the Orekit object.'''
-    return element.kepler({'sma': elementval(orkobj, 'sma'),
-                           'ecc': elementval(orkobj, 'ecc'),
-                           'inc': elementval(orkobj, 'inc'),
-                           'argper': elementval(orkobj, 'argper'),
-                           'raan': elementval(orkobj, 'raan'),
-                           'ma': elementval(orkobj, 'ma')},
-                          oposvel.okad(orkobj.getDate()),
-                          units)
-
-########################################
-####    Convert element types       ####
-########################################
-
-
-# Convert to KeplerianOrbit (Orekit)
-#TimeStampedPVCoordinates.keplerianorbit = lambda self, gravity=force.deffe: self.cartesianorbit(gravity).keplerianorbit()
-# Orbit.keplerianorbit = lambda self: KeplerianOrbit.cast_(OrbitType.KEPLERIAN.convertType(self))
-
-# Convert to kepler (u.Quantity)
-#TimeStampedPVCoordinates.kepler = \
-#    lambda self, units=(astro.prefunits['length'], astro.prefunits['angle']): \
-#        self.cartesianorbit(force.deffe).kepler(units)
-#Orbit.kepler = lambda self, units=(astro.prefunits['length'], astro.prefunits['angle']): _kepler(self, units)
-
-# Circular orbit
-# TimeStampedPVCoordinates.circularorbit = \
-#    lambda self, gravity=force.deffe: CircularOrbit(self, gravity['celestialframe'], gravity['earthmu'])
-#Orbit.circularorbit = lambda self: CircularOrbit(self)

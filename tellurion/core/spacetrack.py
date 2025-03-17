@@ -13,7 +13,7 @@ from . import posvel
 # sentst = tell.spacetrack_latest(stclient, 41335)
 # sentkep = tell.makesq(sentst[0][0])  # Keplerian elements
 # NOT AN ACCURATE COMPUTATION OF CARTESIAN POSITION, IT ASSUMES KEPLER ELEMENTS ARE OSCULATING:
-# sent_badpvt = tork.keplerianorbit(sentkep, sentst[0][1]).pvt()
+# sent_badpvt = convert.keplerianorbit(sentkep, sentst[0][1]).pvt()
 # A better choice would be to use Orekit to propagate/convert; see ork/tle.py for `sent_goodpvt`.
 # tell.posdiff(sent_goodpvt[0], sent_badpvt[0])
 # <Quantity 38.40421256 km>

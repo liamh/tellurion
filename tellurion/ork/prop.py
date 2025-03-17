@@ -60,17 +60,18 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
 
     if posvel.ispvt(initstate):
         pvt0 = initstate
-        ork0 = oposvel.tspvc(*pvt0).cartesianorbit(forceenv)
+        ork0 = convert.cartesianorbit(oposvel.tspvc(*pvt0), forceenv)
     elif posvel.ispv(initstate):
         pvt0 = posvel.pvt((initstate, posvel.nowutc()))
-        ork0 = oposvel.tspvc(*pvt0).cartesianorbit(forceenv)
-    elif element.iskepels(initstate):
-        if type(initstate) is tuple:
-            ork0 = oelement.keplerianorbit(*initstate)
-        else:
-            ork0 = oelement.keplerianorbit(initstate, posvel.nowutc())
+        ork0 = convert.cartesianorbit(oposvel.tspvc(*pvt0), forceenv)
+    # Can't convert.keplerianorbit from astropy yet
+    # elif element.iskepels(initstate):
+    #     if type(initstate) is tuple:
+    #         ork0 = convert.keplerianorbit(*initstate)
+    #     else:
+    #         ork0 = convert.keplerianorbit(initstate, posvel.nowutc())
     elif hasattr(initstate, 'cartesianorbit'):
-        ork0 = initstate.cartesianorbit()
+        ork0 = cartesianorbit(initstate(), forceenv)
     else:
         raise ValueError('Cannot propagate initstate')
 

@@ -13,8 +13,6 @@ from org.orekit.frames import FramesFactory
 from org.orekit.utils import IERSConventions
 from org.orekit.bodies import OneAxisEllipsoid, CelestialBodyFactory
 
-from . import posvel
-
 OneAxisEllipsoid.__repr__ = \
     lambda self: f"<Near-spherical body equatorial radius {self.equatorialRadius}m, polar radius difference {-self.equatorialRadius*self.flattening}m >"
 
@@ -51,8 +49,6 @@ deffe = setgravity(0,0)
 # This will find the unnormalized coefficients independent of any simulation.
 # Returns three arrays: zonals (J2,...), Cnm, Snm
 def unnormcoef(degree, order, when = 0.0*u.s):
-    if type(when) is Quantity and get_physical_type(when) == 'time':
-        when = ork.posvel.okad(posvel.nowutc() + when)
     provider = GravityFieldFactory.getUnnormalizedProvider(degree, order)
     deg = provider.maxDegree
     ord = provider.maxOrder

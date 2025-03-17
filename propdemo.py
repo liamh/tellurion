@@ -27,7 +27,7 @@ demoa.init.check = Munch()
 demoa.init.pos = [5740.13268349, 3314.06715   ,    0.]
 demoa.init.vel = [-2.75082684,  4.76457184,  5.50165367]
 demoa.init.pvt = tell.pvt((demoa.init.pos, demoa.init.vel, newyear))  # A tuple (Quantity, Time)
-demoa.init.kep = tork.kepler(demoa.init.pvt)  # Convert PVT to Kepler elements
+demoa.init.kep = convert.kepler(demoa.init.pvt)  # Convert PVT to Kepler elements
 demoa.init.seekep = tell.splitsq(demoa.init.kep[0])  # Easier to read Kepler elements
 
 # Orekit representations
