@@ -16,14 +16,6 @@ from . import force
 from . import convert
 
 ########################################
-####  Convert PVT to Kepler elset   ####
-########################################
-
-def kepler(pvt, units=(astro.prefunits['length'], astro.prefunits['angle'])):
-    '''Convert Cartesian PVT to a Kepler orbital element set'''
-    return oposvel.tspvc(*pvt).kepler(units)
-
-########################################
 ####    Element values              ####
 ########################################
 
@@ -48,9 +40,9 @@ def elementval (orbit, elt, earthrad=force.deffe["earthrad"]):
     else:
         orbkep = convert.keplerianorbit(orbit)
         if isinstance(elt, list):
-            return [_elget(orbkep, el, earthrad) for el in elt]
+            return [elget(orbkep, el, earthrad) for el in elt]
         else:
-            return _elget(orbkep, elt, earthrad)
+            return elget(orbkep, elt, earthrad)
 
 _elkeys = ["name", "description", "phystype", "orkunit", "getter"]
 _elvals = [["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],
@@ -75,7 +67,7 @@ _elvals = [["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],
 _eldict = dict(zip([ev[0] for ev in _elvals], [dict(zip(_elkeys,ev)) for ev in _elvals]))
 
 # Get altitude of perigee/apogee by subtracting ex2.prop.forceenv["earthrad"]
-def _elget(orbkep, el, earthrad=None):
+def elget(orbkep, el, earthrad=None):
     lookup = _eldict[el]
     getter = lookup["getter"]
     if '__code__' in dir(getter) and len(getter.__code__.co_varnames) > 1:
