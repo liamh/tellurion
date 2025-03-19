@@ -27,32 +27,12 @@ demoa.init.check = Munch()
 demoa.init.pos = [5740.13268349, 3314.06715   ,    0.]
 demoa.init.vel = [-2.75082684,  4.76457184,  5.50165367]
 demoa.init.pvt = tell.pvt((demoa.init.pos, demoa.init.vel, newyear))  # A tuple (Quantity, Time)
-
-
 # Experiment with Cartesian or Kepler transformation
-
-from org.orekit.orbits import Orbit, CartesianOrbit, KeplerianOrbit, OrbitType
-
-demoa.init.tspvc = tork.convert.tspvc(demoa.init.pvt)
-demoa.init.cartorb = CartesianOrbit(demoa.init.tspvc, tork.force.deffe['celestialframe'], tork.force.deffe['earthmu'])
-demoa.init.keporb = OrbitType.KEPLERIAN.convertType(demoa.init.cartorb)
-tork.elget(demoa.init.keporb, 'sma', tork.deffe['earthrad'])
-
-
-
-
-
-
-
-
-demoa.init.kep = convert.kepler(demoa.init.pvt)  # Convert PVT to Kepler elements
+demoa.init.kep = tork.kepler(demoa.init.pvt)  # Convert PVT to Kepler elements
 demoa.init.seekep = tell.splitsq(demoa.init.kep[0])  # Easier to read Kepler elements
 
-# Orekit representations
-demoa.init.ork = Munch()
-demoa.init.ork.pvt = tork.tspvc(*demoa.init.pvt)           # org.orekit.utils.TimeStampedPVCoordinates
-demoa.init.ork.cartorb = demoa.init.ork.pvt.cartesianorbit()  # org.orekit.orbits.CartesianOrbit
-demoa.init.ork.keporb = demoa.init.ork.pvt.keplerianorbit()   # org.orekit.orbits.KeplerianOrbit
+## Working to this point
+
 
 # AstroPy representations
 demoa.init.check.kepap = demoa.init.ork.pvt.kepler()

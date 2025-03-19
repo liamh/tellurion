@@ -33,16 +33,16 @@ def elementval (orbit, elt, earthrad=force.deffe["earthrad"]):
       elt:  the orbital element desired, see list eldict.keys(); may be a list, e.g. ["sma", "ecc"]
       earthrad: the radius of the earth, necessary to provide for altitudes of perigee and apogee
     """
-    if posvel.isephrow(orbit):
-        return elementval(convert.tspvc(orbit), elt, earthrad)
-    elif isinstance(orbit, collections.abc.Iterable):
-        return [elementval(orb, elt) for orb in orbit]
+    # if posvel.isephrow(orbit):
+    #     return elementval(convert.tspvc(orbit), elt, earthrad)
+    # elif isinstance(orbit, collections.abc.Iterable):
+    #     return [elementval(orb, elt) for orb in orbit]
+    # else:
+    #     orbkep = convert.keplerianorbit(orbit)
+    if isinstance(elt, list):
+        return [elget(orbit, el, earthrad) for el in elt]
     else:
-        orbkep = convert.keplerianorbit(orbit)
-        if isinstance(elt, list):
-            return [elget(orbkep, el, earthrad) for el in elt]
-        else:
-            return elget(orbkep, elt, earthrad)
+        return elget(orbit, elt, earthrad)
 
 _elkeys = ["name", "description", "phystype", "orkunit", "getter"]
 _elvals = [["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],

@@ -16,6 +16,7 @@ from ..core import astro
 from ..core import element
 from ..core import posvel
 from . import force
+from . import element as oelement
 
 ###############################
 ####  Cartesian posvel     ####
@@ -43,8 +44,7 @@ def pvt(object, unitlookup=astro.prefunits):
         raise ValueError("Cannot convert value to position, value, and time (PVT)")
 
 def tspvc(pv, time=None):
-    '''Convert time tuple (posvel.pv(), astropy.time.Time) to Orekit
-    TimeStampedPVCoordinates or PV to PVCoordinates'''
+    '''Convert tuple (posvel.pv(), astropy.time.Time) or ephemeris row to Orekit TimeStampedPVCoordinates or posvel.pv() to PVCoordinates'''
     if posvel.isephrow(pv):
         (pv, tpvt) = posvel.pvt(pv)
         if time==None:
@@ -92,55 +92,21 @@ def v3d(arg, unit=u.dimensionless_unscaled):
     else:
         raise ValueError("Cannot convert to or from Vector3D")
 
-########################################
-####  Convert PVT to Kepler elset   ####
-########################################
-
-def zzzkepler(pvt, units=(astro.prefunits['length'], astro.prefunits['angle'])):
-    '''Convert Cartesian PVT to a Kepler orbital element set'''
-    return tspvc(*pvt).kepler(units)
-
 ###############################
 ####  Orbital elements     ####
 ###############################
 
-def kepler(object, units=(astro.prefunits['length'], astro.prefunits['angle']), forceenv=force.deffe):
-    '''Find the Kepler element set from the Orekit or object or pvt; if the argument `object` is a SpacecraftState or BoundedPropagator, the initial state is returned as a Kepler element set'''
-    if posvel.ispvt(object) or posvel.isephrow(object):
-        return kepler(tspvc(object))
-    elif type(object) is Orbit or type(object) is KeplerianOrbit:
-        return element.kepler({'sma': elementval(object, 'sma'),
-                               'ecc': elementval(object, 'ecc'),
-                               'inc': elementval(object, 'inc'),
-                               'argper': elementval(object, 'argper'),
-                               'raan': elementval(object, 'raan'),
-                               'ma': elementval(object, 'ma')},
-                              okad(object.getDate()),
-                              units)
-    elif type(object) is SpacecraftState:
-        return kepler(object.orbit, units)
-    elif type(object) is BoundedPropagator:
-        return kepler(object.initialState, units)
-    elif type(object) is TimeStampedPVCoordinates:
-        return kepler(cartesianorbit(object, forceenv), forceenv, units)
-    else:
-        raise ValueError("Cannot convert value to Kepler element set")
-
-def keplerianorbit(object):
-    '''Find the Orekit KeplerianOrbit from the object'''
-    if type(object) is Orbit or type(object) is CartesianOrbit:
-        return OrbitType.KEPLERIAN.convertType(object)
-    elif type(object) is SpacecraftState:
-        return keplerianorbit(object.orbit)
-    elif type(object) is BoundedPropagator:
-        return keplerianorbit(object.initialState)
-    else:
-        raise ValueError("Cannot convert value to KeplerianOrbit")
+def kepler(object, forceenv=force.deffe): # Add prefunits
+    '''The Kepler element set from the Cartesian PVT'''
+    cartorb = cartesianorbit(object, forceenv)
+    keporb = OrbitType.KEPLERIAN.convertType(cartorb)
+    kepels = astro.makesq(oelement.elementval(keporb, element.kepeltma_names), element.kepeltma_names)
+    return (kepels, object[1])
 
 def cartesianorbit(object, forceenv=force.deffe):
     '''Find the Orekit CartesianOrbit from the object'''
     if posvel.ispvt(object) or posvel.isephrow(object):
-        return tspvc(object)
+        return cartesianorbit(tspvc(object), forceenv)
     elif type(object) is Orbit:
         return OrbitType.CARTESIAN.convertType(object)
     elif type(object) is SpacecraftState:
@@ -151,7 +117,3 @@ def cartesianorbit(object, forceenv=force.deffe):
         return CartesianOrbit(object, forceenv['celestialframe'], forceenv['earthmu'])
     else:
         raise ValueError("Cannot convert value to CartesianOrbit")
-
-###################################
-####  Time to and from Orekit  ####
-###################################
