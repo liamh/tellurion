@@ -103,7 +103,11 @@ demoa.tssel.pvt1h = tell.pvt(demoa.prop.ephem) # PVT at the end of the ephemeris
 #demoa.tssel.pvtshift = tell.pvt(demoa.prop.pvt12h,1*u.day) # Shift the same posvel to 1 day later
 demoa.tssel.kep1h = tork.kepler(demoa.tssel.pvt1h)  # Convert PVT to Kepler elements
 
+
+
+
 ################ Propagation with perturbations
+####### [2025-03-21 Fri 13:41] Jpype works below
 
 demoa.prop.fe4x4 = tork.setgravity(4,4)
 demoa.prop.gen4x4 = tork.generate(demoa.init.pvt, 1*u.day, demoa.prop.fe4x4)
@@ -117,6 +121,11 @@ demoa.prop.fe4x4hpB01 = tork.dragforce(demoa.prop.fe4x4, 'hp')
 demoa.prop.gen4x4hpB01 = tork.generate(demoa.init.pvt, 1*u.day, demoa.prop.fe4x4hpB01)
 demoa.prop.ephem4x4hpB01 = tork.propagate(demoa.prop.gen4x4hpB01, prop5m1h, True)
 demoa.prop.ephem4x4hpB01_posdiff = tell.magdiff(demoa.prop.ephem4x4hpB01['position'], demoa.prop.ephem['position'])
+
+####### [2025-03-21 Fri 13:41] Jpype works above
+
+
+
 
 # Lifetime - need a very low orbit to avoid a long integration, but don't go below 100km altitude, HP will fail
 democ = Munch()
