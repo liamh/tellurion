@@ -34,7 +34,7 @@ def elementval (orbit, elt, earthrad=force.deffe["earthrad"]):
       earthrad: the radius of the earth, necessary to provide for altitudes of perigee and apogee
     """
     # if posvel.isephrow(orbit):
-    #     return elementval(convert.tspvc(orbit), elt, earthrad)
+    #     return elementval(convert._tspvc(orbit), elt, earthrad)
     # elif isinstance(orbit, collections.abc.Iterable):
     #     return [elementval(orb, elt) for orb in orbit]
     # else:
@@ -104,14 +104,14 @@ def keplerianorbit(oes, epoch, units=(astro.prefunits['length'], astro.prefunits
                               float(oessi['argper']), float(oessi['raan']), \
                               float(oessi['ma']), PositionAngleType.MEAN, \
                               fe['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                              oposvel.okad(epoch),   # Sets the date of the orbital parameters
+                              convert._okad(epoch),   # Sets the date of the orbital parameters
                               fe['earthmu'])   # Sets the central attraction coefficient (m³/s²)
     elif 'ta' in oessi.dtype.names:
         return KeplerianOrbit(float(oessi['sma']), float(oessi['ecc']), float(oessi['inc']), \
                               float(oessi['argper']), float(oessi['raan']), \
                               float(oessi['ma']), PositionAngleType.TRUE, \
                               fe['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                              oposvel.okad(epoch),   # Sets the date of the orbital parameters
+                              convert._okad(epoch),   # Sets the date of the orbital parameters
                               fe['earthmu'])   # Sets the central attraction coefficient (m³/s²)
     else:
         raise ValueError('Time element (ma or ta) required in element set')

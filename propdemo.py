@@ -27,20 +27,10 @@ demoa.init.check = Munch()
 demoa.init.pos = [5740.13268349, 3314.06715   ,    0.]
 demoa.init.vel = [-2.75082684,  4.76457184,  5.50165367]
 demoa.init.pvt = tell.pvt((demoa.init.pos, demoa.init.vel, newyear))  # A tuple (Quantity, Time)
-# Experiment with Cartesian or Kepler transformation
+# Cartesian or Kepler transformation
 demoa.init.kep = tork.kepler(demoa.init.pvt)  # Convert PVT to Kepler elements
 demoa.init.seekep = tell.splitsq(demoa.init.kep[0])  # Easier to read Kepler elements
-
-## Working to this point
-
-
-# AstroPy representations
-demoa.init.check.kepap = demoa.init.ork.pvt.kepler()
-
-# Get the pvt back
-demoa.init.check.opvt0 = demoa.init.ork.pvt.pvt()
-demoa.init.check.ocartorb0 = demoa.init.ork.cartorb.pvt()
-demoa.init.check.okeporb0 = demoa.init.ork.keporb.pvt()
+demoa.init.cart = tork.cartesian(demoa.init.kep)  # Convert back to Cartesian, same as demoa.init.pvt
 
 ################ Propagation two-body
 
@@ -51,10 +41,15 @@ demoa.prop.check = Munch()
 demoa.prop.gen = tork.generate(demoa.init.pvt, 1*u.day) # Use generator for any propagation up to 1 day
 
 # The example pvt as a CartesianOrbit
-
 demoa.prop.ephem = tork.propagate(demoa.prop.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
 demoa.prop.pvt12h = tork.propagate(demoa.prop.gen, 12*u.hour) # Propagate to a single time, as a PVT
 
+
+
+
+
+
+# PORTING IN PROGRESS
 demoa.prop.ckep0 = demoa.prop.gen.kepler() # Convert pvt0 initial state directly from generator
 demoa.prop.cpvt0 = demoa.prop.gen.pvt() # Convert pvt0 initial state directly from generator
 

@@ -1,4 +1,11 @@
-"""Convert to and from Orekit objects"""
+"""Convert to and from Orekit objects
+
+Anything that accepts or returns Orekit objects is for internal use;
+the only functions that do not in this file are transformations
+between different state representations (e.g. Cartesian to Kepler and
+vice versa).
+
+"""
 
 import numpy as np
 import pandas as pd
@@ -22,51 +29,68 @@ from . import element as oelement
 ####  Cartesian posvel     ####
 ###############################
 
-def pvt(object, unitlookup=astro.prefunits):
+# Convert to and from Orekit representations of position and velocity,
+# or position, velocity and time.
+# "PV" = An object satisying ispv() (see core/posvel.py)
+# "PVT" = An object satisying ispvt() (see core/posvel.py)
+# _pvt(): Convert from orekit objects to PV or PVT
+# _tspvc(): Convert from PV/PVT to org.orekit.utils.PVCoordinates or TimeStampedPVCoordinates
+
+def _pvt(object, unitlookup=astro.prefunits):
     '''Make the postion, velocity, and time tuple (posvel.pv(),
     astropy.time.Time) or position and velocity from the Orekit object
     that has them defined; there is no transformation (e.g., from
     Kepler elements).
     '''
     if hasattr(object, 'pVCoordinates'):
-        return pvt(object.pVCoordinates, unitlookup)
+        return _pvt(object.pVCoordinates, unitlookup)
+    elif hasattr(object, 'getPVCoordinates'):
+        return _pvt(object.getPVCoordinates())
     elif hasattr(object, 'initialState'):
-        return pvt(object.initialState)
+        return _pvt(object.initialState)
     elif hasattr(object, 'position') and hasattr(object, 'velocity'):
-        pos = [pvc.position.x, pvc.position.y, pvc.position.z]
-        vel = [pvc.velocity.x, pvc.velocity.y, pvc.velocity.z]
+        pos = _v3d(object.position, astro.posvelsiu[0])
+        vel = _v3d(object.velocity, astro.posvelsiu[1])
         pv = astro.changeunits(posvel.pv(pos, vel, astro.orkunits), unitlookup)
-        if type(pvc) is TimeStampedPVCoordinates:
-            return pv, okad(pvc.date)
+        if type(object) is TimeStampedPVCoordinates:
+            return pv, _okad(pvc.date)
+        else:
+            return pv
+    elif hasattr(object, 'getPosition') and hasattr(object, 'getVelocity'):
+        pos = _v3d(object.getPosition(), astro.posvelsiu[0])
+        vel = _v3d(object.getVelocity(), astro.posvelsiu[1])
+        pv = astro.changeunits(posvel.pv(pos, vel, astro.orkunits), unitlookup)
+        if type(object) is TimeStampedPVCoordinates:
+            return pv, _okad(object.getDate())
         else:
             return pv
     else:
         raise ValueError("Cannot convert value to position, value, and time (PVT)")
 
-def tspvc(pv, time=None):
+def _tspvc(pv, time=None):
     '''Convert tuple (posvel.pv(), astropy.time.Time) or ephemeris row to Orekit TimeStampedPVCoordinates or posvel.pv() to PVCoordinates'''
     if posvel.isephrow(pv):
         (pv, tpvt) = posvel.pvt(pv)
         if time==None:
-            return tspvc(pv, tpvt)
+            return _tspvc(pv, tpvt)
         elif isdttm(time):
-            return tspvc(pv, time)
+            return _tspvc(pv, time)
         elif isreltime(time):
-            return tspvc(pv, tpvt+time)
+            return _tspvc(pv, tpvt+time)
     elif posvel.ispvt(pv):
-        return tspvc(pv[0], pv[1])
+        return _tspvc(pv[0], pv[1])
     elif posvel.ispv(pv):
         conv = pv.to(astro.posvelsiu)
-        vecp = v3d(conv[posvel._eph_pos].value)
-        vecv = v3d(conv[posvel._eph_vel].value)
+        vecp = _v3d(conv[posvel._eph_pos].value)
+        vecv = _v3d(conv[posvel._eph_vel].value)
         if time==None:
             return PVCoordinates(vecp, vecv)
         else:
-            return TimeStampedPVCoordinates(okad(time), vecp, vecv)
+            return TimeStampedPVCoordinates(_okad(time), vecp, vecv)
     else:
         raise ValueError("Cannot convert value to PVCoordinates or TimeStampedPVCoordinates")
 
-def okad(t):
+def _okad(t):
     """ Convert time in any form to Orekit AbsoluteDate (okad), or from okad to AstroPy """
     if posvel.isdttm(t): # AstroPy
         return pyhelp.datetime_to_absolutedate(t.datetime)
@@ -79,7 +103,7 @@ def okad(t):
     else:
         raise ValueError("Cannot convert value to or from Orekit AbsoluteDate")
 
-def v3d(arg, unit=u.dimensionless_unscaled):
+def _v3d(arg, unit=u.dimensionless_unscaled):
     '''Make a Vector3D from the argument; if the argument is a Vector3D, return the components as a u.Quantity'''
     # match/case will not work because `case list` causes an error
     argtype = type(arg)
@@ -88,7 +112,7 @@ def v3d(arg, unit=u.dimensionless_unscaled):
     elif argtype == np.ndarray:
         return Vector3D(arg.tolist())
     elif argtype == Vector3D:
-        return u.Quantity([self.x, self.y, self.z], unit)
+        return u.Quantity([arg.getX(), arg.getY(), arg.getZ()], unit)
     else:
         raise ValueError("Cannot convert to or from Vector3D")
 
@@ -96,23 +120,32 @@ def v3d(arg, unit=u.dimensionless_unscaled):
 ####  Orbital elements     ####
 ###############################
 
+# Transformations between Cartesian state vector and Kepler elements
+
 def kepler(object, forceenv=force.deffe): # Add prefunits
     '''The Kepler element set from the Cartesian PVT'''
-    cartorb = cartesianorbit(object, forceenv)
+    cartorb = _cartesianorbit(object, forceenv)
     keporb = OrbitType.KEPLERIAN.convertType(cartorb)
     kepels = astro.makesq(oelement.elementval(keporb, element.kepeltma_names), element.kepeltma_names)
     return (kepels, object[1])
 
-def cartesianorbit(object, forceenv=force.deffe):
+def cartesian(object):
+    '''Make a Cartesian PVT from the object'''
+    if element.iskepels(object):
+        return _pvt(oelement.keplerianorbit(*object))
+
+def _cartesianorbit(object, forceenv=force.deffe):
     '''Find the Orekit CartesianOrbit from the object'''
     if posvel.ispvt(object) or posvel.isephrow(object):
-        return cartesianorbit(tspvc(object), forceenv)
-    elif type(object) is Orbit:
+        return _cartesianorbit(_tspvc(object), forceenv)
+    elif hasattr(object, 'getInitialState'):
+        return _cartesianorbit(object.getInitialState())
+    elif type(object) is Orbit or type(object) is KeplerianOrbit:
         return OrbitType.CARTESIAN.convertType(object)
     elif type(object) is SpacecraftState:
-        return cartesianorbit(object.orbit)
+        return _cartesianorbit(object.getOrbit(), forceenv)
     elif type(object) is BoundedPropagator:
-        return cartesianorbit(object.initialState)
+        return _cartesianorbit(object.initialState, forceenv)
     elif type(object) is TimeStampedPVCoordinates:
         return CartesianOrbit(object, forceenv['celestialframe'], forceenv['earthmu'])
     else:

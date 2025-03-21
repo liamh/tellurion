@@ -18,8 +18,8 @@ from ..core import astro
 from ..core import posvel
 from ..core import element
 from . import force
-from . import posvel as oposvel
 from . import element as oelement
+from . import convert
 
 defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
 
@@ -60,10 +60,10 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
 
     if posvel.ispvt(initstate):
         pvt0 = initstate
-        ork0 = convert.cartesianorbit(oposvel.tspvc(*pvt0), forceenv)
+        ork0 = convert._cartesianorbit(convert._tspvc(*pvt0), forceenv)
     elif posvel.ispv(initstate):
         pvt0 = posvel.pvt((initstate, posvel.nowutc()))
-        ork0 = convert.cartesianorbit(oposvel.tspvc(*pvt0), forceenv)
+        ork0 = convert._cartesianorbit(convert._tspvc(*pvt0), forceenv)
     # Can't convert.keplerianorbit from astropy yet
     # elif element.iskepels(initstate):
     #     if type(initstate) is tuple:
@@ -86,8 +86,8 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
     integrator = DormandPrince853Integrator(
         minstep,
         maxstep,
-	    orekit.JArray_double.cast_(tolerances[0]),  # Double array of doubles needs to be cast in Python
-	    orekit.JArray_double.cast_(tolerances[1]))
+        tolerances[0],
+        tolerances[1])
     integrator.setInitialStepSize(initStep)
 
     initialState = SpacecraftState(ork0, forceenv['mass'])
@@ -125,7 +125,7 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
         (ret['penumbradet'], logger_pen) = make_eclipsedet(okprop, forceenv, False)
 
     # Propagate
-    propagated = okprop.propagate(ork0.date, ork0.date.shiftedBy(astro.timesec(proptime)))
+    propagated = okprop.propagate(ork0.getDate(), ork0.getDate().shiftedBy(astro.timesec(proptime)))
 
     def eclipse_transitions(logger, which):
         '''Find the transitions in and out of eclipse'''
@@ -187,17 +187,17 @@ def propagate(generator, reltimes, include_init=True):
     else:
         raise("Reltimes must be a relative time or times: a u.Quantity with physical type 'time'")
 
-    if type(generator) is BoundedPropagator:
-        gen = generator
-    else:
+    if type(generator) is dict:
         gen = generator['ephgen']
         umbd = generator['umbradet']
         pend = generator['penumbradet']
+    else:
+        gen = generator
 
     if rtscalar:
         # This includes the value of the event function "pvut" = position, velocity, umbra and time
         ss = gen.propagate(gen.getMinDate().shiftedBy(float(reltimes.to(u.s).value)))
-        pvt = ss.orbit.pvt()
+        pvt = convert._pvt(ss)
         if 'umbd' in locals():
             # https://www.orekit.org/static/apidocs/org/orekit/propagation/events/EclipseDetector.html
             # g: Compute the value of the switching function. This
@@ -232,4 +232,4 @@ def propagate(generator, reltimes, include_init=True):
 # The time difference between the earliest (usually the initial time)
 # and the latest; not always what is requested as atmospheric drag can
 # shorten the timespan
-# BoundedPropagator.timerange = lambda self: (oposvel.okad(self.maxDate)-oposvel.okad(self.minDate)).to(u.s)
+# BoundedPropagator.timerange = lambda self: (convert.okad(self.maxDate)-convert.okad(self.minDate)).to(u.s)
