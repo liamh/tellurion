@@ -75,6 +75,9 @@ def isephrow(row):
     return type(row) is astropy.table.row.Row \
         and all([row.keys().__contains__(k) for k in _ephemeris_columns])
 
+def ispvter(obj):
+    return ispvt(obj) or isephrow(obj)
+
 ##################################################
 ####   Make posvel and related types          ####
 ##################################################

@@ -43,15 +43,12 @@ demoa.prop.gen = tork.generate(demoa.init.pvt, 1*u.day) # Use generator for any 
 # The example pvt as a CartesianOrbit
 demoa.prop.ephem = tork.propagate(demoa.prop.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
 demoa.prop.pvt12h = tork.propagate(demoa.prop.gen, 12*u.hour) # Propagate to a single time, as a PVT
-
-
-
-
+demoa.prop.cpvt0 = tork.cartesian(demoa.prop.gen)
+demoa.prop.ckep0 = tork.kepler(demoa.prop.gen)  # Convert pvt0 initial state directly from generator
+tell.splitsq(demoa.prop.ckep0[0])
 
 
 # PORTING IN PROGRESS
-demoa.prop.ckep0 = demoa.prop.gen.kepler() # Convert pvt0 initial state directly from generator
-demoa.prop.cpvt0 = demoa.prop.gen.pvt() # Convert pvt0 initial state directly from generator
 
 demoa.prop.altperapo = tork.tselements(demoa.prop.ephem, ["altper","altapo"]) # TimeTable of altitudes of perigee and apogee
 demoa.prop.pvapa = tell.hcat(demoa.prop.ephem, demoa.prop.altperapo) # Ephemeris table with additional columns for perige and apogee altitude
