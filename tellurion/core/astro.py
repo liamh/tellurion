@@ -4,6 +4,7 @@ AstroPy definitions
 
 import warnings
 import astropy.units as u
+from astropy.coordinates import Angle
 import astropy.table
 import astropy.time
 import numpy as np
@@ -173,6 +174,32 @@ def changeunits(qsq, unitlookup=prefunits):
     else:
         tounits = unitlookup[u.get_physical_type(qsq.unit)._physical_type_list[0]]
     return qsq.to(tounits)
+
+timeelements=['ta', 'ma']
+
+def normalizeangle(angle, wrapat=u.rev/2, exclude=timeelements):
+    '''Add or subtract multiples of full revolutions so that angle
+    falls in the semi-open range [-180 degrees, +180 degrees). Parts
+    of structured quantities with names listed in `exclude` are not
+    normalized.
+    '''
+    if type(angle) is u.Quantity:
+        if type(angle.unit) is u.StructuredUnit:
+            return [normalizeangle(kv[1], wrapat, kv[0] in exclude) for kv in splitsq(angle).items()]
+        else:
+            if u.get_physical_type(angle)=='angle' and exclude != True:
+                return normalizeangle(Angle(angle), wrapat)
+            else:
+                return angle
+    elif type(angle) is Angle:
+        return u.Quantity(angle.wrap_at(wrapat))
+    else:
+        return angle
+
+def isupperhalfplane(angle):
+    '''Angle is in the upper half plane'''
+    na = normalizeangle(angle)
+    return na >= 0.0 and na <= u.rev/2
 
 ################################################################################
 ## Time series and Tables
