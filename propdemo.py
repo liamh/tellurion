@@ -46,14 +46,12 @@ demoa.prop.pvt12h = tork.propagate(demoa.prop.gen, 12*u.hour) # Propagate to a s
 demoa.prop.cpvt0 = tork.cartesian(demoa.prop.gen)
 demoa.prop.ckep0 = tork.kepler(demoa.prop.gen)  # Convert pvt0 initial state directly from generator
 tell.splitsq(demoa.prop.ckep0[0])
-
-
-# PORTING IN PROGRESS
-
-demoa.prop.altperapo = tork.tselements(demoa.prop.ephem, ["altper","altapo"]) # TimeTable of altitudes of perigee and apogee
-demoa.prop.pvapa = tell.hcat(demoa.prop.ephem, demoa.prop.altperapo) # Ephemeris table with additional columns for perige and apogee altitude
-
 demoa.prop.check.eph_has_pvt0 = tell.pvt(demoa.prop.ephem, 0) == demoa.init.pvt # Check that initial state is in the ephemeris
+
+# FAILS:
+
+# demoa.prop.altperapo = tork.tselements(demoa.prop.ephem, ["altper","altapo"]) # TimeTable of altitudes of perigee and apogee
+# demoa.prop.pvapa = tell.hcat(demoa.prop.ephem, demoa.prop.altperapo) # Ephemeris table with additional columns for perige and apogee altitude
 
 # orb1h_ork = tork.tspvc(*pvt1h).cartesianorbit()
 # pvt1h, tork._pvtork(kep1h) are equal but can't be compared, u.allclose does not work on the pv part
@@ -68,6 +66,7 @@ demoa.prop.eclipse.ephem = tork.propagate(demoa.prop.eclipse.genev, np.linspace(
 demoa.prop.eclipse.um12h = tork.propagate(demoa.prop.eclipse.genev, 12*u.hour)
 demoa.prop.eclipse.um12h05m = tork.propagate(demoa.prop.eclipse.genev, tell.tq('12hr 5min'))
 
+# PORTING IN PROGRESS
 ################ Propagation Kepler element
 
 demob = Munch()

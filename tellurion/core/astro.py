@@ -175,9 +175,7 @@ def changeunits(qsq, unitlookup=prefunits):
         tounits = unitlookup[u.get_physical_type(qsq.unit)._physical_type_list[0]]
     return qsq.to(tounits)
 
-timeelements=['ta', 'ma']
-
-def normalizeangle(angle, wrapat=u.rev/2, exclude=timeelements):
+def normalizeangle(angle, wrapat=u.rev/2, exclude=[]):
     '''Add or subtract multiples of full revolutions so that angle
     falls in the semi-open range [-180 degrees, +180 degrees). Parts
     of structured quantities with names listed in `exclude` are not

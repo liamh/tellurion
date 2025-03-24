@@ -7,6 +7,7 @@ from . import astro
 
 kepeltma_names = ["ecc", "sma", "inc", "argper", "raan", "ma"]
 kepeltta_names = ["ecc", "sma", "inc", "argper", "raan", "ta"]
+timeelements=['ta', 'ma']
 
 # kep1 = kepler({"ecc":0.1, "sma":8000.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25})
 # kep2 = kepler({"zper":250.0, "zapo":350.0, "inc":22.0, "argper":66.0, "raan":68.0, "ma":7.25})
@@ -27,10 +28,13 @@ def kepler(oes, dttm=None, units=(astro.prefunits['length'], astro.prefunits['an
     keppt = {"inc":'angle', "argper":'angle', "raan":'angle'} | plane | timeelt
     ordoes = {k:oes[k] for k in keppt.keys()}
     kepsq = astro.makesq(ordoes, phystype=keppt)
+    if not astro.isupperhalfplane(kepsq['inc']):
+        raise ValueError('Inclination must be between 0 and 180 degrees, inclusive')
+    kepsqn = astro.normalizeangle(kepsq, u.rev/2, timeelements)
     if dttm==None:
-        return kepsq
+        return kepsqn
     else:
-        return (kepsq, dttm)
+        return (kepsqn, dttm)
 
 def iskepels(obj):
     '''The argument is a Keper element set or (kepels, epoch)'''

@@ -132,18 +132,18 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
         loggedevents = logger.getLoggedEvents()
         def suntrans(ev):
             if which == 'penumbra':
-                if ev.increasing:
+                if ev.isIncreasing():
                     return 'ps' # Transition from penumbra to full sunlight
                 else:
                     return 'sp' # Transition from full sunlight to penumbra
             else:  # umbra
-                if ev.increasing:
+                if ev.isIncreasing():
                     return 'up' # Transition from umbra to penumbra
                 else:
                     return 'pu' # Transition from penumbra to umbra
         def pvet(ev):
             '''A 3-tuple of posvel, sun transition (2-character string with prior and posterior sun state), and time.'''
-            pvt = ev.state.pvt()
+            pvt = convert.cartesian(ev.getState())
             st = suntrans(ev)
             return (pvt[0], st, pvt[1])
         return [pvet(ev) for ev in loggedevents]
