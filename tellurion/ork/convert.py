@@ -139,9 +139,9 @@ def cartesian(object, dttm=None):
     elements set without a datetime, it must be supplied in `dttm`.'''
     if element.iskepels(object):
         if type(object) is tuple:
-            return _pvt(oelement.keplerianorbit(*object))
+            return _pvt(oelement._keplerianorbit(*object))
         else:
-            return _pvt(oelement.keplerianorbit(object, dttm))
+            return _pvt(oelement._keplerianorbit(object, dttm))
     else:
         return _pvt(_cartesianorbit(object))
 

@@ -90,7 +90,7 @@ def _makekep(elvald):
 ####    Make Kepler element set     ####
 ########################################
 
-def keplerianorbit(oes, epoch, units=(astro.prefunits['length'], astro.prefunits['angle']), fe=force.deffe):
+def _keplerianorbit(oes, epoch, units=(astro.prefunits['length'], astro.prefunits['angle']), fe=force.deffe):
     '''Make a org.orekit.orbits.KeplerianOrbit from orbital elements as a u.Quantity or Dict'''
     if type(oes) is dict:
         oes = element.kepler(oes, None, units)

@@ -40,18 +40,26 @@ def timesec(t):
     return(pt)
 
 def tc(t):
-    """Convert a u.Quantity with physical dimension time to a string of duration (time interval) components
+    """Convert a u.Quantity with physical dimension time to a string
+    of duration (time interval) components; this is the inverse of
+    tq().
 
-    tcomponents(12*u.day + 17.3*u.hour + 5*u.min + 33.1*u.s)
+    tc(tq('12d 17hr 23min 33.1s'))
     '12d 17hr 23min 33.1s'
+    tell.tc(123456*u.s)
+    '1d 10hr 17min 36.0s'
     """
     return astropy.time.TimeDelta(t).quantity_str
 
 def tq(compstr):
-    """Convert a string of duration (time interval) components to a u.Quantity with physical dimension time
+    """Convert a string of duration (time interval) components to a
+    u.Quantity with physical dimension time; this is the inverse of
+    tc().
 
-    tquantity('12d 17hr 23min 33.1s')
+    tq('12d 17hr 23min 33.1s')
     <Quantity 1099413.1 s>
+    tq(tc(123456*u.s))
+    <Quantity 123456. s>
     """
     return astropy.time.TimeDelta(compstr).to_value('sec')*u.s
 
@@ -177,13 +185,18 @@ def changeunits(qsq, unitlookup=prefunits):
 
 def normalizeangle(angle, wrapat=u.rev/2, exclude=[]):
     '''Add or subtract multiples of full revolutions so that angle
-    falls in the semi-open range [-180 degrees, +180 degrees). Parts
-    of structured quantities with names listed in `exclude` are not
-    normalized.
+    falls in the semi-open range [-180 degrees, +180 degrees). The cut
+    point can be changed by setting wrapat differently; for example,
+    for [0, 360) degrees, set to u.rev. Parts of structured quantities
+    with names listed in `exclude` are not normalized. If
+    exclude==True, no values are changed. Default is to exclude
+    nothing.
     '''
     if type(angle) is u.Quantity:
-        if type(angle.unit) is u.StructuredUnit:
-            return [normalizeangle(kv[1], wrapat, kv[0] in exclude) for kv in splitsq(angle).items()]
+        if type(angle.unit) is u.StructuredUnit and exclude != True:
+            return makesq([normalizeangle(kv[1], wrapat, kv[0] in exclude)
+                           for kv in splitsq(angle).items()],
+                          angle.dtype.names)
         else:
             if u.get_physical_type(angle)=='angle' and exclude != True:
                 return normalizeangle(Angle(angle), wrapat)
