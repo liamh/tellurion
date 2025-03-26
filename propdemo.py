@@ -28,6 +28,7 @@ demoa.init.pos = [5740.13268349, 3314.06715   ,    0.]
 demoa.init.vel = [-2.75082684,  4.76457184,  5.50165367]
 demoa.init.pvt = tell.pvt((demoa.init.pos, demoa.init.vel, newyear))  # A tuple (Quantity, Time)
 # Cartesian or Kepler transformation
+demoa.init.altper = tork.elementval(demoa.init.pvt, 'altper')  # Altitude of perigee for the initial state
 demoa.init.kep = tork.kepler(demoa.init.pvt)  # Convert PVT to Kepler elements
 demoa.init.seekep = tell.splitsq(demoa.init.kep[0])  # Easier to read Kepler elements
 demoa.init.cart = tork.cartesian(demoa.init.kep)  # Convert back to Cartesian, same as demoa.init.pvt
@@ -43,15 +44,8 @@ demoa.prop.gen = tork.generate(demoa.init.pvt, 1*u.day) # Use generator for any 
 # The example pvt as a CartesianOrbit
 demoa.prop.ephem = tork.propagate(demoa.prop.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
 demoa.prop.pvt12h = tork.propagate(demoa.prop.gen, 12*u.hour) # Propagate to a single time, as a PVT
-
-# FAILS:
-
-# demoa.prop.altperapo = tork.tselements(demoa.prop.ephem, ["altper","altapo"]) # TimeTable of altitudes of perigee and apogee
-# demoa.prop.pvapa = tell.hcat(demoa.prop.ephem, demoa.prop.altperapo) # Ephemeris table with additional columns for perige and apogee altitude
-
-# orb1h_ork = tork.tspvc(*pvt1h).cartesianorbit()
-# pvt1h, tork._pvtork(kep1h) are equal but can't be compared, u.allclose does not work on the pv part
-# https://github.com/astropy/astropy/issues/17602, it is a numpy issue https://github.com/numpy/numpy/issues/28104
+demoa.prop.altperapo = tork.tselements(demoa.prop.ephem, ["altper","altapo"]) # TimeTable of altitudes of perigee and apogee
+demoa.prop.pvapa = tell.hcat(demoa.prop.ephem, demoa.prop.altperapo) # Ephemeris table with additional columns for perigee and apogee altitude
 
 # Eclipsing
 demoa.prop.eclipse = Munch()
@@ -85,7 +79,7 @@ demoa.tssel.pvt15m = tell.pvt(demoa.prop.ephem, 3) # PVT for 15min by index
 demoa.tssel.pvt35m = tell.pvt(demoa.prop.ephem,'2025-01-01 00:35:00') # PVT for 35min by time
 demoa.tssel.pvt45m = tell.pvt(demoa.prop.ephem, 45*u.min) # PVT for 45min by relative time
 demoa.tssel.pvt1h = tell.pvt(demoa.prop.ephem) # PVT at the end of the ephemeris
-#demoa.tssel.pvtshift = tell.pvt(demoa.prop.pvt12h,1*u.day) # Shift the same posvel to 1 day later
+demoa.tssel.pvtshift = tell.pvt(demoa.prop.pvt12h,1*u.day) # Shift the same posvel to 1 day later
 demoa.tssel.kep1h = tork.kepler(demoa.tssel.pvt1h)  # Convert PVT to Kepler elements
 
 ################ Propagation with perturbations

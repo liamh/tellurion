@@ -21,28 +21,29 @@ from . import convert
 def tselements(ephem, elements):
     '''Make a time series of selected orbital elements'''
     return TimeSeries(time=ephem.time,
-                      data=[dict(zip(elements,
-                                     elementval(_keporb_from_orbit(ephrow), elements)))
+                      data=[dict(zip(elements, elementval(ephrow, elements)))
                             for ephrow in ephem])
 
-def elementval (orbit, elt, earthrad=force.deffe["earthrad"]):
+def elementval (orbstate, elt, earthrad=force.deffe["earthrad"]):
     """
-    Compute the orbital element from the orbit
+    Compute the orbital element from the orbital state
     Arguments
-      orbit:    orbit (of any type), may be a list
+      orbstate:    Representation of orbital state in any form
       elt:  the orbital element desired, see list eldict.keys(); may be a list, e.g. ["sma", "ecc"]
       earthrad: the radius of the earth, necessary to provide for altitudes of perigee and apogee
     """
-    # if posvel.isephrow(orbit):
-    #     return elementval(convert._tspvc(orbit), elt, earthrad)
-    # elif isinstance(orbit, collections.abc.Iterable):
-    #     return [elementval(orb, elt) for orb in orbit]
-    # else:
-    #     orbkep = convert.keplerianorbit(orbit)
     if isinstance(elt, list):
-        return [elget(orbit, el, earthrad) for el in elt]
+        return [elementval(orbstate, el, earthrad) for el in elt]
     else:
-        return elget(orbit, elt, earthrad)
+        lookup = _eldict[elt]
+        getter = lookup["getter"]
+        orbkep = _keplerianorbit(orbstate)
+        if '__code__' in dir(getter) and len(getter.__code__.co_varnames) > 1:
+            orkval = getter(orbkep, earthrad)
+        else:
+            orkval = getter(orbkep)
+        orkunit = lookup["orkunit"]
+        return u.Quantity(orkval, orkunit).to(astro.prefunits[lookup["phystype"]])
 
 _elkeys = ["name", "description", "phystype", "orkunit", "getter"]
 _elvals = [["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],
@@ -50,14 +51,14 @@ _elvals = [["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],
           ["inc", "inclination", "angle", u.radian, KeplerianOrbit.getI],
           ["argper", "argument of perigee", "angle", u.radian, KeplerianOrbit.getPerigeeArgument],
           ["radper", "radius of perigee", "length", u.meter,
-           lambda kep: kep.a*(1.0-kep.e)],
+           lambda kep: kep.getA()*(1.0-kep.getE())],
           ["radapo", "radius of apogee", "length", u.meter,
 
-           lambda kep: kep.a*(1.0+kep.e)],
+           lambda kep: kep.getA()*(1.0+kep.getE())],
           ["altper", "altitude of perigee", "length", u.meter,
-           lambda kep, earthrad: kep.a*(1.0-kep.e)-earthrad],
+           lambda kep, earthrad: kep.getA()*(1.0-kep.getE())-earthrad],
           ["altapo", "altitude of apogee", "length", u.meter,
-           lambda kep, earthrad: kep.a*(1.0+kep.e)-earthrad],
+           lambda kep, earthrad: kep.getA()*(1.0+kep.getE())-earthrad],
           ["raan", "right ascension of the ascending node", "angle", u.radian,
            KeplerianOrbit.getRightAscensionOfAscendingNode],
           ["ta", "true anomaly", "angle", u.radian, KeplerianOrbit.getTrueAnomaly],
@@ -65,17 +66,6 @@ _elvals = [["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],
           ["memo", "mean motion", "angular speed", u.radian/u.second, KeplerianOrbit.getKeplerianMeanMotion],
           ["period", "orbital period", "time", u.second, KeplerianOrbit.getKeplerianPeriod]]
 _eldict = dict(zip([ev[0] for ev in _elvals], [dict(zip(_elkeys,ev)) for ev in _elvals]))
-
-# Get altitude of perigee/apogee by subtracting ex2.prop.forceenv["earthrad"]
-def elget(orbkep, el, earthrad=None):
-    lookup = _eldict[el]
-    getter = lookup["getter"]
-    if '__code__' in dir(getter) and len(getter.__code__.co_varnames) > 1:
-        orkval = getter(orbkep, earthrad)
-    else:
-        orkval = getter(orbkep)
-    orkunit = lookup["orkunit"]
-    return u.Quantity(orkval, orkunit).to(astro.prefunits[lookup["phystype"]])
 
 def _elmake(el, value):
     return u.Quantity(value, astro.prefunits[_eldict[el]["phystype"]])
@@ -90,25 +80,22 @@ def _makekep(elvald):
 ####    Make Kepler element set     ####
 ########################################
 
-# DEBUG
-def ko(oes, epoch):
-    return _keplerianorbit((oes, epoch))
-
-def _keplerianorbit(oest, units=(astro.prefunits['length'], astro.prefunits['angle']),
+def _keplerianorbit(oes, units=(astro.prefunits['length'], astro.prefunits['angle']),
                     forceenv=force.deffe):
     '''Make a org.orekit.orbits.KeplerianOrbit from anything'''
-    if element.iskepels(oest):
-        return _keporb_from_components(*oest, units, forceenv)
-    else:
-        return _keporb_from_pvter_or_ork(oest[0], forceenv)
-
-def _keporb_from_pvter_or_ork(oes, fe=force.deffe):
-    '''Make a org.orekit.orbits.KeplerianOrbit from a PVT, ephemeris row, or an Orekit object'''
-    if type(oes) is KeplerianOrbit:
+    if element.iskepels(oes):
+        return _keporb_from_components(*oes, units, forceenv)
+    elif type(oes) is KeplerianOrbit:
         return oes
+    elif posvel.ispvt(oes):
+        co = CartesianOrbit(convert._tspvc(*oes),
+                            forceenv['celestialframe'], forceenv['earthmu'])
+    elif posvel.isephrow(oes):
+        co = CartesianOrbit(convert._tspvc(oes),
+                            forceenv['celestialframe'], forceenv['earthmu'])
     else:
-        co = OrbitType.CARTESIAN.convertType(oes)
-        return OrbitType.KEPLERIAN.convertType(co)
+        raise ValueError('Cannot transform to Keplerian elements')
+    return OrbitType.KEPLERIAN.convertType(co)
 
 def _keporb_from_components(oes, epoch, units=(astro.prefunits['length'], astro.prefunits['angle']), fe=force.deffe):
     '''Make a org.orekit.orbits.KeplerianOrbit from orbital elements as a u.Quantity or Dict'''

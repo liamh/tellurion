@@ -13,8 +13,7 @@ from org.orekit.frames import FramesFactory
 from org.orekit.utils import IERSConventions
 from org.orekit.bodies import OneAxisEllipsoid, CelestialBodyFactory
 
-OneAxisEllipsoid.__repr__ = \
-    lambda self: f"<Near-spherical body equatorial radius {self.equatorialRadius}m, polar radius difference {-self.equatorialRadius*self.flattening}m >"
+OneAxisEllipsoid.__repr__ =    lambda self: f"<Near-spherical body equatorial radius {self.getEquatorialRadius()}m, polar radius difference {-self.getEquatorialRadius()*self.getFlattening()}m >"
 
 def setgravity(degree, order, mass = 100.0):
     """Set the environmental constants such as reference frame and

@@ -5,7 +5,6 @@ setup_orekit_data()
 
 from . import (
     force,
-    convert,
     element,
     tle,
     prop,
@@ -13,11 +12,10 @@ from . import (
 )
 
 from .force import *
-from .convert import *
 from .element import *
 from .tle import *
 from .prop import *
 from .geog import *
 
 # Define the __all__ variable
-__all__ = ["force", "convert", "element", "tle", "prop", "geog"]
+__all__ = ["force", "element", "tle", "prop", "geog"]
