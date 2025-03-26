@@ -1,9 +1,7 @@
-"""Convert to and from Orekit objects
+"""Convert Cartesian state vectors to and from Orekit objects
 
-Anything that accepts or returns Orekit objects is for internal use
-and thus begins with `_`; the only functions that do not in this file
-are transformations between different state representations
-(e.g. Cartesian to Kepler and vice versa).
+All function accept or return Orekit objects are for internal use
+and thus begins with `_`.
 
 """
 
@@ -14,7 +12,6 @@ import datetime
 
 import orekit_jpype.pyhelpers as pyhelp
 import org.orekit.time
-from org.orekit.orbits import Orbit, CartesianOrbit, KeplerianOrbit, OrbitType
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState
 from org.hipparchus.geometry.euclidean.threed import Vector3D
@@ -87,6 +84,10 @@ def _tspvc(pv, time=None):
             return PVCoordinates(vecp, vecv)
         else:
             return TimeStampedPVCoordinates(_okad(time), vecp, vecv)
+    elif type(pv) is PVCoordinates:
+        return TimeStampedPVCoordinates(_okad(time), pv)
+    elif type(pv) is TimeStampedPVCoordinates:
+        return pv
     else:
         raise ValueError("Cannot convert value to PVCoordinates or TimeStampedPVCoordinates")
 
@@ -115,49 +116,3 @@ def _v3d(arg, unit=u.dimensionless_unscaled):
         return u.Quantity([arg.getX(), arg.getY(), arg.getZ()], unit)
     else:
         raise ValueError("Cannot convert to or from Vector3D")
-
-###############################
-####  Orbital elements     ####
-###############################
-
-# Transformations between Cartesian state vector and Kepler elements
-
-def kepler(object, forceenv=force.deffe): # Add prefunits
-    '''The Kepler element set from the Cartesian PVT, or an ephemeris generator, which has an initial state'''
-    cartorb = _cartesianorbit(object, forceenv)
-    keporb = OrbitType.KEPLERIAN.convertType(cartorb)
-    kepels = astro.makesq(oelement.elementval(keporb, element.kepeltma_names), element.kepeltma_names)
-    if posvel.ispvter(object):
-        return (kepels, object[1])
-    else:
-        date = _okad(keporb.getDate())
-        return (kepels, date)
-
-def cartesian(object, dttm=None):
-    '''Make a Cartesian PVT from the object, or an ephemeris
-    generator, which has an initial state. If the object is an
-    elements set without a datetime, it must be supplied in `dttm`.'''
-    if element.iskepels(object):
-        if type(object) is tuple:
-            return _pvt(oelement._keplerianorbit(*object))
-        else:
-            return _pvt(oelement._keplerianorbit(object, dttm))
-    else:
-        return _pvt(_cartesianorbit(object))
-
-def _cartesianorbit(object, forceenv=force.deffe):
-    '''Find the Orekit CartesianOrbit from the object'''
-    if posvel.ispvter(object):
-        return _cartesianorbit(_tspvc(object), forceenv)
-    elif hasattr(object, 'getInitialState'):
-        return _cartesianorbit(object.getInitialState())
-    elif type(object) is Orbit or type(object) is KeplerianOrbit:
-        return OrbitType.CARTESIAN.convertType(object)
-    elif type(object) is SpacecraftState:
-        return object.getOrbit()
-    elif type(object) is BoundedPropagator:
-        return _cartesianorbit(object.initialState, forceenv)
-    elif type(object) is TimeStampedPVCoordinates:
-        return CartesianOrbit(object, forceenv['celestialframe'], forceenv['earthmu'])
-    else:
-        raise ValueError("Cannot convert value to CartesianOrbit")

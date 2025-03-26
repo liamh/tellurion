@@ -6,7 +6,7 @@ import astropy.units as u
 import astropy.time
 import astropy.table
 import orekit_jpype as orekit
-from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit
+from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit, KeplerianOrbit
 from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState, EphemerisGenerator
@@ -30,10 +30,7 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
 
     Parameters
     ----------
-    initstate: u.Quantity or tuple of (u.Quantity, astropy.time.Time)
-      The initial state, either a state (posvel or element set) or a
-      tuple of (state, epoch). If epoch time of the initial state is not
-      specified, the current time is used.
+    initstate: a tell.ispvter() representing the initial state
 
     proptime:  u.Quantity, float
       The maximum time to propagate, numbers are in seconds
@@ -58,21 +55,8 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
 
     """
 
-    if posvel.ispvt(initstate):
-        pvt0 = initstate
-        ork0 = convert._cartesianorbit(convert._tspvc(*pvt0), forceenv)
-    elif posvel.ispv(initstate):
-        pvt0 = posvel.pvt((initstate, posvel.nowutc()))
-        ork0 = convert._cartesianorbit(convert._tspvc(*pvt0), forceenv)
-    elif element.iskepels(initstate):
-        if type(initstate) is tuple:
-            ork0 = oelement._keplerianorbit(*initstate)
-        else:
-            ork0 = oelement._keplerianorbit(initstate, posvel.nowutc())
-    elif hasattr(initstate, 'cartesianorbit'):
-        ork0 = cartesianorbit(initstate(), forceenv)
-    else:
-        raise ValueError('Cannot propagate initstate')
+    ork0 = CartesianOrbit(convert._tspvc(*initstate),
+                          forceenv['celestialframe'], forceenv['earthmu'])
 
     # Set parameters
     minstep = 0.001
@@ -142,7 +126,7 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
                     return 'pu' # Transition from penumbra to umbra
         def pvet(ev):
             '''A 3-tuple of posvel, sun transition (2-character string with prior and posterior sun state), and time.'''
-            pvt = convert.cartesian(ev.getState())
+            pvt = convert._pvt(ev.getState().getPVCoordinates())
             st = suntrans(ev)
             return (pvt[0], st, pvt[1])
         return [pvet(ev) for ev in loggedevents]

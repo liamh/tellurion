@@ -5,9 +5,8 @@ Orbital elements in Orekit
 import collections.abc
 import astropy.units as u
 from astropy.timeseries import TimeSeries
-from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType, CircularOrbit
+from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType, CircularOrbit, KeplerianOrbit, PositionAngleType
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
-from org.orekit.orbits import KeplerianOrbit, PositionAngleType
 
 from ..core import astro
 from ..core import posvel
@@ -22,7 +21,8 @@ from . import convert
 def tselements(ephem, elements):
     '''Make a time series of selected orbital elements'''
     return TimeSeries(time=ephem.time,
-                      data=[dict(zip(elements, elementval(ephrow, elements)))
+                      data=[dict(zip(elements,
+                                     elementval(_keporb_from_orbit(ephrow), elements)))
                             for ephrow in ephem])
 
 def elementval (orbit, elt, earthrad=force.deffe["earthrad"]):
@@ -90,14 +90,31 @@ def _makekep(elvald):
 ####    Make Kepler element set     ####
 ########################################
 
-def _keplerianorbit(oes, epoch, units=(astro.prefunits['length'], astro.prefunits['angle']), fe=force.deffe):
-    '''Make a org.orekit.orbits.KeplerianOrbit from orbital elements as a u.Quantity or Dict'''
-    if type(oes) is dict:
-        oes = element.kepler(oes, None, units)
+# DEBUG
+def ko(oes, epoch):
+    return _keplerianorbit((oes, epoch))
 
+def _keplerianorbit(oest, units=(astro.prefunits['length'], astro.prefunits['angle']),
+                    forceenv=force.deffe):
+    '''Make a org.orekit.orbits.KeplerianOrbit from anything'''
+    if element.iskepels(oest):
+        return _keporb_from_components(*oest, units, forceenv)
+    else:
+        return _keporb_from_pvter_or_ork(oest[0], forceenv)
+
+def _keporb_from_pvter_or_ork(oes, fe=force.deffe):
+    '''Make a org.orekit.orbits.KeplerianOrbit from a PVT, ephemeris row, or an Orekit object'''
+    if type(oes) is KeplerianOrbit:
+        return oes
+    else:
+        co = OrbitType.CARTESIAN.convertType(oes)
+        return OrbitType.KEPLERIAN.convertType(co)
+
+def _keporb_from_components(oes, epoch, units=(astro.prefunits['length'], astro.prefunits['angle']), fe=force.deffe):
+    '''Make a org.orekit.orbits.KeplerianOrbit from orbital elements as a u.Quantity or Dict'''
     oessi = oes.si.value
-# Future: convert zp/za to a/e
-#    oessidict = astro.splitsq(oessi)
+    # Future: convert zp/za to a/e
+    #    oessidict = astro.splitsq(oessi)
 
     if 'ma' in oessi.dtype.names:
         return KeplerianOrbit(float(oessi['sma']), float(oessi['ecc']), float(oessi['inc']), \
@@ -115,4 +132,33 @@ def _keplerianorbit(oes, epoch, units=(astro.prefunits['length'], astro.prefunit
                               fe['earthmu'])   # Sets the central attraction coefficient (m³/s²)
     else:
         raise ValueError('Time element (ma or ta) required in element set')
-    return
+
+###############################
+####  Transformations      ####
+###############################
+
+# Transformations between Cartesian state vector and Kepler elements
+
+def kepler(object, forceenv=force.deffe, mean_time_element=True): # Add prefunits
+    '''The Kepler element set from the Cartesian PVT or equivalent'''
+    co = CartesianOrbit(convert._tspvc(*object),
+                        forceenv['celestialframe'], forceenv['earthmu'])
+    ko = OrbitType.KEPLERIAN.convertType(co)
+    if mean_time_element:
+        elnames = element.kepeltma_names
+    else:
+        elnames = element.kepeltta_names
+    kepels = astro.makesq(elementval(ko, elnames), elnames)
+    return (kepels, object[1])
+
+def cartesian(object, dttm=None):
+    '''Make a Cartesian PVT from the object, or an ephemeris
+    generator, which has an initial state. If the object is an
+    elements set without a datetime, it must be supplied in `dttm`.'''
+    if element.iskepels(object):
+        if type(object) is tuple:
+            return convert._pvt(_keplerianorbit(object))
+        else:
+            return convert._pvt(_keplerianorbit(object, dttm))
+    else:
+        raise ValueError('Can only transform Kepler element sets')

@@ -43,10 +43,6 @@ demoa.prop.gen = tork.generate(demoa.init.pvt, 1*u.day) # Use generator for any 
 # The example pvt as a CartesianOrbit
 demoa.prop.ephem = tork.propagate(demoa.prop.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
 demoa.prop.pvt12h = tork.propagate(demoa.prop.gen, 12*u.hour) # Propagate to a single time, as a PVT
-demoa.prop.cpvt0 = tork.cartesian(demoa.prop.gen)
-demoa.prop.ckep0 = tork.kepler(demoa.prop.gen)  # Convert pvt0 initial state directly from generator
-tell.splitsq(demoa.prop.ckep0[0])
-demoa.prop.check.eph_has_pvt0 = tell.pvt(demoa.prop.ephem, 0) == demoa.init.pvt # Check that initial state is in the ephemeris
 
 # FAILS:
 
@@ -72,15 +68,13 @@ demob = Munch()
 
 demob.kep = tell.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25},
                            tell.dttm('2023-09-14T08:30:00'))
-demob.pvt = tork.cartesian(*demob.kep) # Convert Kepler elements to PVT
-demob.gen = tork.generate(demob.kep, 1*u.day)
+demob.pvt = tork.cartesian(demob.kep) # Convert Kepler elements to PVT
+demob.gen = tork.generate(demob.pvt, 1*u.day)
 demob.eph = tork.propagate(demob.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
 # tell.pvt(keph, 35*u.min)
 # fails with KeyError: 'No matches found for key 2023-09-14 09:05:00'
 # but tell.pvt(keph,['2023-09-14 09:05:00']) works
 
-demob.kep0 = tork.kepler(demob.gen) # Initial state as Kepler; compare with demob.kep
-demob.pvt0 = tork.cartesian(demob.gen)    # Initial state as PVT
 demob.kep20m_pvt = tell.pvt(demob.eph[4])      # PVT at 20 minutes from ephemeris
 
 ################ Time series selection and manipulation
@@ -112,7 +106,7 @@ demoa.prop.ephem4x4hpB01_posdiff = tell.magdiff(demoa.prop.ephem4x4hpB01['positi
 # Lifetime - need a very low orbit to avoid a long integration, but don't go below 100km altitude, HP will fail
 democ = Munch()
 democ.kep = tell.kepler({"sma":6600.0, "ecc":0.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25}, newyear)
-democ.pvt = tork.cartesian(*democ.kep) # Convert Kepler elements to PVT
+democ.pvt = tork.cartesian(democ.kep) # Convert Kepler elements to PVT
 democ.gen = tork.generate(democ.pvt, 10*u.day, demoa.prop.fe4x4hpB01) # Ask for 10 days, but it only lasts about 6
 
 # PORTING IN PROGRESS - need to restore timerange()
