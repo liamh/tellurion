@@ -149,3 +149,47 @@ def cartesian(object, dttm=None):
             return convert._pvt(_keplerianorbit(object, dttm))
     else:
         raise ValueError('Can only transform Kepler element sets')
+
+def allplane(oes, forceenv=force.deffe):
+    '''Generate all plane pairs (sma, ecc), (radper, radapo), (altper, altapo) from the first or last pairs
+
+    Example 1, convert from altitudes of perigee and apogee to semimajor axis and eccentricity
+    byalts = tell.kepler({"altper":160*u.km, "altapo":20250*u.km, \
+                          "inc":28.5*u.deg, "argper": 0.0*u.deg, "raan": 0.0*u.deg, "ma": 0.0*u.deg}, \
+                          tell.dttm('2022-02-15T08:30:00'))
+    smaecc = tork.allplane(byalts)
+    smaecc[0]['sma'] # <Quantity 16583.13646 km>
+    smaecc[0]['ecc'] # <Quantity 0.60573583>
+    tell.iskepels(byalts) # False
+    tell.iskepels(smaecc) # True
+
+    Example 2, convert from semimajor axis and eccentricity to altitudes of perigee and apogee
+    bysmaecc = tell.kepler({"sma":8000, "ecc":0.1, \
+                          "inc":45, "argper": 120.0, "raan": 80.0, "ma": 0.0}, \
+                          tell.dttm('2025-02-01T12:30:00'))
+    alts = tork.allplane(bysmaecc)
+    alts[0]['altper'] # <Quantity 821.86354 km>
+    alts[0]['altapo'] # <Quantity 2421.86354 km>
+    '''
+    if type(oes) is tuple:
+        (oesd, oest) = oes
+    else:
+        oesd = oes
+        oest = None
+    names = oesd.dtype.names
+    if 'sma' in names and 'ecc' in names:
+        new = {'radper': oesd['sma']*(1-oesd['ecc']), 'radapo': oesd['sma']*(1+oesd['ecc'])}
+        new['altper'] = new['radper'] - forceenv['earthrad']*u.m
+        new['altapo'] = new['radapo'] - forceenv['earthrad']*u.m
+    elif 'altper' in names and 'altapo' in names:
+        new = {'radper': oesd['altper'] + forceenv['earthrad']*u.m, \
+               'radapo': oesd['altapo'] + forceenv['earthrad']*u.m}
+        new['sma'] = (new['radapo']+new['radper'])/2
+        new['ecc'] = (new['radapo']-new['radper'])/(new['radapo']+new['radper'])
+    else:
+        raise ValueError('Plane must be defined by either (sma, ecc) or (altper, altapo)')
+    all = astro.splitsq(oesd) | new
+    if oest is None:
+        return astro.makesq(all)
+    else:
+        return (astro.makesq(all), oest)

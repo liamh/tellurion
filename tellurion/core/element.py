@@ -20,10 +20,10 @@ def kepler(oes, dttm=None, units=(astro.prefunits['length'], astro.prefunits['an
 
     if 'sma' in oes and 'ecc' in oes:
         plane = {"ecc":'dimensionless', "sma":'length'}
-    elif 'rper' in oes and 'rapo' in oes:
-        plane = {"rper":'length', "rapo":'length'}
-    elif 'zper' in oes and 'zapo' in oes:
-        plane = {"zper":'length', "zapo":'length'}
+    elif 'radper' in oes and 'radapo' in oes:
+        plane = {"radper":'length', "radapo":'length'}
+    elif 'altper' in oes and 'altapo' in oes:
+        plane = {"altper":'length', "altapo":'length'}
 
     keppt = {"inc":'angle', "argper":'angle', "raan":'angle'} | plane | timeelt
     ordoes = {k:oes[k] for k in keppt.keys()}
