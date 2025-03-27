@@ -212,7 +212,14 @@ def propagate(generator, reltimes, include_init=True):
             ephem = posvel.tsephem(pvsq, times)
         return ephem
 
-# The time difference between the earliest (usually the initial time)
-# and the latest; not always what is requested as atmospheric drag can
-# shorten the timespan
-# BoundedPropagator.timerange = lambda self: (convert.okad(self.maxDate)-convert.okad(self.minDate)).to(u.s)
+# BoundedPropagator.timerange = lambda self:
+
+def timerange(object):
+    '''The time difference between the earliest (usually the initial
+    time) and the latest; not always what is requested as atmospheric
+    drag can shorten the timespan
+    '''
+    if hasattr(object,'getMaxDate') and hasattr(object,'getMinDate'):
+        return (convert._okad(object.getMaxDate())-convert._okad(object.getMinDate())).to(u.s)
+    else:
+        raise ValueError('Cannot get timerange for this object')

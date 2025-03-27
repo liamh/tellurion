@@ -65,9 +65,9 @@ demob.kep = tell.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "argper":66.0, "ra
 demob.pvt = tork.cartesian(demob.kep) # Convert Kepler elements to PVT
 demob.gen = tork.generate(demob.pvt, 1*u.day)
 demob.eph = tork.propagate(demob.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
-# tell.pvt(keph, 35*u.min)
+# tell.pvt(demob.eph, 35*u.min)
 # fails with KeyError: 'No matches found for key 2023-09-14 09:05:00'
-# but tell.pvt(keph,['2023-09-14 09:05:00']) works
+# but tell.pvt(demob.eph,['2023-09-14 09:05:00']) works
 
 demob.kep20m_pvt = tell.pvt(demob.eph[4])      # PVT at 20 minutes from ephemeris
 
@@ -102,11 +102,9 @@ democ = Munch()
 democ.kep = tell.kepler({"sma":6600.0, "ecc":0.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25}, newyear)
 democ.pvt = tork.cartesian(democ.kep) # Convert Kepler elements to PVT
 democ.gen = tork.generate(democ.pvt, 10*u.day, demoa.prop.fe4x4hpB01) # Ask for 10 days, but it only lasts about 6
-
-# PORTING IN PROGRESS - need to restore timerange()
-# democ.tspan = democ.gen.timerange() # <Quantity 518050.232645 s> ; time until altitude threshold is hit
-# democ.tspan_dhms = tell.tc(democ.tspan) # '5d 23hr 54min 10.233s'
-# democ.nhours = np.floor(democ.tspan.to(u.hour)) # Step by an hour for 143 hours, the maximum integer hour
-# democ.step1hmax = np.linspace(1.0*u.hour, democ.nhours, np.int64(democ.nhours))
-# democ.eph1hmax = tork.propagate(democ.gen, democ.step1hmax, True) # Ephemeris every hour until it decays
-# democ.altperapo = tork.tselements(democ.eph1hmax, ["altper","altapo"]) # Altitudes of perigee and apogee every hour
+democ.tspan = tork.timerange(democ.gen) # <Quantity 518050.233819 s> ; time until altitude threshold is hit
+democ.tspan_dhms = tell.tc(democ.tspan) # '5d 23hr 54min 10.233s'
+democ.nhours = np.floor(democ.tspan.to(u.hour)) # Step by an hour for 143 hours, the maximum integer hour
+democ.step1hmax = np.linspace(1.0*u.hour, democ.nhours, np.int64(democ.nhours))
+democ.eph1hmax = tork.propagate(democ.gen, democ.step1hmax, True) # Ephemeris every hour until it decays
+democ.altperapo = tork.tselements(democ.eph1hmax, ["altper","altapo"]) # Altitudes of perigee and apogee every hour
