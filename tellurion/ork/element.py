@@ -2,7 +2,7 @@
 Orbital elements in Orekit
 """
 
-import collections.abc
+import numpy as np
 import astropy.units as u
 from astropy.timeseries import TimeSeries
 from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType, CircularOrbit, KeplerianOrbit, PositionAngleType
@@ -150,8 +150,8 @@ def cartesian(object, dttm=None):
     else:
         raise ValueError('Can only transform Kepler element sets')
 
-def allplane(oes, forceenv=force.deffe):
-    '''Generate all plane pairs (sma, ecc), (radper, radapo), (altper, altapo) from the first or last pairs
+def allplane(oes, forceenv=force.deffe, units=astro.prefunits):
+    '''Generate all plane pairs (sma, ecc), (radper, radapo), (altper, altapo) from the first or last pairs; additionally, the mean motion can be substituted for semimajor axis in the first pair.
 
     Example 1, convert from altitudes of perigee and apogee to semimajor axis and eccentricity
     byalts = tell.kepler({"altper":160*u.km, "altapo":20250*u.km, \
@@ -170,6 +170,15 @@ def allplane(oes, forceenv=force.deffe):
     alts = tork.allplane(bysmaecc)
     alts[0]['altper'] # <Quantity 821.86354 km>
     alts[0]['altapo'] # <Quantity 2421.86354 km>
+
+    Example 3, define a geosynchronous orbit by mean motion
+    geo = tork.allplane(tell.kepler({"memo":1.0*u.rev/u.sday, "ecc":0.0*u.dimensionless_unscaled, \
+                          "inc":0.0*u.deg, "argper": 120.0*u.deg, "raan": 0.0*u.deg, "ma": 0.0*u.deg}))
+
+    Example 4, define a geosynchronous transfer orbit
+    gto = tork.allplane(tell.kepler({"altper": 350*u.km, "altapo": tork.smamemo(1.0,True), \
+                          "ecc":0.0*u.dimensionless_unscaled, \
+                          "inc":0.0*u.deg, "argper": 120.0*u.deg, "raan": 0.0*u.deg, "ma": 0.0*u.deg}))
     '''
     if type(oes) is tuple:
         (oesd, oest) = oes
@@ -177,8 +186,14 @@ def allplane(oes, forceenv=force.deffe):
         oesd = oes
         oest = None
     names = oesd.dtype.names
-    if 'sma' in names and 'ecc' in names:
-        new = {'radper': oesd['sma']*(1-oesd['ecc']), 'radapo': oesd['sma']*(1+oesd['ecc'])}
+    if ('sma' in names or 'memo' in names) and 'ecc' in names:
+        if 'memo' in names:
+            sma = smamemo(oesd['memo'], forceenv, units)
+            new = {'sma': sma, 'radper': sma*(1-oesd['ecc']), 'radapo': sma*(1+oesd['ecc'])}
+        else:
+            sma = oesd['sma']
+            memo = np.sqrt((forceenv['earthmu']*u.m**3/u.s**2)/sma**3)
+            new = {'memo': memo, 'radper': sma*(1-oesd['ecc']), 'radapo': sma*(1+oesd['ecc'])}
         new['altper'] = new['radper'] - forceenv['earthrad']*u.m
         new['altapo'] = new['radapo'] - forceenv['earthrad']*u.m
     elif 'altper' in names and 'altapo' in names:
@@ -193,3 +208,22 @@ def allplane(oes, forceenv=force.deffe):
         return astro.makesq(all)
     else:
         return (astro.makesq(all), oest)
+
+def smamemo(meanmotion, altitude=False, forceenv=force.deffe, units=astro.prefunits):
+    '''Find the semimajor axis from the mean motion; if mean motion is
+    a number, units are presumed to be revolutions/sidereal day.
+
+    Example of geosynchronous satellite semimajor axis
+      tork.smamemo(1.0)
+      <Quantity 42164.1696233 km>
+    '''
+    if type(meanmotion) is u.Quantity:
+        memod = meanmotion
+    else:
+        memod = meanmotion*1.0*u.rev/u.sday
+    sma1 = np.cbrt((forceenv['earthmu']*u.m**3/u.s**2)/memod**2)
+    sma = sma1.decompose().to(units['length'], equivalencies=u.dimensionless_angles())
+    if altitude:
+        return sma-forceenv['earthrad']*u.m
+    else:
+        return sma

@@ -20,6 +20,8 @@ def kepler(oes, dttm=None, units=(astro.prefunits['length'], astro.prefunits['an
 
     if 'sma' in oes and 'ecc' in oes:
         plane = {"ecc":'dimensionless', "sma":'length'}
+    elif 'memo' in oes and 'ecc' in oes:
+        plane = {"ecc":'dimensionless', "memo":'angular speed'}
     elif 'radper' in oes and 'radapo' in oes:
         plane = {"radper":'length', "radapo":'length'}
     elif 'altper' in oes and 'altapo' in oes:
