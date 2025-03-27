@@ -33,7 +33,7 @@ from . import element as oelement
 # _pvt(): Convert from orekit objects to PV or PVT
 # _tspvc(): Convert from PV/PVT to org.orekit.utils.PVCoordinates or TimeStampedPVCoordinates
 
-def _pvt(object, unitlookup=astro.prefunits):
+def _pvt(object, unitlookup=astro.prefunits, getpvcargs=[]):
     '''Make the postion, velocity, and time tuple (posvel.pv(),
     astropy.time.Time) or position and velocity from the Orekit object
     that has them defined; there is no transformation (e.g., from
@@ -42,7 +42,10 @@ def _pvt(object, unitlookup=astro.prefunits):
     if hasattr(object, 'pVCoordinates'):
         return _pvt(object.pVCoordinates, unitlookup)
     elif hasattr(object, 'getPVCoordinates'):
-        return _pvt(object.getPVCoordinates())
+        if len(getpvcargs)==2:
+            return _pvt(object.getPVCoordinates(_okad(getpvcargs[0]), getpvcargs[1]))
+        else:
+            return _pvt(object.getPVCoordinates())
     elif hasattr(object, 'initialState'):
         return _pvt(object.initialState)
     elif hasattr(object, 'position') and hasattr(object, 'velocity'):
