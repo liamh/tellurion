@@ -26,3 +26,6 @@ def test_allplane():
     np.testing.assert_allclose(alts[0]['altper'], 821.86354*u.km)
     np.testing.assert_allclose(alts[0]['altapo'], 2421.86354*u.km)
     np.testing.assert_allclose(geo['sma'], 42164.1696233*u.km)
+    # Test conversion to semimajor axis
+    np.testing.assert_allclose(tork.sma(1e4*u.s), 10032.11910363*u.km)
+    np.testing.assert_allclose(tork.sma(-20*(u.km/u.s)**2), 9965.0110375*u.km)

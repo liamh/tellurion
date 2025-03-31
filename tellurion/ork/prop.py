@@ -93,11 +93,11 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
         logger = EventsLogger()
         if umbra:
             # Not necessary to have .withUmbra(), it is already set that way
-            eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'], forceenv['earth']).withUmbra()
+            eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'].si.value, forceenv['earth']).withUmbra()
             handled = eclipsedet.withHandler(ContinueOnEvent())
         else:
             # Necessary to have withPenumbra(), as it is not changed in the instance
-            eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'], forceenv['earth']).withPenumbra()
+            eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'].si.value, forceenv['earth']).withPenumbra()
             handled = eclipsedet.withHandler(ContinueOnEvent())
         loggeddet = logger.monitorDetector(handled)
         propagator.addEventDetector(loggeddet)

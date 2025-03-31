@@ -84,15 +84,18 @@ def _keplerianorbit(oes, units=(astro.prefunits['length'], astro.prefunits['angl
                     forceenv=force.deffe):
     '''Make a org.orekit.orbits.KeplerianOrbit from anything'''
     if element.iskepels(oes):
-        return _keporb_from_components(*oes, units, forceenv)
+        if type(oes) is tuple:
+            return _keporb_from_components(*oes, units, forceenv)
+        else:
+            return _keporb_from_components(oes, units, forceenv)
     elif type(oes) is KeplerianOrbit:
         return oes
     elif posvel.ispvt(oes):
         co = CartesianOrbit(convert._tspvc(*oes),
-                            forceenv['celestialframe'], forceenv['earthmu'])
+                            forceenv['celestialframe'], forceenv['earthmu'].si.value)
     elif posvel.isephrow(oes):
         co = CartesianOrbit(convert._tspvc(oes),
-                            forceenv['celestialframe'], forceenv['earthmu'])
+                            forceenv['celestialframe'], forceenv['earthmu'].si.value)
     else:
         raise ValueError('Cannot transform to Keplerian elements')
     return OrbitType.KEPLERIAN.convertType(co)
@@ -109,14 +112,14 @@ def _keporb_from_components(oes, epoch, units=(astro.prefunits['length'], astro.
                               float(oessi['ma']), PositionAngleType.MEAN, \
                               fe['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
                               convert._okad(epoch),   # Sets the date of the orbital parameters
-                              fe['earthmu'])   # Sets the central attraction coefficient (m³/s²)
+                              fe['earthmu'].si.value)   # Sets the central attraction coefficient (m³/s²)
     elif 'ta' in oessi.dtype.names:
         return KeplerianOrbit(float(oessi['sma']), float(oessi['ecc']), float(oessi['inc']), \
                               float(oessi['argper']), float(oessi['raan']), \
                               float(oessi['ma']), PositionAngleType.TRUE, \
                               fe['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
                               convert._okad(epoch),   # Sets the date of the orbital parameters
-                              fe['earthmu'])   # Sets the central attraction coefficient (m³/s²)
+                              fe['earthmu'].si.value)   # Sets the central attraction coefficient (m³/s²)
     else:
         raise ValueError('Time element (ma or ta) required in element set')
 
@@ -129,7 +132,7 @@ def _keporb_from_components(oes, epoch, units=(astro.prefunits['length'], astro.
 def kepler(object, forceenv=force.deffe, mean_time_element=True): # Add prefunits
     '''The Kepler element set from the Cartesian PVT or equivalent'''
     co = CartesianOrbit(convert._tspvc(*object),
-                        forceenv['celestialframe'], forceenv['earthmu'])
+                        forceenv['celestialframe'], forceenv['earthmu'].si.value)
     ko = OrbitType.KEPLERIAN.convertType(co)
     if mean_time_element:
         elnames = element.kepeltma_names
@@ -176,7 +179,7 @@ def allplane(oes, forceenv=force.deffe, units=astro.prefunits):
                           "inc":0.0*u.deg, "argper": 120.0*u.deg, "raan": 0.0*u.deg, "ma": 0.0*u.deg}))
 
     Example 4, define a geosynchronous transfer orbit
-    gto = tork.allplane(tell.kepler({"altper": 350*u.km, "altapo": tork.smamemo(1.0,True), \
+    gto = tork.allplane(tell.kepler({"altper": 350*u.km, "altapo": tork.sma(1.0,True), \
                           "ecc":0.0*u.dimensionless_unscaled, \
                           "inc":0.0*u.deg, "argper": 120.0*u.deg, "raan": 0.0*u.deg, "ma": 0.0*u.deg}))
     '''
@@ -186,19 +189,19 @@ def allplane(oes, forceenv=force.deffe, units=astro.prefunits):
         oesd = oes
         oest = None
     names = oesd.dtype.names
-    if ('sma' in names or 'memo' in names) and 'ecc' in names:
+    if ('sma' in names or 'memo' in names) and 'ecc' in names:  # OR PERIOD IN NAMES
         if 'memo' in names:
-            sma = smamemo(oesd['memo'], forceenv, units)
-            new = {'sma': sma, 'radper': sma*(1-oesd['ecc']), 'radapo': sma*(1+oesd['ecc'])}
+            smav = sma(oesd['memo'], False, forceenv, units)
+            new = {'sma': smav, 'radper': smav*(1-oesd['ecc']), 'radapo': smav*(1+oesd['ecc'])}
         else:
-            sma = oesd['sma']
-            memo = np.sqrt((forceenv['earthmu']*u.m**3/u.s**2)/sma**3)
-            new = {'memo': memo, 'radper': sma*(1-oesd['ecc']), 'radapo': sma*(1+oesd['ecc'])}
-        new['altper'] = new['radper'] - forceenv['earthrad']*u.m
-        new['altapo'] = new['radapo'] - forceenv['earthrad']*u.m
+            smav = oesd['sma']
+            memo = np.sqrt((forceenv['earthmu'])/smav**3)
+            new = {'memo': memo, 'radper': smav*(1-oesd['ecc']), 'radapo': smav*(1+oesd['ecc'])}
+        new['altper'] = new['radper'] - forceenv['earthrad']
+        new['altapo'] = new['radapo'] - forceenv['earthrad']
     elif 'altper' in names and 'altapo' in names:
-        new = {'radper': oesd['altper'] + forceenv['earthrad']*u.m, \
-               'radapo': oesd['altapo'] + forceenv['earthrad']*u.m}
+        new = {'radper': oesd['altper'] + forceenv['earthrad'], \
+               'radapo': oesd['altapo'] + forceenv['earthrad']}
         new['sma'] = (new['radapo']+new['radper'])/2
         new['ecc'] = (new['radapo']-new['radper'])/(new['radapo']+new['radper'])
     else:
@@ -209,21 +212,39 @@ def allplane(oes, forceenv=force.deffe, units=astro.prefunits):
     else:
         return (astro.makesq(all), oest)
 
-def smamemo(meanmotion, altitude=False, forceenv=force.deffe, units=astro.prefunits):
-    '''Find the semimajor axis from the mean motion; if mean motion is
-    a number, units are presumed to be revolutions/sidereal day.
+def sma(input, altitude=False, forceenv=force.deffe, units=astro.prefunits):
+    '''Find the semimajor axis from the mean motion, orbital perioid,
+    altitude, or specific energy; if `input` is a number, it is
+    assumed to be a mean motion in revolutions/sidereal day.
 
     Example of geosynchronous satellite semimajor axis
-      tork.smamemo(1.0)
+      tork.sma(1.0)
       <Quantity 42164.1696233 km>
+    Example of orbital period
+      tork.sma(10000*u.s)
+      <Quantity 10032.11910363 km>
+    Example of specific energy
+      tork.sma(-20*(u.km/u.s)**2)
+
     '''
-    if type(meanmotion) is u.Quantity:
-        memod = meanmotion
+    mu = forceenv['earthmu']
+    if type(input) is u.Quantity:
+        quant = input
     else:
-        memod = meanmotion*1.0*u.rev/u.sday
-    sma1 = np.cbrt((forceenv['earthmu']*u.m**3/u.s**2)/memod**2)
-    sma = sma1.decompose().to(units['length'], equivalencies=u.dimensionless_angles())
-    if altitude:
-        return sma-forceenv['earthrad']*u.m
+        quant = input*1.0*u.rev/u.sday
+    pdim=u.get_physical_type(quant)
+    if pdim == 'angular speed':
+        s1 = np.cbrt(mu/quant**2)
+        s = s1.decompose().to(units['length'], equivalencies=u.dimensionless_angles())
+        if altitude:
+            return s-forceenv['earthrad']
+        else:
+            return s
+    elif pdim == 'time':
+        return sma(u.rev/quant, altitude, forceenv, units)
+    elif pdim == 'specific energy':
+        return (-mu/(2*quant)).to(units['length'])
+    elif pdim == 'length':
+        return quant + forceenv['earthrad']
     else:
-        return sma
+        raise ValueError('Cannot convert quantity to semimajor axis')

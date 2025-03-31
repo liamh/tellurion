@@ -26,19 +26,19 @@ def setgravity(degree, order, mass = 100.0):
         'earthangspd': Constants.IERS2010_EARTH_ANGULAR_VELOCITY,
         'earthflat': Constants.IERS2010_EARTH_FLATTENING,
         'sun': CelestialBodyFactory.getSun(),
-        'sunrad': Constants.SUN_RADIUS
+        'sunrad': Constants.SUN_RADIUS*u.m
     }
     eg = GravityFieldFactory.getNormalizedProvider(degree, order)
     force = {'gravity': eg,
              'gravity-degree-order': [eg.getMaxDegree(), eg.getMaxOrder()],
-             'earthrad': eg.getAe(),
-             'earthmu': eg.getMu(),
+             'earthrad': eg.getAe()*u.m,
+             'earthmu': eg.getMu()*u.m**3/u.s**2,
              'mass': mass} # Needed by several forces but not gravity
     # Define spherical altitude for convience, not specifically force related, but uses the definitions
     return celestdflt | force | \
-        {'earth': OneAxisEllipsoid(force['earthrad'],
+        {'earth': OneAxisEllipsoid(force['earthrad'].si.value,
                                    celestdflt['earthflat'],  celestdflt['earthframe']),
-         'sphalt': OneAxisEllipsoid(force['earthrad'], 0.0, celestdflt['earthframe'])}
+         'sphalt': OneAxisEllipsoid(force['earthrad'].si.value, 0.0, celestdflt['earthframe'])}
 
 # Default force & environment
 deffe = setgravity(0,0)
