@@ -55,8 +55,8 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
 
     """
 
-    ork0 = CartesianOrbit(convert._tspvc(*initstate),
-                          forceenv['celestialframe'], forceenv['earthmu'])
+    ork0 = CartesianOrbit(convert._tspvc(*initstate), \
+                          forceenv['celestialframe'], forceenv['earthmu'].si.value)
 
     # Set parameters
     minstep = 0.001
@@ -152,7 +152,7 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
         ret = generator.getGeneratedEphemeris();
     return ret
 
-def propagate(generator, reltimes, include_init=True):
+def propagate(generator, reltimes, include_init=True, spacecraftstate=False):
     '''From an existing ephemeris generator, propagate to the time(s)
     relative to epoch of the initial state. The relative times must
     satisfy posvel.isreltime(reltimes), and if the size
@@ -196,6 +196,8 @@ def propagate(generator, reltimes, include_init=True):
             else:
                 sunstate = 's'
             return pvt + (sunstate,)
+        elif spacecraftstate:
+            return ss
         else:
             return pvt
     else:

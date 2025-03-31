@@ -43,7 +43,7 @@ def setgravity(degree, order, mass = 100.0):
 # Default force & environment
 deffe = setgravity(0,0)
 
-# _swdata = CssiSpaceWeatherData("SpaceWeather-All-v1.2.txt")
+_swdata = CssiSpaceWeatherData("SpaceWeather-All-v1.2.txt")
 
 # This will find the unnormalized coefficients independent of any simulation.
 # Returns three arrays: zonals (J2,...), Cnm, Snm
