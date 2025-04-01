@@ -168,7 +168,7 @@ def propagate(generator, reltimes, include_init=True, spacecraftstate=False):
         rtshape = reltimes.shape
         rtscalar = rtshape == ()
     else:
-        raise("Reltimes must be a relative time or times: a u.Quantity with physical type 'time'")
+        raise ValueError("Reltimes must be a relative time or times: a u.Quantity with physical type 'time'")
 
     if type(generator) is dict:
         gen = generator['ephgen']
