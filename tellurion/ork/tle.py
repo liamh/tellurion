@@ -2,7 +2,9 @@
 from org.orekit.propagation.analytical.tle import TLE, TLEPropagator
 # from org.orekit.frames import FramesFactory # Will need to get the correct frame for TLEs; TEME?
 from org.orekit.utils import PVCoordinatesProvider
+from ..core import astro
 from . import force
+from . import convert
 
 # See core/spacetrack.py for defining stclient
 
@@ -17,7 +19,8 @@ def tle_latest(stclient, satnum):
 
 # senttle = tork.tle_latest(stclient, 41335)
 # sent_goodpvt = tork.tleprop(senttle)
-def tleprop(tle, forceenv=force.deffe):
-    propagator = PVCoordinatesProvider.cast_(TLEPropagator.selectExtrapolator(tle))
-    pv = propagator.getPVCoordinates(tle.date, forceenv['celestialframe'])
-    return pv.pvt()
+def tleprop(tle, proptime=0.0, forceenv=force.deffe):
+    '''Propagate the two-line elements using SGP4'''
+    propagator = TLEPropagator.selectExtrapolator(tle)
+    return convert._pvt(propagator.getPVCoordinates(tle.getDate().shiftedBy(astro.timesec(proptime)), \
+                                                    forceenv['celestialframe']))
