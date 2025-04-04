@@ -17,7 +17,7 @@ def intrackdeltav(pvt0, mag):
     uv = vel0/np.linalg.norm(vel0)
     return tell.pvt((pvt0[0]['position'], pvt0[0]['velocity'] + mag*uv, pvt0[1]))
 
-def pairsep(initkep, delay1, dv1, delay2, dv2, proptoalt, forceenv=tork.deffe):
+def pairsep(initkep, delay1, dv1, fe1, delay2, dv2, fe2, proptoalt):
     """Propagate the pair of satellites for a time in which the
     unmaneuvered `initkep` will reach an altitude of `proptoalt` after
     one full orbit. The two satellites maneuver with an in-track delta-v after a delay
@@ -25,7 +25,7 @@ def pairsep(initkep, delay1, dv1, delay2, dv2, proptoalt, forceenv=tork.deffe):
     """
     initpvt = tork.cartesian(initkep) # Convert Kepler elements to PVT
     period = tork.elementval(initkep, 'period')
-    gen = tork.generate(initpvt, 1.5*period, forceenv)
+    gen = tork.generate(initpvt, 1.5*period, fe1)
 
     def alttof(tof):
         "Altitude for a given time of flight past the first perigee; set `gen` first"
@@ -35,12 +35,12 @@ def pairsep(initkep, delay1, dv1, delay2, dv2, proptoalt, forceenv=tork.deffe):
     # Find the time of flight to the altitude `proptoalt`
     tof = scipy.optimize.fsolve(alttof, (1.1*period).si.value)[0]*u.s
 
-    def maneuver_and_propagate(delay, dv):
+    def maneuver_and_propagate(delay, dv, forceenv):
         pvtatman = intrackdeltav(tork.propagate(gen, delay, False), dv)
         gencan = tork.generate(pvtatman, tof, forceenv)
         return tork.propagate(gencan, tof-delay, False)[0]['position']
 
-    pvt1atend = maneuver_and_propagate(delay1, dv1)
-    pvt2atend = maneuver_and_propagate(delay2, dv2)
+    pvt1atend = maneuver_and_propagate(delay1, dv1, fe1)
+    pvt2atend = maneuver_and_propagate(delay2, dv2, fe2)
 
     return np.linalg.norm(pvt1atend-pvt2atend)
