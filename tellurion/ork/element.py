@@ -24,7 +24,7 @@ def tselements(ephem, elements):
                       data=[dict(zip(elements, elementval(ephrow, elements)))
                             for ephrow in ephem])
 
-def elementval (orbstate, elt, earthrad=force.deffe["earthrad"]):
+def elementval (orbstate, elt, earthrad=force.deffe["earthrad"].si.value):
     """
     Compute the orbital element from the orbital state
     Arguments

@@ -88,48 +88,12 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
     okprop.addEventDetector(AltitudeDetector(float(events['altitude'].si.value), forceenv['sphalt']))
     ret = {}
 
-    def make_eclipsedet(propagator, forceenv, umbra):
-        '''Make an eclipse detector for either umbra (`umbra=True`) or penumbra (`umbra=False`) and add it to the `propagator`.'''
-        logger = EventsLogger()
-        if umbra:
-            # Not necessary to have .withUmbra(), it is already set that way
-            eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'].si.value, forceenv['earth']).withUmbra()
-            handled = eclipsedet.withHandler(ContinueOnEvent())
-        else:
-            # Necessary to have withPenumbra(), as it is not changed in the instance
-            eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'].si.value, forceenv['earth']).withPenumbra()
-            handled = eclipsedet.withHandler(ContinueOnEvent())
-        loggeddet = logger.monitorDetector(handled)
-        propagator.addEventDetector(loggeddet)
-        return (eclipsedet, logger)
-
     if events['eclipse']: # Only includes earth as occluding body
-        (ret['umbradet'], logger_umb) = make_eclipsedet(okprop, forceenv, True)
-        (ret['penumbradet'], logger_pen) = make_eclipsedet(okprop, forceenv, False)
+        (ret['umbradet'], logger_umb) = _make_eclipsedet(okprop, forceenv, True)
+        (ret['penumbradet'], logger_pen) = _make_eclipsedet(okprop, forceenv, False)
 
     # Propagate
     propagated = okprop.propagate(ork0.getDate(), ork0.getDate().shiftedBy(astro.timesec(proptime)))
-
-    def eclipse_transitions(logger, which):
-        '''Find the transitions in and out of eclipse'''
-        loggedevents = logger.getLoggedEvents()
-        def suntrans(ev):
-            if which == 'penumbra':
-                if ev.isIncreasing():
-                    return 'ps' # Transition from penumbra to full sunlight
-                else:
-                    return 'sp' # Transition from full sunlight to penumbra
-            else:  # umbra
-                if ev.isIncreasing():
-                    return 'up' # Transition from umbra to penumbra
-                else:
-                    return 'pu' # Transition from penumbra to umbra
-        def pvet(ev):
-            '''A 3-tuple of posvel, sun transition (2-character string with prior and posterior sun state), and time.'''
-            pvt = convert._pvt(ev.getState().getPVCoordinates())
-            st = suntrans(ev)
-            return (pvt[0], st, pvt[1])
-        return [pvet(ev) for ev in loggedevents]
 
     if events['eclipse']:
         # Return a dictionary with the generator ['ephgen'], and an
@@ -137,8 +101,8 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
         # two-character string 'suntrans', and elapsed time from the
         # previous transition 'elapsed'
         ret['ephgen'] = generator.getGeneratedEphemeris();
-        umbra = eclipse_transitions(logger_umb, 'umbra')
-        penumbra = eclipse_transitions(logger_pen, 'penumbra')
+        umbra = _eclipse_transitions(logger_umb, True)
+        penumbra = _eclipse_transitions(logger_pen, False)
         suntr = sorted(umbra + penumbra, key=operator.itemgetter(2))
         pvs = u.Quantity([m[0] for m in suntr])
         times = astropy.time.Time([m[2] for m in suntr])
@@ -214,7 +178,41 @@ def propagate(generator, reltimes, include_init=True, spacecraftstate=False):
             ephem = posvel.tsephem(pvsq, times)
         return ephem
 
-# BoundedPropagator.timerange = lambda self:
+def _make_eclipsedet(propagator, forceenv, umbra):
+    '''Make an eclipse detector for either umbra (`umbra=True`) or penumbra (`umbra=False`) and add it to the `propagator`.'''
+    logger = EventsLogger()
+    if umbra:
+        # Not necessary to have .withUmbra(), it is already set that way
+        eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'].si.value, forceenv['earth']).withUmbra()
+        handled = eclipsedet.withHandler(ContinueOnEvent())
+    else:
+        # Necessary to have withPenumbra(), as it is not changed in the instance
+        eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'].si.value, forceenv['earth']).withPenumbra()
+        handled = eclipsedet.withHandler(ContinueOnEvent())
+    loggeddet = logger.monitorDetector(handled)
+    propagator.addEventDetector(loggeddet)
+    return (eclipsedet, logger)
+
+def _eclipse_transitions(logger, umbra):
+    '''Find the transitions in and out of eclipse'''
+    loggedevents = logger.getLoggedEvents()
+    def suntrans(ev):
+        if umbra:
+            if ev.isIncreasing():
+                return 'up' # Transition from umbra to penumbra
+            else:
+                return 'pu' # Transition from penumbra to umbra
+        else:
+            if ev.isIncreasing():
+                return 'ps' # Transition from penumbra to full sunlight
+            else:
+                return 'sp' # Transition from full sunlight to penumbra
+    def pvet(ev):
+        '''A 3-tuple of posvel, sun transition (2-character string with prior and posterior sun state), and time.'''
+        pvt = convert._pvt(ev.getState().getPVCoordinates())
+        st = suntrans(ev)
+        return (pvt[0], st, pvt[1])
+    return [pvet(ev) for ev in loggedevents]
 
 def timerange(object):
     '''The time difference between the earliest (usually the initial
