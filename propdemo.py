@@ -97,6 +97,12 @@ demoa.prop.gen4x4hpB01 = tork.generate(demoa.init.pvt, 1*u.day, demoa.prop.fe4x4
 demoa.prop.ephem4x4hpB01 = tork.propagate(demoa.prop.gen4x4hpB01, prop5m1h, True)
 demoa.prop.ephem4x4hpB01_posdiff = tell.magdiff(demoa.prop.ephem4x4hpB01['position'], demoa.prop.ephem['position'])
 
+# Effects of atmospheric drag in NTW and RSW (LVLH) relative coordinates
+demoa.prop.ss4x4hpB01 = tork.propagate(demoa.prop.gen4x4hpB01, prop5m1h, True, True)
+demoa.prop.ss4x4 = tork.propagate(demoa.prop.gen4x4, prop5m1h, True, True)
+demoa.prop.ntw_4x4hpB01_to_4x4 = tork.ntw(demoa.prop.ss4x4hpB01, demoa.prop.ss4x4, tell.siunits)
+demoa.prop.rsw_4x4hpB01_to_4x4 = tork.lvlh(demoa.prop.ss4x4hpB01, demoa.prop.ss4x4, tell.siunits)
+
 # Lifetime - need a very low orbit to avoid a long integration, but don't go below 100km altitude, HP will fail
 democ = Munch()
 democ.kep = tell.kepler({"sma":6600.0, "ecc":0.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25}, newyear)

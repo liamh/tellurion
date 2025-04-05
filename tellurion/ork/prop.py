@@ -167,7 +167,9 @@ def propagate(generator, reltimes, include_init=True, spacecraftstate=False):
     else:
         if include_init:
             reltimes = np.insert(reltimes, 0, 0.0)
-        data = [propagate(generator, rt) for rt in reltimes]
+        if spacecraftstate:
+            return [propagate(generator, rt, False, True) for rt in reltimes]
+        data = [propagate(generator, rt, False, False) for rt in reltimes]
         pvs = [d[0] for d in data]
         times = [d[1] for d in data]
         pvsq = u.Quantity(np.asarray(pvs), pvs[0].unit)

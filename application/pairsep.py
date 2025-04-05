@@ -6,7 +6,7 @@ import tellurion.core as tell
 import tellurion.ork as tork
 
 def setmsis(maxdeg, mass, dragarea, dragcoef):
-    "Define a forceenv using the NRLMSIS atmospheric drag model with the spacecraft properties defined."
+    """Define a forceenv using the NRLMSIS atmospheric drag model with the spacecraft properties defined."""
     return tork.dragforce(tork.setgravity(maxdeg, maxdeg, float(mass.to(u.kg).value)), \
                           'msis', dragcoef=dragcoef, \
                           dragarea= float(dragarea.to(u.m**2).value))

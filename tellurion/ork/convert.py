@@ -43,11 +43,11 @@ def _pvt(object, unitlookup=astro.prefunits, getpvcargs=[]):
         return _pvt(object.pVCoordinates, unitlookup)
     elif hasattr(object, 'getPVCoordinates'):
         if len(getpvcargs)==2:
-            return _pvt(object.getPVCoordinates(_okad(getpvcargs[0]), getpvcargs[1]))
+            return _pvt(object.getPVCoordinates(_okad(getpvcargs[0]), getpvcargs[1]), unitlookup)
         else:
-            return _pvt(object.getPVCoordinates())
+            return _pvt(object.getPVCoordinates(), unitlookup)
     elif hasattr(object, 'initialState'):
-        return _pvt(object.initialState)
+        return _pvt(object.initialState, unitlookup)
     elif hasattr(object, 'position') and hasattr(object, 'velocity'):
         pos = _v3d(object.position, astro.posvelsiu[0])
         vel = _v3d(object.velocity, astro.posvelsiu[1])

@@ -1,4 +1,4 @@
-import os
+import itertools
 import astropy.units as u
 import spacetrack
 from . import astro
@@ -43,7 +43,9 @@ def stmetadata(stdata):
 
 def spacetrack_latest(stclient, satnums):
     stdata = stclient.tle_latest(norad_cat_id=satnums, ordinal=1)
-    ret = [(satdata(std), stmetadata(std)) for std in stdata]
+    sattle = (stclient.tle_latest(norad_cat_id=satnums, ordinal=1, format='tle')).splitlines()
+    ret = [(satdata(std), tle, stmetadata(std)) \
+           for (std, tle) in zip(stdata, itertools.batched(sattle, 2))]
     if type(satnums) is int:
         return ret[0]
     else:

@@ -25,9 +25,10 @@ prefunits["posvel"] = (prefunits["length"], prefunits["speed"])
 #: Unit for posvel (m, m/s)
 posvelsiu = u.StructuredUnit((u.meter, u.meter/u.second))
 #: Units used by Orekit
-orkunits = {"time": u.second, "length": u.m, "speed": u.m/u.second,
-             "angle": u.radian, "angular speed": u.radian/u.second,
-             "dimensionless": u.dimensionless_unscaled}
+siunits = {"time": u.second, "length": u.m, "speed": u.m/u.second,
+           "angle": u.radian, "angular speed": u.radian/u.second,
+           "dimensionless": u.dimensionless_unscaled}
+orkunits = siunits
 
 def timesec(t):
     '''Convert a u.Quantity to seconds as a Python float'''
