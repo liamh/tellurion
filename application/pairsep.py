@@ -13,9 +13,9 @@ def setmsis(maxdeg, mass, dragarea, dragcoef):
 
 def intrackdeltav(pvt0, mag):
     """Add the in-track velocity and return the new pvt"""
-    vel0 = pvt0[0]['velocity']
+    vel0 = pvt0.pv['velocity']
     uv = vel0/np.linalg.norm(vel0)
-    return tell.pvt((pvt0[0]['position'], pvt0[0]['velocity'] + mag*uv, pvt0[1]))
+    return tell.pvt((pvt0.pv['position'], pvt0.pv['velocity'] + mag*uv, pvt0[1]))
 
 def pairsep(initkep, delay1, dv1, fe1, delay2, dv2, fe2, proptoalt):
     """Propagate the pair of satellites for a time in which the
@@ -29,7 +29,7 @@ def pairsep(initkep, delay1, dv1, fe1, delay2, dv2, fe2, proptoalt):
 
     def alttof(tof):
         "Altitude for a given time of flight past the first perigee; set `gen` first"
-        pos = tork.propagate(gen, tof[0]*u.s, False)[0]['position']
+        pos = tork.propagate(gen, tof[0]*u.s, False).pv['position']
         return np.linalg.norm(pos)-tork.deffe['earthrad']-proptoalt
 
     # Find the time of flight to the altitude `proptoalt`
@@ -38,7 +38,7 @@ def pairsep(initkep, delay1, dv1, fe1, delay2, dv2, fe2, proptoalt):
     def maneuver_and_propagate(delay, dv, forceenv):
         pvtatman = intrackdeltav(tork.propagate(gen, delay, False), dv)
         gencan = tork.generate(pvtatman, tof, forceenv)
-        return tork.propagate(gencan, tof-delay, False)[0]['position']
+        return tork.propagate(gencan, tof-delay, False).pv['position']
 
     pvt1atend = maneuver_and_propagate(delay1, dv1, fe1)
     pvt2atend = maneuver_and_propagate(delay2, dv2, fe2)

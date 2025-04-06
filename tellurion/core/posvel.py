@@ -1,6 +1,7 @@
 """
 Position, velocity and time sets in AstroPy
 """
+import collections
 import datetime
 import numpy as np
 import astropy.units as u
@@ -14,6 +15,8 @@ from . import astro
 ##################################################
 ####   Constants used to define field names   ####
 ##################################################
+
+PVT = collections.namedtuple('PVT', 'pv t')
 
 _eph_time = 'time'
 _eph_pos = 'position'
@@ -66,8 +69,9 @@ def isreltime(obj):
     return type(obj) is u.Quantity and u.get_physical_type(obj) == u.get_physical_type('time')
 
 def ispvt(obj):
-    return type(obj) == tuple and len(obj) == 2 \
-        and ispv(obj[0]) and isdttm(obj[1])
+    return type(obj) == PVT and ispv(obj.pv) and isdttm(obj.t)
+#or (type(obj) == tuple and len(obj) == 2 \
+#        and ispv(obj[0]) and isdttm(obj[1]))
 
 def isephem(ts):
     '''Argument is an ephemeris table'''
@@ -120,11 +124,12 @@ def nowutc():
 def pvt(obj, item=None):
     '''Return a tuple of posvel and time from a variety of sources.
     '''
+
     if isephrow(obj):
         # PVT from an ephemeris row
         pos = obj[_eph_pos]
         vel = obj[_eph_vel]
-        return (pv(pos, vel), obj[_eph_time])
+        return PVT(pv(pos, vel), obj[_eph_time])
     elif type(obj) is TimeSeries:
         # Select a row from an ephemeris by index, absolute time, or relative time
         if item == None:   # Return the last row
@@ -140,20 +145,20 @@ def pvt(obj, item=None):
     elif ispv(obj):
         if item==None:
             # Add the current time to the PV
-            return (obj, nowutc())
+            return PVT(obj, nowutc())
         else:
             # Add the specified time to the PV
-            return (obj, dttm(item))
+            return PVT(obj, dttm(item))
     elif ispvt(obj):
         if isdttm(item):
             # Replace the timestamp in the PVT
-            return (obj[0], item)
+            return PVT(obj[0], item)
         else:
             # Displace the timestamp in the PVT by the given relative time
-            return (obj[0], obj[1] + item)
+            return PVT(obj[0], obj[1] + item)
     elif type(obj) is tuple:
         # Create a PVT from the three P, V, T
-        return (pv(obj[0], obj[1]), obj[2])
+        return PVT(pv(obj[0], obj[1]), obj[2])
     else:
         raise ValueError('Cannot make a PVT from this object')
 

@@ -15,8 +15,10 @@ from . import posvel
 # NOT AN ACCURATE COMPUTATION OF CARTESIAN POSITION, IT ASSUMES KEPLER ELEMENTS ARE OSCULATING:
 # sent_badpvt = tork.cartesian(tell.makesq(sentst.els), sentst.t)
 # A better choice would be to use Orekit to propagate/convert; see ork/tle.py for `sent_goodpvt`.
-# tell.posdiff(sent_goodpvt[0], sent_badpvt[0])
+# tell.posdiff(sent_goodpvt.pv, sent_badpvt.pv)
 # <Quantity 38.40421256 km>
+
+MeanElementSetT = collections.namedtuple('MeanElementSetT', 'els t tle model scdata')
 
 def satdata(stdict):
     epoch = posvel.dttm(stdict['EPOCH']) + float(stdict['EPOCH_MICROSECONDS'])*u.microsecond
@@ -41,12 +43,10 @@ def stscdata(stdata):
             'catid': int(stdata['OBJECT_NUMBER']),
             'intldes': stdata['OBJECT_ID']}
 
-MeanElementSet = collections.namedtuple('MeanElementSet', 'els t tle model scdata')
-
 def spacetrack_latest(stclient, satnums):
     stdata = stclient.tle_latest(norad_cat_id=satnums, ordinal=1)
     sattle = (stclient.tle_latest(norad_cat_id=satnums, ordinal=1, format='tle')).splitlines()
-    ret = [MeanElementSet(*satdata(std), tle, 'SGP4', stscdata(std)) \
+    ret = [MeanElementSetT(*satdata(std), tle, 'SGP4', stscdata(std)) \
            for (std, tle) in zip(stdata, itertools.batched(sattle, 2))]
     if type(satnums) is int:
         return ret[0]

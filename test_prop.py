@@ -10,8 +10,8 @@ import tellurion.ork as tork
 ################################
 
 def pvtequal(a, b):
-    np.testing.assert_allclose(a[0]['position'],b[0]['position'], rtol=1e-5, atol=1e-12)
-    np.testing.assert_allclose(a[0]['velocity'],b[0]['velocity'], rtol=1e-5, atol=1e-12)
+    np.testing.assert_allclose(a.pv['position'],b.pv['position'], rtol=1e-5, atol=1e-12)
+    np.testing.assert_allclose(a.pv['velocity'],b.pv['velocity'], rtol=1e-5, atol=1e-12)
     np.testing.assert_equal(a[1], b[1])
 
 def kepequal(a, b):
