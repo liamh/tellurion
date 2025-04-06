@@ -9,10 +9,14 @@ from . import convert
 # See core/spacetrack.py for defining stclient
 
 # isssent = tell.spacetrack_latest(stclient, [25544, 41335])
-# sent_goodpvt = tork.tleprop(isssent[1][1])
-def tleprop(tlestr, proptime=0.0, forceenv=force.deffe):
-    '''Propagate the two-line elements using SGP4'''
-    tle = TLE(*tlestr)
-    propagator = TLEPropagator.selectExtrapolator(tle)
-    return convert._pvt(propagator.getPVCoordinates(tle.getDate().shiftedBy(astro.timesec(proptime)), \
-                                                    forceenv['celestialframe']))
+# sent_goodpvt = tork.SGP4prop(isssent['SENTINEL 3A'])
+
+def SGP4prop(meanels, proptime=0.0, forceenv=force.deffe):
+    '''Propagate mean elements using SGP4'''
+    if hasattr(meanels, 'model') and meanels.model == 'SGP4':
+        tle = TLE(*meanels.tle)
+        propagator = TLEPropagator.selectExtrapolator(tle)
+        return convert._pvt(propagator.getPVCoordinates(tle.getDate().shiftedBy(astro.timesec(proptime)), \
+                                                        forceenv['celestialframe']))
+    else:
+        raise ValueError("Can only propagte SGP4 mean elements with SGP4")

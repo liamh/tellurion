@@ -53,7 +53,7 @@ def _pvt(object, unitlookup=astro.prefunits, getpvcargs=[]):
         vel = _v3d(object.velocity, astro.posvelsiu[1])
         pv = astro.changeunits(posvel.pv(pos, vel, astro.orkunits), unitlookup)
         if type(object) is TimeStampedPVCoordinates:
-            return pv, _okad(pvc.date)
+            return posvel.pvt(pv, _okad(object.getDate()))
         else:
             return pv
     elif hasattr(object, 'getPosition') and hasattr(object, 'getVelocity'):
@@ -61,7 +61,7 @@ def _pvt(object, unitlookup=astro.prefunits, getpvcargs=[]):
         vel = _v3d(object.getVelocity(), astro.posvelsiu[1])
         pv = astro.changeunits(posvel.pv(pos, vel, astro.orkunits), unitlookup)
         if type(object) is TimeStampedPVCoordinates:
-            return pv, _okad(object.getDate())
+            return posvel.pvt(pv, _okad(object.getDate()))
         else:
             return pv
     else:

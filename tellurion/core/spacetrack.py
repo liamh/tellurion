@@ -1,3 +1,4 @@
+import collections
 import itertools
 import astropy.units as u
 import spacetrack
@@ -11,9 +12,8 @@ from . import posvel
 
 # Example with Sentinel 3A
 # sentst = tell.spacetrack_latest(stclient, 41335)
-# sentkep = tell.makesq(sentst[0][0])  # Keplerian elements
 # NOT AN ACCURATE COMPUTATION OF CARTESIAN POSITION, IT ASSUMES KEPLER ELEMENTS ARE OSCULATING:
-# sent_badpvt = convert.keplerianorbit(sentkep, sentst[0][1]).pvt()
+# sent_badpvt = tork.cartesian(tell.makesq(sentst.els), sentst.t)
 # A better choice would be to use Orekit to propagate/convert; see ork/tle.py for `sent_goodpvt`.
 # tell.posdiff(sent_goodpvt[0], sent_badpvt[0])
 # <Quantity 38.40421256 km>
@@ -35,18 +35,20 @@ def satdata(stdict):
               'B': 12.7416*float(stdict['BSTAR'])*u.m*u.m/u.kg}
     return (orbels, epoch)
 
-def stmetadata(stdata):
+def stscdata(stdata):
     return {'name': stdata['OBJECT_NAME'],
             'type': stdata['OBJECT_TYPE'],
             'catid': int(stdata['OBJECT_NUMBER']),
             'intldes': stdata['OBJECT_ID']}
 
+MeanElementSet = collections.namedtuple('MeanElementSet', 'els t tle model scdata')
+
 def spacetrack_latest(stclient, satnums):
     stdata = stclient.tle_latest(norad_cat_id=satnums, ordinal=1)
     sattle = (stclient.tle_latest(norad_cat_id=satnums, ordinal=1, format='tle')).splitlines()
-    ret = [(satdata(std), tle, stmetadata(std)) \
+    ret = [MeanElementSet(*satdata(std), tle, 'SGP4', stscdata(std)) \
            for (std, tle) in zip(stdata, itertools.batched(sattle, 2))]
     if type(satnums) is int:
         return ret[0]
     else:
-        return ret
+        return dict(zip([el.scdata['name'] for el in ret], ret))
