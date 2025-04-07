@@ -84,10 +84,7 @@ def _keplerianorbit(oes, units=(astro.prefunits['length'], astro.prefunits['angl
                     forceenv=force.deffe):
     '''Make a org.orekit.orbits.KeplerianOrbit from anything'''
     if element.iskepels(oes):
-        if type(oes) is tuple:
-            return _keporb_from_components(*oes, units, forceenv)
-        else:
-            return _keporb_from_components(oes, units, forceenv)
+        return _keporb_from_components(oes.els, oes.t, units, forceenv)
     elif type(oes) is KeplerianOrbit:
         return oes
     elif posvel.ispvt(oes):
@@ -138,18 +135,21 @@ def kepler(object, forceenv=force.deffe, mean_time_element=True): # Add prefunit
         elnames = element.kepeltma_names
     else:
         elnames = element.kepeltta_names
-    kepels = astro.makesq(elementval(ko, elnames), elnames)
-    return (kepels, object[1])
+    if hasattr(object, 't'):
+        dttm = object.t
+    elif hasattr(object, 'time'):
+        dttm = object.time
+    kepels = dict(zip(elnames, elementval(ko, elnames)))
+    return element.kepler(kepels, dttm)
 
 def cartesian(object, dttm=None):
     '''Make a Cartesian PVT from the object, or an ephemeris
     generator, which has an initial state. If the object is an
     elements set without a datetime, it must be supplied in `dttm`.'''
-    if element.iskepels(object):
-        if type(object) is tuple:
-            return convert._pvt(_keplerianorbit(object))
-        else:
-            return convert._pvt(_keplerianorbit(object, dttm))
+    if element.iskepels(object, True):
+        return convert._pvt(_keplerianorbit(object))
+    elif element.iskepels(object, False):
+        return convert._pvt(_keplerianorbit(object, dttm))
     else:
         raise ValueError('Can only transform Kepler element sets')
 

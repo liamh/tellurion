@@ -1,9 +1,13 @@
+import collections
 import numpy as np
 import astropy.units as u
 import astropy.constants # astropy.constants.R_earth
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
 from . import astro
+from . import posvel
+
+ElementSetT = collections.namedtuple('ElementSetT', 'els t')
 
 kepeltma_names = ["ecc", "sma", "inc", "argper", "raan", "ma"]
 kepeltta_names = ["ecc", "sma", "inc", "argper", "raan", "ta"]
@@ -36,12 +40,15 @@ def kepler(oes, dttm=None, units=(astro.prefunits['length'], astro.prefunits['an
     if dttm==None:
         return kepsqn
     else:
-        return (kepsqn, dttm)
+        return ElementSetT(kepsqn, dttm)
 
-def iskepels(obj):
-    '''The argument is a Keper element set or (kepels, epoch)'''
-    if type(obj) is tuple and len(obj)==2 and type(obj[1])==Time:
-        return iskepels(obj[0])
+def iskepels(obj, est=True):
+    '''The argument is a Keper element set or (kepels, epoch); if
+    `est` is `True`, then it is a properly constructed `ElementSetT`,
+    and if `False`, it is element values only, without an epoch time.'''
+    if type(obj) is ElementSetT and est:
+        return iskepels(obj.els, False) and posvel.isdttm(obj.t)
     else:
-        knames = {'argper', 'ecc', 'inc', 'ma', 'raan', 'sma'}
-        return type(obj) is u.Quantity and not(knames - set(obj.dtype.names))
+        return type(obj) is u.Quantity \
+            and (not(set(kepeltma_names) - set(obj.dtype.names)) \
+                 or not(set(kepeltta_names) - set(obj.dtype.names)))

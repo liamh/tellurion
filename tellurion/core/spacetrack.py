@@ -13,7 +13,7 @@ from . import posvel
 # Example with Sentinel 3A
 # sentst = tell.spacetrack_latest(stclient, 41335)
 # NOT AN ACCURATE COMPUTATION OF CARTESIAN POSITION, IT ASSUMES KEPLER ELEMENTS ARE OSCULATING:
-# sent_badpvt = tork.cartesian(tell.makesq(sentst.els), sentst.t)
+# sent_badpvt = tork.cartesian(tell.kepler(sentst.els, sentst.t))
 # A better choice would be to use Orekit to propagate/convert; see ork/tle.py for `sent_goodpvt`.
 # tell.posdiff(sent_goodpvt.pv, sent_badpvt.pv)
 # <Quantity 38.40421256 km>
