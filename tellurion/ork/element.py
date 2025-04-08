@@ -153,7 +153,7 @@ def cartesian(object, dttm=None):
     else:
         raise ValueError('Can only transform Kepler element sets')
 
-def allplane(oes, forceenv=force.deffe, units=astro.prefunits):
+def allplane(oesdict, forceenv=force.deffe, units=astro.prefunits):
     '''Generate all plane pairs (sma, ecc), (radper, radapo), (altper, altapo) from the first or last pairs; additionally, the mean motion can be substituted for semimajor axis in the first pair.
 
     Example 1, convert from altitudes of perigee and apogee to semimajor axis and eccentricity
@@ -167,50 +167,39 @@ def allplane(oes, forceenv=force.deffe, units=astro.prefunits):
     tell.iskepels(smaecc) # True
 
     Example 2, convert from semimajor axis and eccentricity to altitudes of perigee and apogee
-    bysmaecc = tell.kepler({"sma":8000, "ecc":0.1, \
-                          "inc":45, "argper": 120.0, "raan": 80.0, "ma": 0.0}, \
-                          tell.dttm('2025-02-01T12:30:00'))
+    bysmaecc = {"sma":8000, "ecc":0.1, "inc":45, "argper": 120.0, "raan": 80.0, "ma": 0.0}
     alts = tork.allplane(bysmaecc)
     alts[0]['altper'] # <Quantity 821.86354 km>
     alts[0]['altapo'] # <Quantity 2421.86354 km>
 
     Example 3, define a geosynchronous orbit by mean motion
-    geo = tork.allplane(tell.kepler({"memo":1.0*u.rev/u.sday, "ecc":0.0*u.dimensionless_unscaled, \
-                          "inc":0.0*u.deg, "argper": 120.0*u.deg, "raan": 0.0*u.deg, "ma": 0.0*u.deg}))
+    geo = tork.allplane({"memo":1.0*u.rev/u.sday, "ecc":0.0*u.dimensionless_unscaled, \
+                          "inc":0.0*u.deg, "argper": 120.0*u.deg, "raan": 0.0*u.deg, "ma": 0.0*u.deg})
 
     Example 4, define a geosynchronous transfer orbit
-    gto = tork.allplane(tell.kepler({"altper": 350*u.km, "altapo": tork.sma(1.0,True), \
+    gto = tork.allplane({"altper": 350*u.km, "altapo": tork.sma(1.0,True), \
                           "ecc":0.0*u.dimensionless_unscaled, \
-                          "inc":0.0*u.deg, "argper": 120.0*u.deg, "raan": 0.0*u.deg, "ma": 0.0*u.deg}))
+                          "inc":0.0*u.deg, "argper": 120.0*u.deg, "raan": 0.0*u.deg, "ma": 0.0*u.deg})
     '''
-    if type(oes) is tuple:
-        (oesd, oest) = oes
-    else:
-        oesd = oes
-        oest = None
-    names = oesd.dtype.names
+    names = oesdict.keys()
     if ('sma' in names or 'memo' in names) and 'ecc' in names:  # OR PERIOD IN NAMES
         if 'memo' in names:
-            smav = sma(oesd['memo'], False, forceenv, units)
-            new = {'sma': smav, 'radper': smav*(1-oesd['ecc']), 'radapo': smav*(1+oesd['ecc'])}
+            smav = sma(oesdict['memo'], False, forceenv, units)
+            new = {'sma': smav, 'radper': smav*(1-oesdict['ecc']), 'radapo': smav*(1+oesdict['ecc'])}
         else:
-            smav = oesd['sma']
+            smav = oesdict['sma']
             memo = np.sqrt((forceenv['earthmu'])/smav**3)
-            new = {'memo': memo, 'radper': smav*(1-oesd['ecc']), 'radapo': smav*(1+oesd['ecc'])}
+            new = {'memo': memo, 'radper': smav*(1-oesdict['ecc']), 'radapo': smav*(1+oesdict['ecc'])}
         new['altper'] = new['radper'] - forceenv['earthrad']
         new['altapo'] = new['radapo'] - forceenv['earthrad']
     elif 'altper' in names and 'altapo' in names:
-        new = {'radper': oesd['altper'] + forceenv['earthrad'], \
-               'radapo': oesd['altapo'] + forceenv['earthrad']}
+        new = {'radper': oesdict['altper'] + forceenv['earthrad'], \
+               'radapo': oesdict['altapo'] + forceenv['earthrad']}
         new['sma'] = (new['radapo']+new['radper'])/2
         new['ecc'] = (new['radapo']-new['radper'])/(new['radapo']+new['radper'])
     else:
         raise ValueError('Plane must be defined by either (sma, ecc) or (altper, altapo)')
-    all = astro.splitsq(oesd) | new
-    if oest is None:
-        return astro.makesq(all)
-    else:
-        return (astro.makesq(all), oest)
+    return oesdict | new
 
 def sma(input, altitude=False, forceenv=force.deffe, units=astro.prefunits):
     '''Find the semimajor axis from the mean motion, orbital perioid,

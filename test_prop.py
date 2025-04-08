@@ -10,14 +10,14 @@ import tellurion.ork as tork
 ################################
 
 def pvtequal(a, b):
-    np.testing.assert_allclose(a.pv['position'],b.pv['position'], rtol=1e-5, atol=1e-12)
-    np.testing.assert_allclose(a.pv['velocity'],b.pv['velocity'], rtol=1e-5, atol=1e-12)
-    np.testing.assert_equal(a[1], b[1])
+    return np.testing.assert_allclose(a.pv['position'],b.pv['position'], rtol=1e-5, atol=1e-12) \
+        and np.testing.assert_allclose(a.pv['velocity'],b.pv['velocity'], rtol=1e-5, atol=1e-12) \
+        and np.testing.assert_equal(a[1], b[1])
 
 def kepequal(a, b):
     for nm in tell.kepeltma_names:
         np.testing.assert_allclose(a[0][nm],b[0][nm])
-    np.testing.assert_equal(a[1], b[1])
+    return np.testing.assert_equal(a[1], b[1])
 
 ##########################
 ####   Definitions    ####
@@ -39,13 +39,13 @@ demoa.init.seekep = tell.splitsq(demoa.init.kep[0])  # Easier to read Kepler ele
 demoa.init.cart = tork.cartesian(demoa.init.kep)  # Convert back to Cartesian, same as demoa.init.pvt
 
 def test_kepcart():
-    pvtequal(demoa.init.cart, demoa.init.pvt)
+    return pvtequal(demoa.init.cart, demoa.init.pvt)
 
 demob = Munch()
 demob.kep = tell.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25},
                            tell.dttm('2023-09-14T08:30:00'))
-demob.pvt = tork.cartesian(*demob.kep) # Convert Kepler elements to PVT
+demob.pvt = tork.cartesian(demob.kep) # Convert Kepler elements to PVT
 demob.rekep = tork.kepler(demob.pvt)
 
 def test_cartkep():
-    kepequal(demob.rekep, demob.kep)
+    return kepequal(demob.rekep, demob.kep)
