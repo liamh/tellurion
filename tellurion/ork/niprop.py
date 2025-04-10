@@ -1,17 +1,14 @@
-import operator
 import collections
 import collections.abc
 import numpy as np
 import astropy.units as u
 import astropy.time
 import astropy.table
-import orekit_jpype as orekit
 from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit, KeplerianOrbit
 from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState, EphemerisGenerator
-from org.orekit.propagation.events import AltitudeDetector, EclipseDetector, EventsLogger
-from org.orekit.propagation.events.handlers import ContinueOnEvent
+from org.orekit.propagation.events import AltitudeDetector
 import org.orekit.forces.gravity as okgrav
 
 from ..core import astro
@@ -20,6 +17,7 @@ from ..core import element
 from . import force
 from . import element as oelement
 from . import convert
+from . import eclipse
 
 defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
 
@@ -90,8 +88,8 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
 
     # Set up eclipse detector
     if events['eclipse']: # Only includes earth as occluding body
-        (ret['umbradet'], logger_umb) = _make_eclipsedet(okprop, forceenv, True)
-        (ret['penumbradet'], logger_pen) = _make_eclipsedet(okprop, forceenv, False)
+        (ret['umbradet'], logger_umb) = eclipse._make_eclipsedet(okprop, forceenv, True)
+        (ret['penumbradet'], logger_pen) = eclipse._make_eclipsedet(okprop, forceenv, False)
 
     okprop.propagate(ork0.getDate(), ork0.getDate().shiftedBy(astro.timesec(proptime)))
 
@@ -101,59 +99,10 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
         # two-character string 'suntrans', and elapsed time from the
         # previous transition 'elapsed'
         ret['ephgen'] = generator.getGeneratedEphemeris();
-        ret['sun transition'] = _eclipse_transition_table(logger_umb, logger_pen)
+        ret['sun transition'] = eclipse._eclipse_transition_table(logger_umb, logger_pen)
     else:
         ret = generator.getGeneratedEphemeris();
     return ret
-
-def _make_eclipsedet(propagator, forceenv, umbra):
-    '''Make an eclipse detector for either umbra (`umbra=True`) or penumbra (`umbra=False`) and add it to the `propagator`.'''
-    logger = EventsLogger()
-    if umbra:
-        # Not necessary to have .withUmbra(), it is already set that way
-        eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'].si.value, forceenv['earth']).withUmbra()
-        handled = eclipsedet.withHandler(ContinueOnEvent())
-    else:
-        # Necessary to have withPenumbra(), as it is not changed in the instance
-        eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'].si.value, forceenv['earth']).withPenumbra()
-        handled = eclipsedet.withHandler(ContinueOnEvent())
-    loggeddet = logger.monitorDetector(handled)
-    propagator.addEventDetector(loggeddet)
-    return (eclipsedet, logger)
-
-def _eclipse_transition_table(logger_umb, logger_pen):
-    umbra = _eclipse_transitions(logger_umb, True)
-    penumbra = _eclipse_transitions(logger_pen, False)
-    suntr = sorted(umbra + penumbra, key=operator.itemgetter(2))
-    pvs = u.Quantity([m[0] for m in suntr])
-    times = astropy.time.Time([m[2] for m in suntr])
-    txyz = posvel.posxyz(posvel.tsephem(pvs, times))
-    txyz['suntrans'] = [m[1] for m in suntr]
-    elapsed = [dt.quantity_str for dt in np.diff(txyz['time'])]
-    elapsed.insert(0,'')
-    txyz['elapsed'] = elapsed
-    return txyz
-
-def _eclipse_transitions(logger, umbra):
-    '''Find the transitions in and out of eclipse'''
-    loggedevents = logger.getLoggedEvents()
-    def suntrans(ev):
-        if umbra:
-            if ev.isIncreasing():
-                return 'up' # Transition from umbra to penumbra
-            else:
-                return 'pu' # Transition from penumbra to umbra
-        else:
-            if ev.isIncreasing():
-                return 'ps' # Transition from penumbra to full sunlight
-            else:
-                return 'sp' # Transition from full sunlight to penumbra
-    def pvet(ev):
-        '''A 3-tuple of posvel, sun transition (2-character string with prior and posterior sun state), and time.'''
-        pvt = convert._pvt(ev.getState().getPVCoordinates())
-        st = suntrans(ev)
-        return (pvt[0], st, pvt[1])
-    return [pvet(ev) for ev in loggedevents]
 
 def propagate(generator, reltimes, include_init=True, spacecraftstate=False):
     '''From an existing ephemeris generator, propagate to the time(s)
@@ -185,19 +134,7 @@ def propagate(generator, reltimes, include_init=True, spacecraftstate=False):
         ss = gen.propagate(gen.getMinDate().shiftedBy(float(reltimes.to(u.s).value)))
         pvt = convert._pvt(ss)
         if 'umbd' in locals():
-            # https://www.orekit.org/static/apidocs/org/orekit/propagation/events/EclipseDetector.html
-            # g: Compute the value of the switching function. This
-            # function becomes negative when entering the region of
-            # shadow and positive when exiting.
-            umbsl = umbd.g(ss)
-            pensl = pend.g(ss)
-
-            if umbsl < 0.0 and pensl < 0.0:
-                sunstate = 'u'
-            elif umbsl*pensl < 0.0:
-                sunstate = 'p'
-            else:
-                sunstate = 's'
+            sunstate = eclipse._solar_illumination_state(umbd, pend, ss)
             return pvt + (sunstate,)
         elif spacecraftstate:
             return ss
