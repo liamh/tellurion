@@ -9,6 +9,7 @@ from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState, EphemerisGenerator
 from org.orekit.propagation.events import AltitudeDetector
+from org.orekit.utils import AbsolutePVCoordinates, TimeStampedPVCoordinates
 import org.orekit.forces.gravity as okgrav
 
 from ..core import astro
@@ -21,7 +22,7 @@ from . import eclipse
 
 defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
 
-def generate(initstate, proptime, forceenv=force.deffe, events=defev):
+def generate(initstate, proptime, events=defev, forceenv=force.deffe):
     """Make a generator for an ephemeris, optionally include eclipse
     information. The result of this function is passed as the first
     argument to `propagate()`.
@@ -93,15 +94,17 @@ def generate(initstate, proptime, forceenv=force.deffe, events=defev):
 
     okprop.propagate(ork0.getDate(), ork0.getDate().shiftedBy(astro.timesec(proptime)))
 
+    gge = generator.getGeneratedEphemeris()
+    ret['propfn'] = lambda propto: gge.propagate(propto)
+    ret['mindate'] = gge.getMinDate()
+    ret['maxdate'] = gge.getMaxDate()
+
     if events['eclipse']: # Only includes earth as occluding body
         # Return a dictionary with the generator ['ephgen'], and an
         # ephemeris table ['sun transitions'] with xyz positions,
         # two-character string 'suntrans', and elapsed time from the
         # previous transition 'elapsed'
-        ret['ephgen'] = generator.getGeneratedEphemeris();
         ret['sun transition'] = eclipse._eclipse_transition_table(logger_umb, logger_pen)
-    else:
-        ret = generator.getGeneratedEphemeris();
     return ret
 
 def propagate(generator, reltimes, include_init=True, spacecraftstate=False):
@@ -122,18 +125,15 @@ def propagate(generator, reltimes, include_init=True, spacecraftstate=False):
     else:
         raise ValueError("Reltimes must be a relative time or times: a u.Quantity with physical type 'time'")
 
-    if type(generator) is dict:
-        gen = generator['ephgen']
-        umbd = generator['umbradet']
-        pend = generator['penumbradet']
-    else:
-        gen = generator
+    umbd = generator.get('umbradet')
+    pend = generator.get('penumbradet')
 
     if rtscalar:
         # This includes the value of the event function "pvut" = position, velocity, umbra and time
-        ss = gen.propagate(gen.getMinDate().shiftedBy(float(reltimes.to(u.s).value)))
+        reftime = generator.get('epoch') or generator.get('mindate')
+        ss = _to_spacecraft_state(generator['propfn'](reftime.shiftedBy(float(reltimes.to(u.s).value))))
         pvt = convert._pvt(ss)
-        if 'umbd' in locals():
+        if umbd and pend:
             sunstate = eclipse._solar_illumination_state(umbd, pend, ss)
             return pvt + (sunstate,)
         elif spacecraftstate:
@@ -149,7 +149,7 @@ def propagate(generator, reltimes, include_init=True, spacecraftstate=False):
         pvs = [d[0] for d in data]
         times = [d[1] for d in data]
         pvsq = u.Quantity(np.asarray(pvs), pvs[0].unit)
-        if 'umbd' in locals():
+        if umbd:
             ephem = posvel.posxyz(posvel.tsephem(pvsq, times))
             ephem['sunlight'] = [d[2] for d in data]
         else:
@@ -161,7 +161,15 @@ def timerange(object):
     time) and the latest; not always what is requested as atmospheric
     drag can shorten the timespan
     '''
-    if hasattr(object,'getMaxDate') and hasattr(object,'getMinDate'):
-        return (convert._okad(object.getMaxDate())-convert._okad(object.getMinDate())).to(u.s)
+    if object.get('maxdate') and object.get('mindate'):
+        return (convert._okad(object.get('maxdate'))-convert._okad(object.get('mindate'))).to(u.s)
     else:
         raise ValueError('Cannot get timerange for this object')
+
+def _to_spacecraft_state(tspvc, forceenv=force.deffe):
+    '''From the TimeStampedPVCoordinates, create a SpacecraftState'''
+    if type(tspvc)==TimeStampedPVCoordinates:
+        apvc = AbsolutePVCoordinates(forceenv['celestialframe'], tspvc)
+        return SpacecraftState(apvc)
+    else:
+        return tspvc

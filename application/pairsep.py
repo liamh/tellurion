@@ -25,7 +25,7 @@ def pairsep(initkep, delay1, dv1, fe1, delay2, dv2, fe2, proptoalt):
     """
     initpvt = tork.cartesian(initkep) # Convert Kepler elements to PVT
     period = tork.elementval(initkep, 'period')
-    gen = tork.generate(initpvt, 1.5*period, fe1)
+    gen = tork.generate(initpvt, 1.5*period, forceenv=fe1)
 
     def alttof(tof):
         "Altitude for a given time of flight past the first perigee; set `gen` first"
@@ -37,7 +37,7 @@ def pairsep(initkep, delay1, dv1, fe1, delay2, dv2, fe2, proptoalt):
 
     def maneuver_and_propagate(delay, dv, forceenv):
         pvtatman = intrackdeltav(tork.propagate(gen, delay, False), dv)
-        gencan = tork.generate(pvtatman, tof, forceenv)
+        gencan = tork.generate(pvtatman, tof, forceenv=forceenv)
         return tork.propagate(gencan, tof-delay, False).pv['position']
 
     pvt1atend = maneuver_and_propagate(delay1, dv1, fe1)

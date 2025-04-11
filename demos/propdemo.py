@@ -50,7 +50,7 @@ demoa.prop.pvapa = tell.hcat(demoa.prop.ephem, demoa.prop.altperapo) # Ephemeris
 # Eclipsing
 demoa.prop.eclipse = Munch()
 demoa.prop.eclipse.events = {'altitude': 125.0*u.km, 'eclipse': True, 'visibility': []}
-demoa.prop.eclipse.genev = tork.generate(demoa.init.pvt, 1*u.day, tork.deffe, demoa.prop.eclipse.events)
+demoa.prop.eclipse.genev = tork.generate(demoa.init.pvt, 1*u.day, demoa.prop.eclipse.events)
 demoa.prop.eclipse.suntrans = demoa.prop.eclipse.genev['sun transition']
 demoa.prop.eclipse.ephem = tork.propagate(demoa.prop.eclipse.genev, np.linspace(5.0*u.minute, 5*60.0*u.minute, 60))
 demoa.prop.eclipse.um12h = tork.propagate(demoa.prop.eclipse.genev, 12*u.hour)
@@ -85,7 +85,7 @@ demoa.tssel.kep1h = tork.kepler(demoa.tssel.pvt1h)  # Convert PVT to Kepler elem
 ################ Propagation with perturbations
 
 demoa.prop.fe4x4 = tork.setgravity(4,4)
-demoa.prop.gen4x4 = tork.generate(demoa.init.pvt, 1*u.day, demoa.prop.fe4x4)
+demoa.prop.gen4x4 = tork.generate(demoa.init.pvt, 1*u.day, forceenv=demoa.prop.fe4x4)
 demoa.prop.ephem4x4 = tork.propagate(demoa.prop.gen4x4, prop5m1h, True)
 demoa.prop.ephem4x4_posdiff = tell.magdiff(demoa.prop.ephem4x4['position'], demoa.prop.ephem['position'])
 
@@ -93,7 +93,7 @@ demoa.prop.ephem4x4_posdiff = tell.magdiff(demoa.prop.ephem4x4['position'], demo
 
 # Atmospheric drag
 demoa.prop.fe4x4hpB01 = tork.dragforce(demoa.prop.fe4x4, 'hp')
-demoa.prop.gen4x4hpB01 = tork.generate(demoa.init.pvt, 1*u.day, demoa.prop.fe4x4hpB01)
+demoa.prop.gen4x4hpB01 = tork.generate(demoa.init.pvt, 1*u.day, forceenv=demoa.prop.fe4x4hpB01)
 demoa.prop.ephem4x4hpB01 = tork.propagate(demoa.prop.gen4x4hpB01, prop5m1h, True)
 demoa.prop.ephem4x4hpB01_posdiff = tell.magdiff(demoa.prop.ephem4x4hpB01['position'], demoa.prop.ephem['position'])
 
@@ -107,7 +107,7 @@ demoa.prop.rsw_4x4hpB01_to_4x4 = tork.lvlh(demoa.prop.ss4x4hpB01, demoa.prop.ss4
 democ = Munch()
 democ.kep = tell.kepler({"sma":6600.0, "ecc":0.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25}, newyear)
 democ.pvt = tork.cartesian(democ.kep) # Convert Kepler elements to PVT
-democ.gen = tork.generate(democ.pvt, 10*u.day, demoa.prop.fe4x4hpB01) # Ask for 10 days, but it only lasts about 6
+democ.gen = tork.generate(democ.pvt, 10*u.day, forceenv=demoa.prop.fe4x4hpB01) # Ask for 10 days, but it only lasts about 6
 democ.tspan = tork.timerange(democ.gen) # <Quantity 518050.233819 s> ; time until altitude threshold is hit
 democ.tspan_dhms = tell.tc(democ.tspan) # '5d 23hr 54min 10.233s'
 democ.nhours = np.floor(democ.tspan.to(u.hour)) # Step by an hour for 143 hours, the maximum integer hour

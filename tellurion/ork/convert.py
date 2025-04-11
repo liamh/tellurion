@@ -13,7 +13,7 @@ import datetime
 import orekit_jpype.pyhelpers as pyhelp
 import org.orekit.time
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
-from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState
+from org.orekit.propagation import Propagator, BoundedPropagator
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 
 from ..core import astro
@@ -39,7 +39,15 @@ def _pvt(object, unitlookup=astro.prefunits, getpvcargs=[]):
     that has them defined; there is no transformation (e.g., from
     Kepler elements).
     '''
-    if hasattr(object, 'pVCoordinates'):
+    if hasattr(object, 'getPosition') and hasattr(object, 'getVelocity'):
+        pos = _v3d(object.getPosition(), astro.posvelsiu[0])
+        vel = _v3d(object.getVelocity(), astro.posvelsiu[1])
+        pv = astro.changeunits(posvel.pv(pos, vel, astro.orkunits), unitlookup)
+        if hasattr(object, 'getDate'):
+            return posvel.pvt(pv, _okad(object.getDate()))
+        else:
+            return pv
+    elif hasattr(object, 'pVCoordinates'):
         return _pvt(object.pVCoordinates, unitlookup)
     elif hasattr(object, 'getPVCoordinates'):
         if len(getpvcargs)==2:
@@ -51,14 +59,6 @@ def _pvt(object, unitlookup=astro.prefunits, getpvcargs=[]):
     elif hasattr(object, 'position') and hasattr(object, 'velocity'):
         pos = _v3d(object.position, astro.posvelsiu[0])
         vel = _v3d(object.velocity, astro.posvelsiu[1])
-        pv = astro.changeunits(posvel.pv(pos, vel, astro.orkunits), unitlookup)
-        if type(object) is TimeStampedPVCoordinates:
-            return posvel.pvt(pv, _okad(object.getDate()))
-        else:
-            return pv
-    elif hasattr(object, 'getPosition') and hasattr(object, 'getVelocity'):
-        pos = _v3d(object.getPosition(), astro.posvelsiu[0])
-        vel = _v3d(object.getVelocity(), astro.posvelsiu[1])
         pv = astro.changeunits(posvel.pv(pos, vel, astro.orkunits), unitlookup)
         if type(object) is TimeStampedPVCoordinates:
             return posvel.pvt(pv, _okad(object.getDate()))
