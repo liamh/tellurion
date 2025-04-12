@@ -22,6 +22,24 @@ from . import posvel
 
 MeanElementSetT = collections.namedtuple('MeanElementSetT', 'els t tle model scdata')
 
+def mestrt(mest):
+    '''Create a readable (only strings, numbers, dict) tuple from the
+    `MeanElementSetT`. To save a mean element set from spacetrack and
+    later recreate it without access to `space-track.org`, use this
+    function to create the readable tuple, save to a Python source
+    file and call `makemest()` on it.
+    '''
+    return(astro.splitsq(astro.makesq(mest.els), False, True), \
+           mest.t.to_string(), \
+           mest.tle, \
+           mest.model, \
+           mest.scdata)
+
+def makemest(elstuples, timestr, tle, model, scdata):
+    '''Create a MeanElementSetT from readable arguments'''
+    return MeanElementSetT(astro.splitsq(astro.makesq(*elstuples)), \
+                           astro.abstime(timestr), tle, model, scdata)
+
 def satdata(stdict):
     epoch = astro.abstime(stdict['EPOCH']) + float(stdict['EPOCH_MICROSECONDS'])*u.microsecond
     orbels = {'sma': float(stdict['SEMIMAJOR_AXIS'])*u.km,

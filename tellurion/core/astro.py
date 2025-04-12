@@ -17,6 +17,7 @@ import collections.abc
 
 #: A revolution (full circle), useful for two-line elements (mean motion in rev/day)
 u.rev = u.revolution = u.def_unit('revolution', 2*np.pi*u.radian)
+u.add_enabled_units(u.rev)
 
 #: User's preferred units
 prefunits = {"time": u.second, "length": u.km, "speed": u.km/u.second,
@@ -207,12 +208,14 @@ def makesq(values, names=None, units=None, phystype=None, unitlookup=prefunits):
     npa = np.array(tuple(vals), dtype = dtype)
     return u.Quantity(npa, u.StructuredUnit(units))
 
-def splitsq(stqu, quant=True):
-    '''Make a dict of names and quantities, or values, names, and units from the structured quantity'''
+def splitsq(stqu, quant=True, readably=False):
+    '''Make a dict of names and quantities, or values, names, and units from the structured quantity. To recreate a structured quantity, set `quant` to False; this results in input for makesq. For example, `makesq(*splitsq(sq, False))` copies `sq`.'''
     if quant:
         vnu = splitsq(stqu, False)
         qs = [v*u for (v, u) in zip(vnu[0], vnu[2])]
         return {un:val for (val, un) in zip(qs, vnu[1])}
+    elif readably:
+        return (stqu.value.tolist(), stqu.dtype.names, tuple(un.to_string() for un in stqu.unit.values()))
     else:
         return (stqu.value.tolist(), stqu.dtype.names, stqu.unit.values())
 
