@@ -9,6 +9,7 @@ import astropy.units as u
 import astropy.coordinates as coord
 from astropy.timeseries import TimeSeries
 from astropy.time import Time
+from . import astro
 from . import posvel
 from . import geonames
 
@@ -29,7 +30,7 @@ def eciobs(loc, observation=None, name='eci obs'):
     the location. If observation is a Time or multiple times, find the site
     vector(s). Uses AstroPy.'''
     if observation==None:
-        observation = posvel.nowutc()
+        observation = astro.abstime(0)
     if type(observation) is Time:
         if type(observation.value) is np.ndarray:
             arr = [eciobs(loc, obs) for obs in observation]
@@ -64,6 +65,6 @@ def siderealtime(time = None, location = nullisland):
     the current time, default `location` gives GST
     '''
     if time==None:
-        time = posvel.nowutc()
+        time = astro.abstime(0)
     obstm = Time(time, location = location)
     return obstm.sidereal_time('mean')

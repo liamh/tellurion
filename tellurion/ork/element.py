@@ -159,7 +159,7 @@ def allplane(oesdict, forceenv=force.deffe, units=astro.prefunits):
     Example 1, convert from altitudes of perigee and apogee to semimajor axis and eccentricity
     byalts = tell.kepler({"altper":160*u.km, "altapo":20250*u.km, \
                           "inc":28.5*u.deg, "argper": 0.0*u.deg, "raan": 0.0*u.deg, "ma": 0.0*u.deg}, \
-                          tell.dttm('2022-02-15T08:30:00'))
+                          tell.abstime('2022-02-15T08:30:00'))
     smaecc = tork.allplane(byalts)
     smaecc[0]['sma'] # <Quantity 16583.13646 km>
     smaecc[0]['ecc'] # <Quantity 0.60573583>

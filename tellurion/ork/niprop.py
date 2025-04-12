@@ -107,7 +107,7 @@ def generate(initstate, proptime, events=defev, forceenv=force.deffe):
         ret['sun transition'] = eclipse._eclipse_transition_table(logger_umb, logger_pen)
     return ret
 
-def propagate(generator, reltimes, include_init=True, spacecraftstate=False):
+def propagate(generator, reltimes, include_init=True, reftime='epoch', spacecraftstate=False):
     '''From an existing ephemeris generator, propagate to the time(s)
     relative to epoch of the initial state. The relative times must
     satisfy posvel.isreltime(reltimes), and if the size
@@ -119,19 +119,26 @@ def propagate(generator, reltimes, include_init=True, spacecraftstate=False):
     be one of 'u' (umbra, or total eclipse), 'p' (penumbra, or partial
     eclipse, or 's' (full sun).
     '''
-    if posvel.isreltime(reltimes):
-        rtshape = reltimes.shape
-        rtscalar = rtshape == ()
+
+    # Compute the reference time `reft`, an astropy.time.Time
+    if reftime=='epoch' and generator.get('epoch'):
+        reft = convert._okad(generator.get('epoch'))
+    elif reftime=='epoch' and generator.get('mindate'):
+        reft = convert._okad(generator.get('mindate'))
     else:
-        raise ValueError("Reltimes must be a relative time or times: a u.Quantity with physical type 'time'")
+        reft = astro.abstime(reftime)
+
+    atimes = astro.abstime(reltimes, reft)
+    if include_init:
+        reltimes = np.insert(atimes, 0, reft)
+    atscalar = atimes.shape == ()
 
     umbd = generator.get('umbradet')
     pend = generator.get('penumbradet')
 
-    if rtscalar:
+    if atscalar:
         # This includes the value of the event function "pvut" = position, velocity, umbra and time
-        reftime = generator.get('epoch') or generator.get('mindate')
-        ss = _to_spacecraft_state(generator['propfn'](reftime.shiftedBy(float(reltimes.to(u.s).value))))
+        ss = _to_spacecraft_state(generator['propfn'](convert._okad(atimes)))
         pvt = convert._pvt(ss)
         if umbd and pend:
             sunstate = eclipse._solar_illumination_state(umbd, pend, ss)
@@ -141,11 +148,9 @@ def propagate(generator, reltimes, include_init=True, spacecraftstate=False):
         else:
             return pvt
     else:
-        if include_init:
-            reltimes = np.insert(reltimes, 0, 0.0)
         if spacecraftstate:
-            return [propagate(generator, rt, False, True) for rt in reltimes]
-        data = [propagate(generator, rt, False, False) for rt in reltimes]
+            return [propagate(generator, rt, False, reftime, True) for rt in reltimes]
+        data = [propagate(generator, rt, False, reftime, False) for rt in reltimes]
         pvs = [d[0] for d in data]
         times = [d[1] for d in data]
         pvsq = u.Quantity(np.asarray(pvs), pvs[0].unit)

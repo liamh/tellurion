@@ -103,7 +103,7 @@ def _okad(t):
     elif type(t) == datetime.datetime:  # Python
         return pyhelp.datetime_to_absolutedate(t)
     elif type(t) is org.orekit.time.AbsoluteDate:
-        return posvel.dttm(pyhelp.absolutedate_to_datetime(t))
+        return astro.abstime(pyhelp.absolutedate_to_datetime(t))
     else:
         raise ValueError("Cannot convert value to or from Orekit AbsoluteDate")
 

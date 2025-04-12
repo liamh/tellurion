@@ -1,7 +1,7 @@
 # Geographic locations and observations
 
 import astropy.coordinates as coord
-from propdemo import *
+from demos.propdemo import *
 
 ############### Earth locations
 

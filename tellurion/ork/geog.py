@@ -15,6 +15,7 @@ from org.orekit.frames import TopocentricFrame
 import org.orekit.models.earth as oearth
 
 from ..core import posvel
+from ..core import astro
 from . import force
 from . import convert
 
@@ -40,7 +41,7 @@ def eciobs(loc, observation=None, name='eci obs', forceenv=force.deffe):
                               name)
         dttm = observation.obstime
     elif observation==None:
-        dttm = posvel.nowutc()
+        dttm = astro.abstime(0)
     else:
         dttm = observation
     if type(dttm.value) is np.ndarray:

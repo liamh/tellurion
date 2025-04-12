@@ -102,19 +102,6 @@ def pv(position, velocity, unitlookup=astro.prefunits):
 #### Dates, times, and PVT                    ####
 ##################################################
 
-def dttm(obj):
-    """Convert the object to an astropy.time.Time dttm"""
-    if type(obj) is str:
-        return astropy.time.Time(np.datetime64(obj), scale='utc')
-    else:
-        return astropy.time.Time(obj)
-
-def nowutc():
-    """
-    The time now (in UTC) as dttm.
-    """
-    return astropy.time.Time(datetime.datetime.now(datetime.UTC), scale='utc')
-
 # To add timezone to datetime
 #import pytz
 #def utcdt(datetime):
@@ -137,18 +124,15 @@ def pvt(obj, item=None):
         try:
             row = obj[item]
         except:
-            try:
-                row = obj.loc[dttm(item)]
-            except:
-                row = obj.loc[obj[0]['time'] + item]
+            row = obj.loc[astro.abstime(obj[0]['time'], item)]
         return pvt(row)
     elif ispv(obj):
         if item==None:
             # Add the current time to the PV
-            return PVT(obj, nowutc())
+            return PVT(obj, astro.abstime(0))
         else:
             # Add the specified time to the PV
-            return PVT(obj, dttm(item))
+            return PVT(obj, astro.abstime(item))
     elif ispvt(obj):
         if isdttm(item):
             # Replace the timestamp in the PVT

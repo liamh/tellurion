@@ -15,7 +15,7 @@ import tellurion.ork as tork
 
 ################ General
 
-newyear = tell.dttm('2025-01-01T00:00:00')
+newyear = tell.abstime('2025-01-01T00:00:00')
 prop5m1h = np.linspace(5.0*u.minute, 60.0*u.minute, 12) # Step every 5 minutes for an hour
 
 ################ State and elements
@@ -61,7 +61,7 @@ demoa.prop.eclipse.um12h05m = tork.propagate(demoa.prop.eclipse.genev, tell.tq('
 demob = Munch()
 
 demob.kep = tell.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25},
-                           tell.dttm('2023-09-14T08:30:00'))
+                           tell.abstime('2023-09-14T08:30:00'))
 demob.pvt = tork.cartesian(demob.kep) # Convert Kepler elements to PVT
 demob.gen = tork.generate(demob.pvt, 1*u.day)
 demob.eph = tork.propagate(demob.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
@@ -98,8 +98,8 @@ demoa.prop.ephem4x4hpB01 = tork.propagate(demoa.prop.gen4x4hpB01, prop5m1h, True
 demoa.prop.ephem4x4hpB01_posdiff = tell.magdiff(demoa.prop.ephem4x4hpB01['position'], demoa.prop.ephem['position'])
 
 # Effects of atmospheric drag in NTW and RSW (LVLH) relative coordinates
-demoa.prop.ss4x4hpB01 = tork.propagate(demoa.prop.gen4x4hpB01, prop5m1h, True, True)
-demoa.prop.ss4x4 = tork.propagate(demoa.prop.gen4x4, prop5m1h, True, True)
+demoa.prop.ss4x4hpB01 = tork.propagate(demoa.prop.gen4x4hpB01, prop5m1h, True, spacecraftstate=True)
+demoa.prop.ss4x4 = tork.propagate(demoa.prop.gen4x4, prop5m1h, True, spacecraftstate=True)
 demoa.prop.ntw_4x4hpB01_to_4x4 = tork.ntw(demoa.prop.ss4x4hpB01, demoa.prop.ss4x4, tell.siunits)
 demoa.prop.rsw_4x4hpB01_to_4x4 = tork.lvlh(demoa.prop.ss4x4hpB01, demoa.prop.ss4x4, tell.siunits)
 

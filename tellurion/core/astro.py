@@ -3,11 +3,12 @@ AstroPy definitions
 """
 
 import warnings
+import datetime
+import numpy as np
 import astropy.units as u
 from astropy.coordinates import Angle
 import astropy.table
 import astropy.time
-import numpy as np
 import collections.abc
 
 ################################################################################
@@ -29,6 +30,46 @@ siunits = {"time": u.second, "length": u.m, "speed": u.m/u.second,
            "angle": u.radian, "angular speed": u.radian/u.second,
            "dimensionless": u.dimensionless_unscaled}
 orkunits = siunits
+
+def abstime(ratimes, reftime='now'):
+    '''Convert `ratimes`, which is a relative time (also known as
+    "time delta" or "time interval"), or an absolute time, or an
+    iterable of those things, into an absolute time
+    (astropy.time.Time) or a list of absolute times. If `reftime` is
+    not provided, it defaults to the current time.
+
+    Examples
+    newyear = tell.abstime('2025-01-01T00:00:00')
+    prop5m1h = np.linspace(5.0*u.minute, 60.0*u.minute, 12) # Step every 5 minutes for an hour
+    tell.abstime(['2025-01-01T00:00:00', '2025-01-02T00:00:00', '2025-01-03T00:00:00']
+    tell.abstime(prop5m1h, newyear)
+    tell.abstime(5*u.hour, newyear)
+    tell.abstime('12d 17hr 23min 33.1s', newyear)
+    tell.abstime([5*u.hour, '12d 17hr 23min 33.1s'], newyear)
+    import datetime
+    tell.abstime(datetime.datetime(2025, 4, 17, 22, 54, 8, 684006))
+
+    '''
+    if reftime=='now':
+        reftime = astropy.time.Time(datetime.datetime.now(datetime.UTC), scale='utc')
+    if type(ratimes)==astropy.time.Time:
+        return ratimes
+    if type(ratimes) in [datetime.datetime, np.datetime64]:
+        return astropy.time.Time(ratimes)
+    if type(ratimes)==str:
+        try:
+            return (astropy.time.Time(ratimes, scale='utc'))
+        except:
+            try:
+                return abstime(astropy.time.TimeDelta(ratimes).to_value('sec')*u.s, reftime)
+            except:
+                raise ValueError("Cannot interpret string as relative or absolute time")
+    if type(ratimes) in [int, float, np.float64]:
+        return abstime(ratimes*u.s, reftime)
+    if type(ratimes) == u.Quantity:
+        return reftime + ratimes
+    if isinstance(ratimes, collections.abc.Iterable):
+        return astropy.time.Time([abstime(tm, reftime) for tm in ratimes])
 
 def timesec(t):
     '''Convert a u.Quantity to seconds as a Python float'''

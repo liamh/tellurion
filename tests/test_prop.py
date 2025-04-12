@@ -23,7 +23,7 @@ def kepequal(a, b):
 ####   Definitions    ####
 ##########################
 
-newyear = tell.dttm('2025-01-01T00:00:00')
+newyear = tell.abstime('2025-01-01T00:00:00')
 prop5m1h = np.linspace(5.0*u.minute, 60.0*u.minute, 12) # Step every 5 minutes for an hour
 
 demoa = Munch()
@@ -43,7 +43,7 @@ def test_kepcart():
 
 demob = Munch()
 demob.kep = tell.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25},
-                           tell.dttm('2023-09-14T08:30:00'))
+                           tell.abstime('2023-09-14T08:30:00'))
 demob.pvt = tork.cartesian(demob.kep) # Convert Kepler elements to PVT
 demob.rekep = tork.kepler(demob.pvt)
 
