@@ -9,11 +9,6 @@ import tellurion.ork as tork
 ####  Comparison of states  ####
 ################################
 
-def pvtequal(a, b):
-    return np.testing.assert_allclose(a.pv['position'],b.pv['position'], rtol=1e-5, atol=1e-12) \
-        and np.testing.assert_allclose(a.pv['velocity'],b.pv['velocity'], rtol=1e-5, atol=1e-12) \
-        and np.testing.assert_equal(a[1], b[1])
-
 def kepequal(a, b):
     for nm in tell.kepeltma_names:
         np.testing.assert_allclose(a[0][nm],b[0][nm])
@@ -68,14 +63,17 @@ sent3a.mest = \
                   'SGP4', \
                   {'name': 'SENTINEL 3A', 'type': 'PAYLOAD', 'catid': 41335, \
                    'intldes': '2016-011A'})
-sent3a.gen = tork.SGP4gen(sent3a.mest, 1*u.day, {'altitude': 125.0*u.km, 'eclipse': True, 'visibility': []})
+sent3a.gen = tork.prepare(sent3a.mest, 1*u.day, {'altitude': 125.0*u.km, 'eclipse': True, 'visibility': []})
 
 ##########################
 ####      Tests       ####
 ##########################
 
 def test_kepcart():
-    return pvtequal(demoa.init.cart, demoa.init.pvt)
+    np.testing.assert_allclose(tell.pvtsijd(demoa.init.pvt), \
+                               np.array([ 5.74013268e+06,  3.31406715e+06,  0.00000000e+00, \
+                                          -2.75082684e+03, 4.76457184e+03,  5.50165367e+03, \
+                                          2.46067650e+06]))
 
 def test_cartkep():
     return kepequal(demob.rekep, demob.kep)

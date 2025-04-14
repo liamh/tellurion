@@ -8,13 +8,16 @@ from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit, KeplerianOrbit
 from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState, EphemerisGenerator
+from org.orekit.propagation.analytical.tle import TLE, TLEPropagator
 from org.orekit.propagation.events import AltitudeDetector
-from org.orekit.utils import AbsolutePVCoordinates, TimeStampedPVCoordinates
+from org.orekit.utils import AbsolutePVCoordinates, TimeStampedPVCoordinates, PVCoordinatesProvider
 import org.orekit.forces.gravity as okgrav
 
 from ..core import astro
 from ..core import posvel
+from ..core.posvel import PVT
 from ..core import element
+from ..core.spacetrack import MeanElementSetT
 from . import force
 from . import element as oelement
 from . import convert
@@ -22,7 +25,36 @@ from . import eclipse
 
 defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
 
-def generate(initstate, proptime, events=defev, forceenv=force.deffe):
+# import astropy.units as u
+# isssent = tell.spacetrack_latest(stclient, [25544, 41335])
+# sentprep = tork.SGP4prep(isssent['SENTINEL 3A'], 1*u.day, {'altitude': 125.0*u.km, 'eclipse': True, 'visibility': []})
+# tork.propagate(sentprep, np.linspace(5.0*u.minute, 60.0*u.minute, 12), True)
+
+def prepare(initstate, proptime, events=defev, forceenv=force.deffe):
+    if type(initstate)==MeanElementSetT:
+        return SGP4prep(initstate, proptime, events, forceenv)
+    elif type(initstate)==PVT:
+        return niprep(initstate, proptime, events, forceenv)
+
+def SGP4prep(meanels, proptime, events=defev, forceenv=force.deffe):
+    '''Propagate mean elements using SGP4'''
+    if hasattr(meanels, 'model') and meanels.model == 'SGP4':
+        ret = {}
+        tle = TLE(*meanels.tle)
+        ret['epoch'] = tle.getDate()
+        propagator = TLEPropagator.selectExtrapolator(tle)
+        ret['propfn'] = lambda propto: propagator.getPVCoordinates(propto, forceenv['celestialframe'])
+        ret['pvt0'] = convert._pvt(ret['propfn'](ret['epoch']))
+        if events['eclipse']:
+            (ret['umbradet'], logger_umb) = eclipse._make_eclipsedet(propagator, forceenv, True)
+            (ret['penumbradet'], logger_pen) = eclipse._make_eclipsedet(propagator, forceenv, False)
+            ret['propfn'](ret['epoch'].shiftedBy(astro.timesec(proptime)))
+            ret['sun transition'] = eclipse._eclipse_transition_table(logger_umb, logger_pen)
+        return ret
+    else:
+        raise ValueError("Can only propagate SGP4 mean elements with SGP4")
+
+def niprep(initstate, proptime, events=defev, forceenv=force.deffe):
     """Make a generator for an ephemeris, optionally include eclipse
     information. The result of this function is passed as the first
     argument to `propagate()`.

@@ -6,18 +6,16 @@ setup_orekit_data()
 from . import (
     force,
     element,
-    meprop,
-    niprop,
+    prop,
     relative,
     geog
 )
 
 from .force import *
 from .element import *
-from .meprop import *
-from .niprop import *
+from .prop import *
 from .relative import *
 from .geog import *
 
 # Define the __all__ variable
-__all__ = ["force", "element", "meprop", "niprop", "relative", "geog"]
+__all__ = ["force", "element", "prop", "relative", "geog"]

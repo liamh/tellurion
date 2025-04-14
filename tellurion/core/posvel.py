@@ -168,6 +168,15 @@ def makept(pos, dttm, frame='gcrs'):
     '''Make a SkyCoord GCRS location'''
     return coord.SkyCoord(coord.CartesianRepresentation(pos), obstime=dttm, frame=frame)
 
+def pvtsijd(pvt, units=astro.prefunits):
+    '''Create an array of length 7 with position and velocity in SI units and Julian date'''
+    if type(pvt) is PVT:
+        return np.concatenate((pvt.pv.si[_eph_pos].value, pvt.pv.si[_eph_vel].value, \
+                               np.array([pvt.t.to_value('jd')])))
+    elif type(pvt) is np.ndarray:
+        return PVT(pv(pvt[0:3], pvt[3:6], astro.siunits).to(units['posvel']), \
+                   astro.abstime(astropy.time.Time(pvt[6], format='jd').to_datetime()))
+
 ##################################################
 #### Compare positions, velocities            ####
 ##################################################
