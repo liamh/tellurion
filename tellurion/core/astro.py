@@ -4,6 +4,7 @@ AstroPy definitions
 
 import warnings
 import datetime
+import bisect
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import Angle
@@ -283,3 +284,19 @@ def ts(data, times):
     ts[_eph_pos].info.format = _pos_format
     ts[_eph_vel].info.format = _vel_format
     return ts
+
+def fromtime(ts, reftime='now', label = 'from now', copy = True):
+    '''The time series `ts` starting at the specified reference time `reftime` (default is the current time) and new column showing the elapsed time from the reference time. Make a new series if `copy` is `True` (the default); otherwise, modify the original time series.'''
+    if reftime=='now':
+        reftime = abstime(0)
+    if copy:
+        newts = ts.copy()
+    else:
+        newts = ts
+    rowstart = bisect.bisect_left(newts.time, reftime)
+    newts.remove_rows(slice(0, rowstart))
+    newcol = astropy.table.Column((newts.time - reftime).quantity_str, name = label)
+    if label in newts.keys():
+        newts.remove_column(label)
+    newts.add_column(newcol, index=1)
+    return newts
