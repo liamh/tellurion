@@ -169,7 +169,7 @@ def makept(pos, dttm, frame='gcrs'):
     return coord.SkyCoord(coord.CartesianRepresentation(pos), obstime=dttm, frame=frame)
 
 def pvtsijd(pvt, units=astro.prefunits):
-    '''Create an array of length 7 with position and velocity in SI units and Julian date'''
+    '''Create an array of length 7 with position and velocity in SI units and Julian date, or create a PVT from an array of length 7'''
     if type(pvt) is PVT:
         return np.concatenate((pvt.pv.si[_eph_pos].value, pvt.pv.si[_eph_vel].value, \
                                np.array([pvt.t.to_value('jd')])))

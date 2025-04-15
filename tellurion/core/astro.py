@@ -289,6 +289,9 @@ def fromtime(ts, reftime='now', label = 'from now', copy = True):
     '''The time series `ts` starting at the specified reference time `reftime` (default is the current time) and new column showing the elapsed time from the reference time. Make a new series if `copy` is `True` (the default); otherwise, modify the original time series.'''
     if reftime=='now':
         reftime = abstime(0)
+    elif reftime=='epoch':
+        reftime=ts.time[0]
+        label='from epoch'
     if copy:
         newts = ts.copy()
     else:

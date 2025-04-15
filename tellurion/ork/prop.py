@@ -30,13 +30,13 @@ defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
 # sentprep = tork.SGP4prep(isssent['SENTINEL 3A'], 1*u.day, {'altitude': 125.0*u.km, 'eclipse': True, 'visibility': []})
 # tork.propagate(sentprep, np.linspace(5.0*u.minute, 60.0*u.minute, 12), True)
 
-def prepare(initstate, proptime, events=defev, forceenv=force.deffe):
+def prepare(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None):
     if type(initstate)==MeanElementSetT:
-        return SGP4prep(initstate, proptime, events, forceenv)
+        return SGP4prep(initstate, proptime, events, forceenv, reftime)
     elif type(initstate)==PVT:
-        return niprep(initstate, proptime, events, forceenv)
+        return niprep(initstate, proptime, events, forceenv, reftime)
 
-def SGP4prep(meanels, proptime, events=defev, forceenv=force.deffe):
+def SGP4prep(meanels, proptime, events=defev, forceenv=force.deffe, reftime=None):
     '''Propagate mean elements using SGP4'''
     if hasattr(meanels, 'model') and meanels.model == 'SGP4':
         ret = {}
@@ -49,12 +49,12 @@ def SGP4prep(meanels, proptime, events=defev, forceenv=force.deffe):
             (ret['umbradet'], logger_umb) = eclipse._make_eclipsedet(propagator, forceenv, True)
             (ret['penumbradet'], logger_pen) = eclipse._make_eclipsedet(propagator, forceenv, False)
             ret['propfn'](ret['epoch'].shiftedBy(astro.timesec(proptime)))
-            ret['sun transition'] = eclipse._eclipse_transition_table(logger_umb, logger_pen)
+            ret['sun transition'] = eclipse._eclipse_transition_table(logger_umb, logger_pen, reftime)
         return ret
     else:
         raise ValueError("Can only propagate SGP4 mean elements with SGP4")
 
-def niprep(initstate, proptime, events=defev, forceenv=force.deffe):
+def niprep(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None):
     """Make a generator for an ephemeris, optionally include eclipse
     information. The result of this function is passed as the first
     argument to `propagate()`.
@@ -136,7 +136,7 @@ def niprep(initstate, proptime, events=defev, forceenv=force.deffe):
         # ephemeris table ['sun transitions'] with xyz positions,
         # two-character string 'suntrans', and elapsed time from the
         # previous transition 'elapsed'
-        ret['sun transition'] = eclipse._eclipse_transition_table(logger_umb, logger_pen)
+        ret['sun transition'] = eclipse._eclipse_transition_table(logger_umb, logger_pen, reftime)
     return ret
 
 def propagate(generator, reltimes, include_init=True, reftime='epoch', spacecraftstate=False):

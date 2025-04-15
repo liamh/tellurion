@@ -7,6 +7,7 @@ import astropy.time
 from org.orekit.propagation.events import EclipseDetector, EventsLogger
 from org.orekit.propagation.events.handlers import ContinueOnEvent
 from ..core import posvel
+from ..core import astro
 from . import convert
 
 def _make_eclipsedet(propagator, forceenv, umbra):
@@ -24,7 +25,7 @@ def _make_eclipsedet(propagator, forceenv, umbra):
     propagator.addEventDetector(loggeddet)
     return (eclipsedet, logger)
 
-def _eclipse_transition_table(logger_umb, logger_pen):
+def _eclipse_transition_table(logger_umb, logger_pen, reftime='epoch'):
     umbra = _eclipse_transitions(logger_umb, True)
     penumbra = _eclipse_transitions(logger_pen, False)
     suntr = sorted(umbra + penumbra, key=operator.itemgetter(2))
@@ -34,7 +35,9 @@ def _eclipse_transition_table(logger_umb, logger_pen):
     txyz['suntrans'] = [m[1] for m in suntr]
     elapsed = [dt.quantity_str for dt in np.diff(txyz['time'])]
     elapsed.insert(0,'')
-    txyz['elapsed'] = elapsed
+    txyz.add_column(elapsed, index=1, name='elapsed')
+    if reftime is not None:
+        astro.fromtime(txyz, reftime=reftime, copy=False)
     return txyz
 
 def _eclipse_transitions(logger, umbra):
