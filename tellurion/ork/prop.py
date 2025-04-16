@@ -30,13 +30,13 @@ defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
 # sentprep = tork.SGP4prep(isssent['SENTINEL 3A'], 1*u.day, {'altitude': 125.0*u.km, 'eclipse': True, 'visibility': []})
 # tork.propagate(sentprep, np.linspace(5.0*u.minute, 60.0*u.minute, 12), True)
 
-def prepare(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None):
+def prepare(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None, occluder='earth'):
     if type(initstate)==MeanElementSetT:
-        return SGP4prep(initstate, proptime, events, forceenv, reftime)
+        return SGP4prep(initstate, proptime, events, forceenv, reftime, occluder)
     elif type(initstate)==PVT:
-        return niprep(initstate, proptime, events, forceenv, reftime)
+        return niprep(initstate, proptime, events, forceenv, reftime, occluder)
 
-def SGP4prep(meanels, proptime, events=defev, forceenv=force.deffe, reftime=None):
+def SGP4prep(meanels, proptime, events=defev, forceenv=force.deffe, reftime=None, occluder='earth'):
     '''Propagate mean elements using SGP4'''
     if hasattr(meanels, 'model') and meanels.model == 'SGP4':
         ret = {}
@@ -46,15 +46,15 @@ def SGP4prep(meanels, proptime, events=defev, forceenv=force.deffe, reftime=None
         ret['propfn'] = lambda propto: propagator.getPVCoordinates(propto, forceenv['celestialframe'])
         ret['pvt0'] = convert._pvt(ret['propfn'](ret['epoch']))
         if events['eclipse']:
-            (ret['umbradet'], logger_umb) = eclipse._make_eclipsedet(propagator, forceenv, True)
-            (ret['penumbradet'], logger_pen) = eclipse._make_eclipsedet(propagator, forceenv, False)
+            (ret['umbradet'], logger_umb) = eclipse._make_eclipsedet(propagator, forceenv, True, occluder)
+            (ret['penumbradet'], logger_pen) = eclipse._make_eclipsedet(propagator, forceenv, False, occluder)
             ret['propfn'](ret['epoch'].shiftedBy(astro.timesec(proptime)))
             ret['sun transition'] = eclipse._eclipse_transition_table(logger_umb, logger_pen, reftime)
         return ret
     else:
         raise ValueError("Can only propagate SGP4 mean elements with SGP4")
 
-def niprep(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None):
+def niprep(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None, occluder='earth'):
     """Make a generator for an ephemeris, optionally include eclipse
     information. The result of this function is passed as the first
     argument to `propagate()`.
@@ -121,8 +121,8 @@ def niprep(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None
 
     # Set up eclipse detector
     if events['eclipse']: # Only includes earth as occluding body
-        (ret['umbradet'], logger_umb) = eclipse._make_eclipsedet(okprop, forceenv, True)
-        (ret['penumbradet'], logger_pen) = eclipse._make_eclipsedet(okprop, forceenv, False)
+        (ret['umbradet'], logger_umb) = eclipse._make_eclipsedet(okprop, forceenv, True, occluder)
+        (ret['penumbradet'], logger_pen) = eclipse._make_eclipsedet(okprop, forceenv, False, occluder)
 
     okprop.propagate(ork0.getDate(), ork0.getDate().shiftedBy(astro.timesec(proptime)))
 

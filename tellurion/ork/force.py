@@ -38,7 +38,9 @@ def setgravity(degree, order, mass = 100.0):
     return celestdflt | force | \
         {'earth': OneAxisEllipsoid(force['earthrad'].si.value,
                                    celestdflt['earthflat'],  celestdflt['earthframe']),
-         'sphalt': OneAxisEllipsoid(force['earthrad'].si.value, 0.0, celestdflt['earthframe'])}
+         'sphalt': OneAxisEllipsoid(force['earthrad'].si.value, 0.0, celestdflt['earthframe']),
+         'moon': OneAxisEllipsoid(Constants.MOON_EQUATORIAL_RADIUS, 0.0012, \
+                                  CelestialBodyFactory.getMoon().getBodyOrientedFrame())}
 
 # Default force & environment
 deffe = setgravity(0,0)

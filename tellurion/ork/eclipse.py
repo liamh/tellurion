@@ -10,16 +10,16 @@ from ..core import posvel
 from ..core import astro
 from . import convert
 
-def _make_eclipsedet(propagator, forceenv, umbra):
+def _make_eclipsedet(propagator, forceenv, umbra, occluder='earth'):
     '''Make an eclipse detector for either umbra (`umbra=True`) or penumbra (`umbra=False`) and add it to the `propagator`.'''
     logger = EventsLogger()
     if umbra:
         # Not necessary to have .withUmbra(), it is already set that way
-        eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'].si.value, forceenv['earth']).withUmbra()
+        eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'].si.value, forceenv[occluder]).withUmbra()
         handled = eclipsedet.withHandler(ContinueOnEvent())
     else:
         # Necessary to have withPenumbra(), as it is not changed in the instance
-        eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'].si.value, forceenv['earth']).withPenumbra()
+        eclipsedet = EclipseDetector(forceenv['sun'], forceenv['sunrad'].si.value, forceenv[occluder]).withPenumbra()
         handled = eclipsedet.withHandler(ContinueOnEvent())
     loggeddet = logger.monitorDetector(handled)
     propagator.addEventDetector(loggeddet)
@@ -29,16 +29,18 @@ def _eclipse_transition_table(logger_umb, logger_pen, reftime='epoch'):
     umbra = _eclipse_transitions(logger_umb, True)
     penumbra = _eclipse_transitions(logger_pen, False)
     suntr = sorted(umbra + penumbra, key=operator.itemgetter(2))
-    pvs = u.Quantity([m[0] for m in suntr])
-    times = astropy.time.Time([m[2] for m in suntr])
-    txyz = posvel.posxyz(posvel.tsephem(pvs, times))
-    txyz['suntrans'] = [m[1] for m in suntr]
-    elapsed = [dt.quantity_str for dt in np.diff(txyz['time'])]
-    elapsed.insert(0,'')
-    txyz.add_column(elapsed, index=1, name='elapsed')
-    if reftime is not None:
-        astro.fromtime(txyz, reftime=reftime, copy=False)
-    return txyz
+    if len(suntr) > 0:
+        pvs = u.Quantity([m[0] for m in suntr])
+        times = astropy.time.Time([m[2] for m in suntr])
+        txyz = posvel.posxyz(posvel.tsephem(pvs, times))
+        txyz['suntrans'] = [m[1] for m in suntr]
+        elapsed = [dt.quantity_str for dt in np.diff(txyz['time'])]
+        elapsed.insert(0,'')
+        txyz.add_column(elapsed, index=1, name='elapsed')
+        if reftime is not None:
+            astro.fromtime(txyz, reftime=reftime, copy=False)
+        return txyz
+    return None
 
 def _eclipse_transitions(logger, umbra):
     '''Find the transitions in and out of eclipse'''
