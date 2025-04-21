@@ -3,7 +3,7 @@
 from org.orekit.propagation.events import EclipseDetector
 from . import event
 
-_sun_states = ['u', 'p', 's'] # Umbra, penumbra, sun
+_sun_states = 'ups' # Umbra, penumbra, sun
 
 def _make_eclipsedet(propagator, forceenv, umbra, occluder='earth'):
     '''Make an eclipse detector for either umbra (`umbra=True`) or penumbra (`umbra=False`) and add it to the `propagator`.'''
@@ -26,4 +26,4 @@ def _solar_illumination_state(umbra_detector, penumbra_detector, spacecraft_stat
     # shadow and positive when exiting.
     umbsl = umbra_detector.g(spacecraft_state)
     pensl = penumbra_detector.g(spacecraft_state)
-    return event._label_three_state([umbsl, pensl], _sun_states)
+    return event._label_positive_count([umbsl, pensl], _sun_states)
