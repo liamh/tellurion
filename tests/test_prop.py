@@ -63,7 +63,7 @@ sent3a.mest = \
                   'SGP4', \
                   {'name': 'SENTINEL 3A', 'type': 'PAYLOAD', 'catid': 41335, \
                    'intldes': '2016-011A'})
-sent3a.gen = tork.prepare(sent3a.mest, 1*u.day, {'altitude': 125.0*u.km, 'eclipse': True, 'visibility': []})
+sent3a.gen = tork.prepare(sent3a.mest, 1*u.day, {'altitude': 125.0*u.km, 'eclipse': [True, True], 'visibility': []})
 
 ##########################
 ####      Tests       ####

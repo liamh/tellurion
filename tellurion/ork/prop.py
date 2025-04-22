@@ -27,7 +27,7 @@ defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
 
 # import astropy.units as u
 # isssent = tell.spacetrack_latest(stclient, [25544, 41335])
-# sentprep = tork.SGP4prep(isssent['SENTINEL 3A'], 1*u.day, {'altitude': 125.0*u.km, 'eclipse': True, 'visibility': []})
+# sentprep = tork.SGP4prep(isssent['SENTINEL 3A'], 1*u.day, {'altitude': 125.0*u.km, 'eclipse': [True, True], 'visibility': []})
 # tork.propagate(sentprep, np.linspace(5.0*u.minute, 60.0*u.minute, 12), True)
 
 def prepare(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None, occluder='earth'):
@@ -46,10 +46,7 @@ def SGP4prep(meanels, proptime, events=defev, forceenv=force.deffe, reftime=None
         ret['propfn'] = lambda propto: propagator.getPVCoordinates(propto, forceenv['celestialframe'])
         ret['pvt0'] = convert._pvt(ret['propfn'](ret['epoch']))
         if events['eclipse']:
-            (ret['umbradet'], logger_umb) = eclipse._make_eclipsedet(propagator, forceenv, True, occluder)
-            (ret['penumbradet'], logger_pen) = eclipse._make_eclipsedet(propagator, forceenv, False, occluder)
-            ret['propfn'](ret['epoch'].shiftedBy(astro.timesec(proptime)))
-            ret['sun transition'] = eclipse._eclipse_transition_table(logger_umb, logger_pen, reftime)
+            eclipse._umbra_penumbra(events['eclipse'], propagator, ret, proptime, forceenv, reftime, occluder)
         return ret
     else:
         raise ValueError("Can only propagate SGP4 mean elements with SGP4")
@@ -115,28 +112,25 @@ def niprep(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None
     if 'dragforce' in forceenv:
         okprop.addForceModel(forceenv['dragforce'])
 
+    ret = {}
+    # ret['propfn'] = lambda propto: okprop.propagate(ork0.getDate(), propto)
+    ret['epoch'] = ork0.getDate()
+    ret['propfn'] = lambda propto: okprop.propagate(ret['epoch'], propto)
+
     # Events
     okprop.addEventDetector(AltitudeDetector(float(events['altitude'].si.value), forceenv['sphalt']))
-    ret = {}
 
     # Set up eclipse detector
-    if events['eclipse']: # Only includes earth as occluding body
-        (ret['umbradet'], logger_umb) = eclipse._make_eclipsedet(okprop, forceenv, True, occluder)
-        (ret['penumbradet'], logger_pen) = eclipse._make_eclipsedet(okprop, forceenv, False, occluder)
-
-    okprop.propagate(ork0.getDate(), ork0.getDate().shiftedBy(astro.timesec(proptime)))
+    if events['eclipse']:
+        eclipse._umbra_penumbra(events['eclipse'], okprop, ret, proptime, forceenv, reftime, occluder)
+    else:
+        ret['propfn'](ret['epoch'].shiftedBy(astro.timesec(proptime)))
 
     gge = generator.getGeneratedEphemeris()
-    ret['propfn'] = lambda propto: gge.propagate(propto)
+    #ret['propfn'] = lambda propto: gge.propagate(propto)
     ret['mindate'] = gge.getMinDate()
     ret['maxdate'] = gge.getMaxDate()
 
-    if events['eclipse']: # Only includes earth as occluding body
-        # Return a dictionary with the generator ['ephgen'], and an
-        # ephemeris table ['sun transitions'] with xyz positions,
-        # two-character string 'suntrans', and elapsed time from the
-        # previous transition 'elapsed'
-        ret['sun transition'] = eclipse._eclipse_transition_table(logger_umb, logger_pen, reftime)
     return ret
 
 def propagate(generator, reltimes, include_init=True, reftime='epoch', spacecraftstate=False):
@@ -172,7 +166,7 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', spacecraf
         # This includes the value of the event function "pvut" = position, velocity, umbra and time
         ss = _to_spacecraft_state(generator['propfn'](convert._okad(atimes)))
         pvt = convert._pvt(ss)
-        if umbd and pend:
+        if umbd or pend:
             sunstate = eclipse._solar_illumination_state(umbd, pend, ss)
             return pvt + (sunstate,)
         elif spacecraftstate:
@@ -186,7 +180,7 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', spacecraf
         pvs = [d[0] for d in data]
         times = [d[1] for d in data]
         pvsq = u.Quantity(np.asarray(pvs), pvs[0].unit)
-        if umbd:
+        if umbd or pend:
             ephem = posvel.posxyz(posvel.tsephem(pvsq, times))
             ephem['sunlight'] = [d[2] for d in data]
         else:

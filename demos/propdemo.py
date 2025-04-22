@@ -49,7 +49,7 @@ demoa.prop.pvapa = tell.hcat(demoa.prop.ephem, demoa.prop.altperapo) # Ephemeris
 
 # Eclipsing
 demoa.prop.eclipse = Munch()
-demoa.prop.eclipse.events = {'altitude': 125.0*u.km, 'eclipse': True, 'visibility': []}
+demoa.prop.eclipse.events = {'altitude': 125.0*u.km, 'eclipse': [True, True], 'visibility': []}
 demoa.prop.eclipse.genev = tork.prepare(demoa.init.pvt, 1*u.day, demoa.prop.eclipse.events)
 demoa.prop.eclipse.suntrans = demoa.prop.eclipse.genev['sun transition']
 demoa.prop.eclipse.ephem = tork.propagate(demoa.prop.eclipse.genev, np.linspace(5.0*u.minute, 5*60.0*u.minute, 60))
