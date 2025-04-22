@@ -39,15 +39,14 @@ def prepare(initstate, proptime, events=defev, forceenv=force.deffe, reftime=Non
 def SGP4prep(meanels, proptime, events=defev, forceenv=force.deffe, reftime=None, occluder='earth'):
     '''Propagate mean elements using SGP4'''
     if hasattr(meanels, 'model') and meanels.model == 'SGP4':
-        ret = {}
+        gendict = {}
         tle = TLE(*meanels.tle)
-        ret['epoch'] = tle.getDate()
+        gendict['epoch'] = tle.getDate()
         propagator = TLEPropagator.selectExtrapolator(tle)
-        ret['propfn'] = lambda propto: propagator.getPVCoordinates(propto, forceenv['celestialframe'])
-        ret['pvt0'] = convert._pvt(ret['propfn'](ret['epoch']))
-        if events['eclipse']:
-            eclipse._umbra_penumbra(events['eclipse'], propagator, ret, proptime, forceenv, reftime, occluder)
-        return ret
+        gendict['propfn'] = lambda propto: propagator.getPVCoordinates(propto, forceenv['celestialframe'])
+        gendict['pvt0'] = convert._pvt(gendict['propfn'](gendict['epoch']))
+        eclipse._umbra_penumbra(events['eclipse'], propagator, gendict, proptime, forceenv, reftime, occluder)
+        return gendict
     else:
         raise ValueError("Can only propagate SGP4 mean elements with SGP4")
 
@@ -112,26 +111,23 @@ def niprep(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None
     if 'dragforce' in forceenv:
         okprop.addForceModel(forceenv['dragforce'])
 
-    ret = {}
-    # ret['propfn'] = lambda propto: okprop.propagate(ork0.getDate(), propto)
-    ret['epoch'] = ork0.getDate()
-    ret['propfn'] = lambda propto: okprop.propagate(ret['epoch'], propto)
+    gendict = {}
+    gendict['epoch'] = ork0.getDate()
+    gendict['propfn'] = lambda propto: okprop.propagate(gendict['epoch'], propto)
 
     # Events
     okprop.addEventDetector(AltitudeDetector(float(events['altitude'].si.value), forceenv['sphalt']))
 
     # Set up eclipse detector
-    if events['eclipse']:
-        eclipse._umbra_penumbra(events['eclipse'], okprop, ret, proptime, forceenv, reftime, occluder)
-    else:
-        ret['propfn'](ret['epoch'].shiftedBy(astro.timesec(proptime)))
+    eclipse._umbra_penumbra(events['eclipse'], okprop, gendict, proptime, forceenv, reftime, occluder)
+    gendict['propfn'](gendict['epoch'].shiftedBy(astro.timesec(proptime)))
 
     gge = generator.getGeneratedEphemeris()
-    #ret['propfn'] = lambda propto: gge.propagate(propto)
-    ret['mindate'] = gge.getMinDate()
-    ret['maxdate'] = gge.getMaxDate()
+    #gendict['propfn'] = lambda propto: gge.propagate(propto)
+    gendict['mindate'] = gge.getMinDate()
+    gendict['maxdate'] = gge.getMaxDate()
 
-    return ret
+    return gendict
 
 def propagate(generator, reltimes, include_init=True, reftime='epoch', spacecraftstate=False):
     '''From an existing ephemeris generator, propagate to the time(s)
@@ -159,30 +155,35 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', spacecraf
         reltimes = np.insert(atimes, 0, reft)
     atscalar = atimes.shape == ()
 
-    umbd = generator.get('umbradet')
-    pend = generator.get('penumbradet')
+    ecldet = generator.get('eclipsedet')
 
     if atscalar:
         # This includes the value of the event function "pvut" = position, velocity, umbra and time
         ss = _to_spacecraft_state(generator['propfn'](convert._okad(atimes)))
-        pvt = convert._pvt(ss)
-        if umbd or pend:
-            sunstate = eclipse._solar_illumination_state(umbd, pend, ss)
-            return pvt + (sunstate,)
-        elif spacecraftstate:
+        if spacecraftstate:
             return ss
         else:
-            return pvt
+            pvt = convert._pvt(ss)
+            # If PVTs could have optional attributes, all this could be included in the one line above
+            # See comment at definition of PVT()
+            event = eclipse._solar_illumination_state(ecldet, ss)
+            if event:
+                return pvt + event
+            else:
+                return pvt
     else:
+        datalist = [propagate(generator, rt, False, reftime, spacecraftstate) for rt in reltimes]
         if spacecraftstate:
-            return [propagate(generator, rt, False, reftime, True) for rt in reltimes]
-        data = [propagate(generator, rt, False, reftime, False) for rt in reltimes]
-        pvs = [d[0] for d in data]
-        times = [d[1] for d in data]
+            return datalist
+        data = [list(i) for i in zip(*datalist)]
+        pvs = data[0]
+        times = data[1]
         pvsq = u.Quantity(np.asarray(pvs), pvs[0].unit)
-        if umbd or pend:
-            ephem = posvel.posxyz(posvel.tsephem(pvsq, times))
-            ephem['sunlight'] = [d[2] for d in data]
+        if len(data) > 2:
+            #  Add a column of event data
+            label = '-'.join(set(data[2]))
+            ephem = posvel.posxyz(posvel.tsephem(pvsq, times)) # Show only position
+            ephem[label] = data[3]
         else:
             ephem = posvel.tsephem(pvsq, times)
         return ephem

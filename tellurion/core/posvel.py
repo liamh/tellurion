@@ -16,6 +16,8 @@ from . import astro
 ####   Constants used to define field names   ####
 ##################################################
 
+# Provide attributes with default values https://stackoverflow.com/a/18348004/238405
+# Maybe use dataclasses https://stackoverflow.com/q/47955263/238405
 PVT = collections.namedtuple('PVT', 'pv t')
 
 _eph_time = 'time'

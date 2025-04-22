@@ -10,6 +10,9 @@ from org.orekit.propagation.events import EclipseDetector
 from ..core import astro
 from . import event
 
+def _do_eclipse(umbpen):
+    return type(umbpen) is list and len(umbpen)==2 and any(umbpen)
+
 def _sun_states(umbpen):
     sun_states = 'ups' # Umbra, penumbra, sun
     if umbpen[0] and umbpen[1]:
@@ -19,24 +22,27 @@ def _sun_states(umbpen):
     else:
         return sun_states[1] + sun_states[2]
 
-def _remove_none(lst):
-    return list(filter(lambda x: x is not None, lst))
-
 def _umbra_penumbra(umbra_penumbra, propagator, gendict, proptime, forceenv, reftime, occluder='earth'):
     '''Define eclipse detectors for umbra, penumbra, or both. The
     first argument `umbra_penumbra` should be a two-element Boolean
     list defining which events to include.'''
-    if umbra_penumbra[0]:
-        (gendict['umbradet'], logger_umb) = _make_eclipsedet(propagator, forceenv, True, occluder)
+    if _do_eclipse(umbra_penumbra):
+        if umbra_penumbra[0]:
+            (detector_umb, logger_umb) = _make_eclipsedet(propagator, forceenv, True, occluder)
+        else:
+            logger_umb = None
+            detector_umb = None
+        if umbra_penumbra[1]:
+            (detector_pen, logger_pen) = _make_eclipsedet(propagator, forceenv, False, occluder)
+        else:
+            logger_pen = None
+            detector_pen = None
+        gendict['propfn'](gendict['epoch'].shiftedBy(astro.timesec(proptime)))
+        loggers = [logger_umb, logger_pen]
+        gendict['eclipsedet'] = [detector_umb, detector_pen]
+        gendict['sun transition'] = _eclipse_transition_table(loggers, _sun_states(loggers), reftime)
     else:
-        logger_umb = None
-    if umbra_penumbra[1]:
-        (gendict['penumbradet'], logger_pen) = _make_eclipsedet(propagator, forceenv, False, occluder)
-    else:
-        logger_pen = None
-    gendict['propfn'](gendict['epoch'].shiftedBy(astro.timesec(proptime)))
-    aloggers = _remove_none([logger_umb, logger_pen])
-    gendict['sun transition'] = _eclipse_transition_table(aloggers, _sun_states([logger_umb, logger_pen]), reftime)
+        gendict['eclipsedet'] = [None, None]
     return gendict
 
 def _make_eclipsedet(propagator, forceenv, umbra, occluder='earth'):
@@ -52,18 +58,21 @@ def _make_eclipsedet(propagator, forceenv, umbra, occluder='earth'):
 def _eclipse_transition_table(loggers, state_chars, reftime='epoch'):
     return event._event_transition_table(loggers, 'suntrans', state_chars, reftime)
 
-def _solar_illumination_state(umbra_detector, penumbra_detector, spacecraft_state):
+def _solar_illumination_state(detectors, spacecraft_state):
     '''A single character, one of 'u' (umbra, or total eclipse), 'p' (penumbra, or partial eclipse, or 's' (full sun).'''
     # https://www.orekit.org/static/apidocs/org/orekit/propagation/events/EclipseDetector.html
     # g: Compute the value of the switching function. This
     # function becomes negative when entering the region of
     # shadow and positive when exiting.
-    if umbra_detector:
-        umbsl = umbra_detector.g(spacecraft_state)
+    if _do_eclipse(detectors):
+        if detectors[0]:
+            umbsl = detectors[0].g(spacecraft_state)
+        else:
+            umbsl = None
+        if detectors[1]:
+            pensl = detectors[1].g(spacecraft_state)
+        else:
+            pensl = None
+        return ('sunlight', event._label_positive_count([umbsl, pensl], _sun_states([umbsl, pensl])))
     else:
-        umbsl = None
-    if penumbra_detector:
-        pensl = penumbra_detector.g(spacecraft_state)
-    else:
-        pensl = None
-    return event._label_positive_count(_remove_none([umbsl, pensl]), _sun_states([umbsl, pensl]))
+        return ()

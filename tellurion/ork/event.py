@@ -25,7 +25,7 @@ def _make_evdet(propagator, detector, continue_prop=True):
 def _event_transition_table(loggers, column_label, state_labels, reftime='epoch'):
     '''Create an ephemeris table with a column of transitions'''
     trans = [_event_transition_label(lg, ind, state_labels) \
-             for (lg, ind) in zip(loggers, list(range(len(loggers))))]
+             for (lg, ind) in zip(loggers, list(range(len(loggers)))) if lg is not None]
     merged = sorted(list(itertools.chain.from_iterable(trans)), key=operator.itemgetter(2))
     if len(merged) > 0:
         pvs = u.Quantity([m[0] for m in merged])
@@ -60,5 +60,5 @@ def _event_transition_label(logger, ind, labels):
     return [pvet(ev) for ev in loggedevents]
 
 def _label_positive_count(detectors, labels):
-    '''Determine the appropriate event label by the number of positive counts amont the detectors.'''
-    return(labels[sum(1 for x in detectors if x > 0.0)])
+    '''Determine the appropriate event label by the number of positive counts among the detectors.'''
+    return(labels[sum(1 for x in detectors if x is not None and x > 0.0)])
