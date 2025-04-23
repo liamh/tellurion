@@ -56,7 +56,7 @@ def _event_transition_label(logger, ind, labels):
         '''A 3-tuple of posvel, event transition (2-character string with prior and posterior event state), and time.'''
         pvt = convert._pvt(ev.getState().getPVCoordinates())
         st = _spairs(labels, not ev.isIncreasing())[ind]
-        return (pvt[0], st, pvt[1])
+        return (pvt.pv, st, pvt.time)
     return [pvet(ev) for ev in loggedevents]
 
 def _label_positive_count(detectors, labels):

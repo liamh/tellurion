@@ -79,7 +79,7 @@ def test_cartkep():
     return kepequal(demob.rekep, demob.kep)
 
 def test_meanels():
-    np.testing.assert_allclose(sent3a.gen['pvt0'].t.to_value('jd'), 2460777.69826472)
+    np.testing.assert_allclose(sent3a.gen['pvt0'].time.to_value('jd'), 2460777.69826472)
     np.testing.assert_allclose(sent3a.gen['pvt0'].pv.si.value[0], \
                                np.array([-7083008.74600191,  1198601.43504089, 17351.44198235]))
     np.testing.assert_allclose(sent3a.gen['pvt0'].pv.si.value[1], \

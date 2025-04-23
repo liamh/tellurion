@@ -67,30 +67,30 @@ def _pvt(object, unitlookup=astro.prefunits, getpvcargs=[]):
     else:
         raise ValueError("Cannot convert value to position, value, and time (PVT)")
 
-def _tspvc(pv, time=None):
+def _tspvc(obj, time=None):
     '''Convert tuple (posvel.pv(), astropy.time.Time) or ephemeris row to Orekit TimeStampedPVCoordinates or posvel.pv() to PVCoordinates'''
-    if posvel.isephrow(pv):
-        (pv, tpvt) = posvel.pvt(pv)
+    if posvel.isephrow(obj):
+        opvt = posvel.pvt(obj)
         if time==None:
-            return _tspvc(pv, tpvt)
+            return _tspvc(opvt.pv, opvt.time)
         elif isdttm(time):
-            return _tspvc(pv, time)
+            return _tspvc(opvt.pv, time)
         elif isreltime(time):
-            return _tspvc(pv, tpvt+time)
-    elif posvel.ispvt(pv):
-        return _tspvc(pv[0], pv[1])
-    elif posvel.ispv(pv):
-        conv = pv.to(astro.posvelsiu)
+            return _tspvc(opvt.pv, opvt.time+time)
+    elif posvel.ispvt(obj):
+        return _tspvc(obj.pv, obj.time)
+    elif posvel.ispv(obj):
+        conv = obj.to(astro.posvelsiu)
         vecp = _v3d(conv[posvel._eph_pos].value)
         vecv = _v3d(conv[posvel._eph_vel].value)
         if time==None:
             return PVCoordinates(vecp, vecv)
         else:
             return TimeStampedPVCoordinates(_okad(time), vecp, vecv)
-    elif type(pv) is PVCoordinates:
-        return TimeStampedPVCoordinates(_okad(time), pv)
-    elif type(pv) is TimeStampedPVCoordinates:
-        return pv
+    elif type(obj) is PVCoordinates:
+        return TimeStampedPVCoordinates(_okad(time), obj)
+    elif type(obj) is TimeStampedPVCoordinates:
+        return obj
     else:
         raise ValueError("Cannot convert value to PVCoordinates or TimeStampedPVCoordinates")
 

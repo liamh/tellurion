@@ -2,6 +2,7 @@
 Position, velocity and time sets in AstroPy
 """
 import collections
+import dataclasses
 import datetime
 import numpy as np
 import astropy.units as u
@@ -18,7 +19,17 @@ from . import astro
 
 # Provide attributes with default values https://stackoverflow.com/a/18348004/238405
 # Maybe use dataclasses https://stackoverflow.com/q/47955263/238405
-PVT = collections.namedtuple('PVT', 'pv t')
+PVT = collections.namedtuple('PVT', 'pv time')
+
+# @dataclasses.dataclass
+# class PVT:
+#     '''Orbital state vector as position (Cartesian 3-vector), velocity (Cartesian 3-vector), time, and a dictionary of discrete attributes; each field can have multiple rows, corresponding to an ephemeris'''
+#     pv: u.Quantity
+#     '''The orbital state vector as an astropy.units 6-vector with structured quantity of physical dimension length, speed'''
+#     time: astropy.time.Time
+#     '''The date and time of the state'''
+#     discattr: dict = dataclasses.field(default_factory=dict)
+#     '''Discrete attributes of the orbital state; these are attributes that have a finite set of discrete values'''
 
 _eph_time = 'time'
 _eph_pos = 'position'
@@ -71,7 +82,7 @@ def isreltime(obj):
     return type(obj) is u.Quantity and u.get_physical_type(obj) == u.get_physical_type('time')
 
 def ispvt(obj):
-    return type(obj) == PVT and ispv(obj.pv) and isdttm(obj.t)
+    return type(obj) == PVT and ispv(obj.pv) and isdttm(obj.time)
 #or (type(obj) == tuple and len(obj) == 2 \
 #        and ispv(obj[0]) and isdttm(obj[1]))
 
@@ -174,7 +185,7 @@ def pvtsijd(pvt, units=astro.prefunits):
     '''Create an array of length 7 with position and velocity in SI units and Julian date, or create a PVT from an array of length 7'''
     if type(pvt) is PVT:
         return np.concatenate((pvt.pv.si[_eph_pos].value, pvt.pv.si[_eph_vel].value, \
-                               np.array([pvt.t.to_value('jd')])))
+                               np.array([pvt.time.to_value('jd')])))
     elif type(pvt) is np.ndarray:
         return PVT(pv(pvt[0:3], pvt[3:6], astro.siunits).to(units['posvel']), \
                    astro.abstime(astropy.time.Time(pvt[6], format='jd').to_datetime()))

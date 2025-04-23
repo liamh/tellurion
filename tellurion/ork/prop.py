@@ -82,7 +82,7 @@ def niprep(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None
 
     """
 
-    ork0 = CartesianOrbit(convert._tspvc(*initstate), \
+    ork0 = CartesianOrbit(convert._tspvc(initstate), \
                           forceenv['celestialframe'], forceenv['earthmu'].si.value)
 
     # Set parameters
@@ -175,7 +175,9 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', spacecraf
         datalist = [propagate(generator, rt, False, reftime, spacecraftstate) for rt in reltimes]
         if spacecraftstate:
             return datalist
-        data = [list(i) for i in zip(*datalist)]
+        # pvs = [d.pv for d in datalist]
+        # times = [d.time for d in datalist]
+        data = [list(i) for i in zip(*datalist)] # Temporary; detect attribute results and add to `discattr` dict
         pvs = data[0]
         times = data[1]
         pvsq = u.Quantity(np.asarray(pvs), pvs[0].unit)

@@ -87,10 +87,7 @@ def _keplerianorbit(oes, units=(astro.prefunits['length'], astro.prefunits['angl
         return _keporb_from_components(oes.els, oes.t, units, forceenv)
     elif type(oes) is KeplerianOrbit:
         return oes
-    elif posvel.ispvt(oes):
-        co = CartesianOrbit(convert._tspvc(*oes),
-                            forceenv['celestialframe'], forceenv['earthmu'].si.value)
-    elif posvel.isephrow(oes):
+    elif posvel.ispvter(oes):
         co = CartesianOrbit(convert._tspvc(oes),
                             forceenv['celestialframe'], forceenv['earthmu'].si.value)
     else:
@@ -128,7 +125,7 @@ def _keporb_from_components(oes, epoch, units=(astro.prefunits['length'], astro.
 
 def kepler(object, forceenv=force.deffe, mean_time_element=True): # Add prefunits
     '''The Kepler element set from the Cartesian PVT or equivalent'''
-    co = CartesianOrbit(convert._tspvc(*object),
+    co = CartesianOrbit(convert._tspvc(object),
                         forceenv['celestialframe'], forceenv['earthmu'].si.value)
     ko = OrbitType.KEPLERIAN.convertType(co)
     if mean_time_element:
