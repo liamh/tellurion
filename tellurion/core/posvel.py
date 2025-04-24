@@ -19,7 +19,7 @@ from . import astro
 
 # Provide attributes with default values https://stackoverflow.com/a/18348004/238405
 # Maybe use dataclasses https://stackoverflow.com/q/47955263/238405
-PVT = collections.namedtuple('PVT', 'pv time')
+PVT = collections.namedtuple('PVT', 'pv time aux')
 
 # @dataclasses.dataclass
 # class PVT:
@@ -121,7 +121,7 @@ def pv(position, velocity, unitlookup=astro.prefunits):
 #    return pytz.utc.localize(datetime)
 
 # A PVT consists of a tuple a posvel (as defined by ispv()) and an astropy.time.Time
-def pvt(obj, item=None):
+def pvt(obj, item=None, aux=None):
     '''Return a tuple of posvel and time from a variety of sources.
     '''
 
@@ -129,7 +129,7 @@ def pvt(obj, item=None):
         # PVT from an ephemeris row
         pos = obj[_eph_pos]
         vel = obj[_eph_vel]
-        return PVT(pv(pos, vel), obj[_eph_time])
+        return PVT(pv(pos, vel), obj[_eph_time], aux)
     elif type(obj) is TimeSeries:
         # Select a row from an ephemeris by index, absolute time, or relative time
         if item == None:   # Return the last row
@@ -137,25 +137,25 @@ def pvt(obj, item=None):
         try:
             row = obj[item]
         except:
-            row = obj.loc[astro.abstime(obj[0]['time'], item)]
+            row = obj.loc[astro.abstime(obj[0]['time'], aux)]
         return pvt(row)
     elif ispv(obj):
         if item==None:
             # Add the current time to the PV
-            return PVT(obj, astro.abstime(0))
+            return PVT(obj, astro.abstime(0), aux)
         else:
             # Add the specified time to the PV
-            return PVT(obj, astro.abstime(item))
+            return PVT(obj, astro.abstime(item), aux)
     elif ispvt(obj):
         if isdttm(item):
             # Replace the timestamp in the PVT
-            return PVT(obj[0], item)
+            return PVT(obj[0], item, aux)
         else:
             # Displace the timestamp in the PVT by the given relative time
-            return PVT(obj[0], obj[1] + item)
+            return PVT(obj[0], obj[1] + item, aux)
     elif type(obj) is tuple:
         # Create a PVT from the three P, V, T
-        return PVT(pv(obj[0], obj[1]), obj[2])
+        return PVT(pv(obj[0], obj[1]), obj[2], aux)
     else:
         raise ValueError('Cannot make a PVT from this object')
 

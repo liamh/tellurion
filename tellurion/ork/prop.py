@@ -180,9 +180,11 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', spacecraf
         data = [list(i) for i in zip(*datalist)] # Temporary; detect attribute results and add to `discattr` dict
         pvs = data[0]
         times = data[1]
+        auxes = data[2]
         pvsq = u.Quantity(np.asarray(pvs), pvs[0].unit)
-        if len(data) > 2:
+        if any(auxes):
             #  Add a column of event data
+            breakpoint()
             label = '-'.join(set(data[2]))
             ephem = posvel.posxyz(posvel.tsephem(pvsq, times)) # Show only position
             ephem[label] = data[3]
