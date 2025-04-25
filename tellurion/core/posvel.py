@@ -19,17 +19,17 @@ from . import astro
 
 # Provide attributes with default values https://stackoverflow.com/a/18348004/238405
 # Maybe use dataclasses https://stackoverflow.com/q/47955263/238405
-PVT = collections.namedtuple('PVT', 'pv time aux')
+#PVT = collections.namedtuple('PVT', 'pv time aux')
 
-# @dataclasses.dataclass
-# class PVT:
-#     '''Orbital state vector as position (Cartesian 3-vector), velocity (Cartesian 3-vector), time, and a dictionary of discrete attributes; each field can have multiple rows, corresponding to an ephemeris'''
-#     pv: u.Quantity
-#     '''The orbital state vector as an astropy.units 6-vector with structured quantity of physical dimension length, speed'''
-#     time: astropy.time.Time
-#     '''The date and time of the state'''
-#     discattr: dict = dataclasses.field(default_factory=dict)
-#     '''Discrete attributes of the orbital state; these are attributes that have a finite set of discrete values'''
+@dataclasses.dataclass
+class PVT:
+    '''Orbital state vector as position (Cartesian 3-vector), velocity (Cartesian 3-vector), time, and a dictionary of discrete attributes; each field can have multiple rows, corresponding to an ephemeris'''
+    pv: u.Quantity
+    '''The orbital state vector as an astropy.units 6-vector with structured quantity of physical dimension length, speed'''
+    time: astropy.time.Time
+    '''The date and time of the state'''
+    aux: dict = dataclasses.field(default_factory=dict)
+    '''Discrete attributes of the orbital state; these are attributes that have a finite set of discrete values'''
 
 _eph_time = 'time'
 _eph_pos = 'position'
@@ -129,7 +129,7 @@ def pvt(obj, item=None, aux=None):
         # PVT from an ephemeris row
         pos = obj[_eph_pos]
         vel = obj[_eph_vel]
-        return PVT(pv(pos, vel), obj[_eph_time], aux)
+        res = PVT(pv(pos, vel), obj[_eph_time])
     elif type(obj) is TimeSeries:
         # Select a row from an ephemeris by index, absolute time, or relative time
         if item == None:   # Return the last row
@@ -137,27 +137,30 @@ def pvt(obj, item=None, aux=None):
         try:
             row = obj[item]
         except:
-            row = obj.loc[astro.abstime(obj[0]['time'], aux)]
-        return pvt(row)
+            row = obj.loc[astro.abstime(obj[0]['time'])]
+        return pvt(row, aux = aux)
     elif ispv(obj):
         if item==None:
             # Add the current time to the PV
-            return PVT(obj, astro.abstime(0), aux)
+            res = PVT(obj, astro.abstime(0))
         else:
             # Add the specified time to the PV
-            return PVT(obj, astro.abstime(item), aux)
+            res = PVT(obj, astro.abstime(item))
     elif ispvt(obj):
         if isdttm(item):
             # Replace the timestamp in the PVT
-            return PVT(obj[0], item, aux)
+            res = PVT(obj[0], item)
         else:
             # Displace the timestamp in the PVT by the given relative time
-            return PVT(obj[0], obj[1] + item, aux)
+            res = PVT(obj[0], obj[1] + item)
     elif type(obj) is tuple:
         # Create a PVT from the three P, V, T
-        return PVT(pv(obj[0], obj[1]), obj[2], aux)
+        res = PVT(pv(obj[0], obj[1]), obj[2])
     else:
         raise ValueError('Cannot make a PVT from this object')
+    if aux: # only one attribute for now
+        res[aux[0]] = aux[1]
+    return res
 
 def makepos(pos, unit=astro.prefunits['length']):
     '''Create a position vector or convert units'''

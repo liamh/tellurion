@@ -168,22 +168,25 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', spacecraf
             # See comment at definition of PVT()
             event = eclipse._solar_illumination_state(ecldet, ss)
             if event:
-                pvt = PVT(pvt.pv, pvt.time, event)
+                #pvt = PVT(pvt.pv, pvt.time, event)
+                pvt.aux[event[0]] = event[1]
             return pvt
     else:
         datalist = [propagate(generator, rt, False, reftime, spacecraftstate) for rt in reltimes]
         if spacecraftstate:
             return datalist
-        # pvs = [d.pv for d in datalist]
-        # times = [d.time for d in datalist]
-        data = [list(i) for i in zip(*datalist)] # Temporary; detect attribute results and add to `discattr` dict
-        pvs = data[0]
-        times = data[1]
-        auxes = data[2]
+        pvs = [d.pv for d in datalist]
         pvsq = u.Quantity(np.asarray(pvs), pvs[0].unit)
+        times = [d.time for d in datalist]
+        auxes = [d.aux for d in datalist]
+        # data = [list(i) for i in zip(*datalist)] # Temporary; detect attribute results and add to `discattr` dict
+        # pvs = data[0]
+        # times = data[1]
+        # auxes = data[2]
         if any(auxes):
             #  Add a column of event data
             ax = [list(i) for i in zip(*auxes)]
+            breakpoint()
             label = '-'.join(set(ax[0]))
             ephem = posvel.posxyz(posvel.tsephem(pvsq, times)) # Show only position
             ephem[label] = ax[1]
