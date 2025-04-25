@@ -45,7 +45,7 @@ def tsephem(data, times=None, columnnames=_ephemeris_columns, \
             pvformats=(_pos_format, _vel_format)):
     '''Create an ephemeris table (timeseries) from the posvel and times or PVT data'''
     if times==None:
-        (data, times) = zip(*data)
+        (data, times, auxes) = zip(*data)
     datdict = {columnnames[1]: [d[_eph_pos] for d in data], \
                columnnames[2]: [d[_eph_vel] for d in data]}
     ts = TimeSeries(time=times, data=datdict)
