@@ -31,6 +31,34 @@ class PVT:
     aux: dict = dataclasses.field(default_factory=dict)
     '''Discrete attributes of the orbital state; these are attributes that have a finite set of discrete values'''
 
+    def copy(self):
+        return PVT(self.pv.copy(), self.time.copy(), self.aux.copy())
+
+    def vcat(self, pvt):
+        if self.pv.shape==():
+            reshapepv1 = np.reshape(self.pv, (1,))
+        else:
+            reshapepv1 = self.pv
+        if pvt.pv.shape==():
+            reshapepv2 = np.reshape(pvt.pv, (1,))
+        else:
+            reshapepv2 = pvt.pv
+        self.pv = np.concatenate((reshapepv1, reshapepv2))
+
+        if type(self.time.value) is list:
+            t1 = self.time.value
+        else:
+            t1 = [self.time.value]
+        if type(pvt.time.value) is list:
+            t2 = pvt.time.value
+        else:
+            t2 = [pvt.time.value] # need here pvt.time.to_string()
+        breakpoint() # times are as datetimes
+        self.time = astropy.time.Time(t1 + t2)
+        dl = [self.aux, pvt.aux]
+        self.aux ={k: [d[k] for d in dl] for k in dl[0]}
+        return self
+
 _eph_time = 'time'
 _eph_pos = 'position'
 _eph_vel = 'velocity'
