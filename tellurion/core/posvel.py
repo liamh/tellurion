@@ -4,6 +4,7 @@ Position, velocity and time sets in AstroPy
 import collections
 import dataclasses
 import datetime
+import funcy
 import numpy as np
 import astropy.units as u
 import astropy.coordinates as coord
@@ -11,11 +12,22 @@ import astropy.time
 from astropy.timeseries import TimeSeries
 import astropy.table.row
 import astropy.coordinates as coord
+from . import util
 from . import astro
 
 ##################################################
 ####   Constants used to define field names   ####
 ##################################################
+
+_eph_time = 'time'
+_eph_pos = 'position'
+_eph_vel = 'velocity'
+_ephemeris_columns = [_eph_time, _eph_pos, _eph_vel]
+_eph_pos_xyz = ('px','py','pz')
+
+# These should be conditional on the units used
+_pos_format = '10.3f'
+_vel_format = '10.6f'
 
 # Provide attributes with default values https://stackoverflow.com/a/18348004/238405
 # Maybe use dataclasses https://stackoverflow.com/q/47955263/238405
@@ -31,44 +43,45 @@ class PVT:
     aux: dict = dataclasses.field(default_factory=dict)
     '''Discrete attributes of the orbital state; these are attributes that have a finite set of discrete values'''
 
+    def __getitem__(self, index):
+        pv1d = util.ensure_1d(self.pv)
+        t1d = util.ensure_1d(self.time)
+        return PVT(pv1d[index], t1d[index],
+                   {k: v[index] for k, v in self.aux.items()})
+
+    def __len__(self):
+        return len(self.time)
+
     def copy(self):
         return PVT(self.pv.copy(), self.time.copy(), self.aux.copy())
 
-    def vcat(self, pvt):
-        if self.pv.shape==():
-            reshapepv1 = np.reshape(self.pv, (1,))
-        else:
-            reshapepv1 = self.pv
-        if pvt.pv.shape==():
-            reshapepv2 = np.reshape(pvt.pv, (1,))
-        else:
-            reshapepv2 = pvt.pv
-        self.pv = np.concatenate((reshapepv1, reshapepv2))
-
-        if type(self.time.value) is list:
-            t1 = self.time.value
-        else:
-            t1 = [self.time.value]
-        if type(pvt.time.value) is list:
-            t2 = pvt.time.value
-        else:
-            t2 = [pvt.time.value] # need here pvt.time.to_string()
-        breakpoint() # times are as datetimes
-        self.time = astropy.time.Time(t1 + t2)
-        dl = [self.aux, pvt.aux]
-        self.aux ={k: [d[k] for d in dl] for k in dl[0]}
+    def concatenate(self, pvt):
+        '''Concatenate rows from another PVT onto the end of this PVT'''
+        if type(pvt) is list:
+            if pvt:
+                return self.concatenate(pvt[0]).concatenate(pvt[1:])
+            else:
+                return self
+        self.pv = np.concatenate((util.ensure_1d(self.pv), util.ensure_1d(pvt.pv)))
+        self.time = np.concatenate((util.ensure_1d(self.time), util.ensure_1d(pvt.time)))
+        self.aux = funcy.merge_with(''.join, self.aux, pvt.aux)
         return self
 
-_eph_time = 'time'
-_eph_pos = 'position'
-_eph_vel = 'velocity'
-_ephemeris_columns = [_eph_time, _eph_pos, _eph_vel]
-_eph_pos_xyz = ('px','py','pz')
+    def ephemeris(self, columnnames=_ephemeris_columns, pvformats=(_pos_format, _vel_format)):
+        '''An AstroPy time series of PVT with `aux` variables (if any)'''
+        ts = TimeSeries(time=self.time, data=self.pv, names=columnnames[1:])
+        for key in self.aux:
+            ts[key] = list(self.aux[key])
+        ts[columnnames[1]].info.format = pvformats[0]
+        ts[columnnames[2]].info.format = pvformats[1]
+        return ts
 
-# These should be conditional on the units used
-_pos_format = '10.3f'
-_vel_format = '10.6f'
+    def to_array(self, time_format=astro.prefnumabstime):
+        '''Convert the PVT into a 7-column np.ndarray using SI units and the preferred time format ('mjd' default); `aux` values are not included'''
+        return np.concatenate((self.pv.si[_eph_pos].value, self.pv.si[_eph_vel].value, \
+                               self.time.to_array(time_format)))
 
+# TODO: Eliminate; used in _event_transition_table
 def tsephem(data, times=None, columnnames=_ephemeris_columns, \
             pvformats=(_pos_format, _vel_format)):
     '''Create an ephemeris table (timeseries) from the posvel and times or PVT data'''
@@ -81,6 +94,7 @@ def tsephem(data, times=None, columnnames=_ephemeris_columns, \
     ts[columnnames[2]].info.format = pvformats[1]
     return ts
 
+# TODO: Eliminate, .ephemeris() should switch to posxyz or give option, used in _event_transition_table
 def posxyz(ephem):
     '''Position only, separate x, y, z, components'''
     txyz = TimeSeries(time=ephem['time'], data=ephem[_eph_pos])
@@ -177,13 +191,18 @@ def pvt(obj, item=None, aux=None):
     elif ispvt(obj):
         if isdttm(item):
             # Replace the timestamp in the PVT
-            res = PVT(obj[0], item)
+            res = PVT(obj.pv, item)
         else:
             # Displace the timestamp in the PVT by the given relative time
-            res = PVT(obj[0], obj[1] + item)
+            res = PVT(obj.pv, obj.time + item)
     elif type(obj) is tuple:
         # Create a PVT from the three P, V, T
         res = PVT(pv(obj[0], obj[1]), obj[2])
+    elif type(obj) is list:
+        return obj[0].concatenate(obj[1:])
+    elif type(obj) is np.ndarray:
+        return PVT(pv(obj[0:3], obj[3:6], astro.siunits).to(astro.prefunits['posvel']), \
+                   astro.abstime(astropy.time.Time(obj[6], format=astro.prefnumabstime).to_datetime()))
     else:
         raise ValueError('Cannot make a PVT from this object')
     if aux: # only one attribute for now
@@ -211,15 +230,6 @@ def makepos(pos, unit=astro.prefunits['length']):
 def makept(pos, dttm, frame='gcrs'):
     '''Make a SkyCoord GCRS location'''
     return coord.SkyCoord(coord.CartesianRepresentation(pos), obstime=dttm, frame=frame)
-
-def pvtsijd(pvt, units=astro.prefunits):
-    '''Create an array of length 7 with position and velocity in SI units and Julian date, or create a PVT from an array of length 7'''
-    if type(pvt) is PVT:
-        return np.concatenate((pvt.pv.si[_eph_pos].value, pvt.pv.si[_eph_vel].value, \
-                               np.array([pvt.time.to_value('jd')])))
-    elif type(pvt) is np.ndarray:
-        return PVT(pv(pvt[0:3], pvt[3:6], astro.siunits).to(units['posvel']), \
-                   astro.abstime(astropy.time.Time(pvt[6], format='jd').to_datetime()))
 
 ##################################################
 #### Compare positions, velocities            ####

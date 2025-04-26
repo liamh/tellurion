@@ -15,8 +15,8 @@ def ntw(relsc, refsc, unitlookup=astro.prefunits):
     org.orekit.propagation.SpacecraftState (set the `spacecraftstate`
     argument of `prop()` to `True`)
     '''
-    rf =  _relframe(LOFType.NTW, relsc, refsc, unitlookup)
-    return posvel.tsephem(rf, None, ['time', 'NTW position', 'NTW velocity'])
+    rf =  posvel.pvt(_relframe(LOFType.NTW, relsc, refsc, unitlookup))
+    return rf.ephemeris(['time', 'NTW position', 'NTW velocity'])
 
 def lvlh(relsc, refsc, unitlookup=astro.prefunits):
     '''Find the LVLH or RSW (radial, along-track, cross-track) relative
@@ -24,8 +24,8 @@ def lvlh(relsc, refsc, unitlookup=astro.prefunits):
     org.orekit.propagation.SpacecraftState (set the `spacecraftstate`
     argument of `prop()` to `True`)
     '''
-    rf = _relframe(LOFType.LVLH, relsc, refsc, unitlookup)
-    return posvel.tsephem(rf, None, ['time', 'LVLH position', 'LVLH velocity'])
+    rf = posvel.pvt(_relframe(LOFType.LVLH, relsc, refsc, unitlookup))
+    return rf.ephemeris(['time', 'LVLH position', 'LVLH velocity'])
 
 def _relframe(frame, relsc, refsc, unitlookup=astro.prefunits):
     if isinstance(refsc, collections.abc.Iterable):

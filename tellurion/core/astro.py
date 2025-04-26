@@ -259,6 +259,23 @@ def isupperhalfplane(angle):
     return na >= 0.0 and na <= u.rev/2
 
 ################################################################################
+## Time
+################################################################################
+
+prefnumabstime = 'mjd' # Preferred numerical format for absolute time
+astropy.time.Time.to_array = lambda self, format=prefnumabstime: to_array(self, format)
+
+def to_array(tms, format=prefnumabstime):
+    if tms.shape == ():
+        mjds = np.array([tms.to_value(format=format)])
+    else:
+        mjds = tms.to_value(format)
+    return mjds
+
+def from_array(tms, format=prefnumabstime):
+    return astropy.time.Time(astropy.time.Time(tms, format=format).to_value('isot'))
+
+################################################################################
 ## Time series and Tables
 ################################################################################
 

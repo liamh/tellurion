@@ -1,4 +1,5 @@
 from . import (
+    util,
     astro,
     posvel,
     element,
@@ -7,6 +8,7 @@ from . import (
     spacetrack,
 )
 
+from .util import *
 from .astro import *
 from .posvel import *
 from .posvel import PVT
@@ -18,4 +20,4 @@ from .spacetrack import *
 from .spacetrack import MeanElementSetT
 
 # Define the __all__ variable
-__all__ = ["astro", "posvel", "element", "geog", "geonames", "spacetrack"]
+__all__ = ["util", "astro", "posvel", "element", "geog", "geonames", "spacetrack"]

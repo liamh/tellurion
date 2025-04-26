@@ -30,6 +30,7 @@ def _event_transition_table(loggers, column_label, state_labels, reftime='epoch'
     if len(merged) > 0:
         pvs = u.Quantity([m[0] for m in merged])
         times = astropy.time.Time([m[2] for m in merged])
+        # TODO: port to .ephemeris()
         txyz = posvel.posxyz(posvel.tsephem(pvs, times))
         txyz[column_label] = [m[1] for m in merged]
         elapsed = [dt.quantity_str for dt in np.diff(txyz['time'])]

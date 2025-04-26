@@ -69,11 +69,14 @@ sent3a.gen = tork.prepare(sent3a.mest, 1*u.day, {'altitude': 125.0*u.km, 'eclips
 ####      Tests       ####
 ##########################
 
+def test_pvt():
+    tell.pvt(demoa.init.pvt.to_array()) == demoa.init.pvt
+
 def test_kepcart():
-    np.testing.assert_allclose(tell.pvtsijd(demoa.init.pvt), \
+    np.testing.assert_allclose(demoa.init.pvt.to_array(), \
                                np.array([ 5.74013268e+06,  3.31406715e+06,  0.00000000e+00, \
                                           -2.75082684e+03, 4.76457184e+03,  5.50165367e+03, \
-                                          2.46067650e+06]))
+                                          6.067600e+04]))
 
 def test_cartkep():
     return kepequal(demob.rekep, demob.kep)

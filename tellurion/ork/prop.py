@@ -178,27 +178,8 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', spacecraf
         else:
             retpvt = propagate(generator, reltimes[0], False, reftime, False)
             for rt in reltimes[1:]:
-                retpvt.vcat(propagate(generator, rt, False, reftime, False))
-            return retpvt
-
-        # pvs = [d.pv for d in datalist]
-        # pvsq = u.Quantity(np.asarray(pvs), pvs[0].unit)
-        # times = [d.time for d in datalist]
-        # auxes = [d.aux for d in datalist]
-        # # data = [list(i) for i in zip(*datalist)] # Temporary; detect attribute results and add to `discattr` dict
-        # pvs = data[0]
-        # times = data[1]
-        # auxes = data[2]
-        # if any(auxes):
-        #     #  Add a column of event data
-        #     ax = [list(i) for i in zip(*auxes)]
-        #     breakpoint()
-        #     label = '-'.join(set(ax[0]))
-        #     ephem = posvel.posxyz(posvel.tsephem(pvsq, times)) # Show only position
-        #     ephem[label] = ax[1]
-        # else:
-        #     ephem = posvel.tsephem(pvsq, times)
-        # return ephem
+                retpvt.concatenate(propagate(generator, rt, False, reftime, False))
+            return retpvt.ephemeris()
 
 def timerange(object):
     '''The time difference between the earliest (usually the initial
