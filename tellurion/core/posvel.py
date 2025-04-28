@@ -23,7 +23,7 @@ _eph_time = 'time'
 _eph_pos = 'position'
 _eph_vel = 'velocity'
 _ephemeris_columns = [_eph_time, _eph_pos, _eph_vel]
-_eph_pos_xyz = ('px','py','pz')
+_ephemeris_columns_pos_xyz = [_eph_time, 'px','py','pz']
 
 # These should be conditional on the units used
 _pos_format = '10.3f'
@@ -67,39 +67,42 @@ class PVT:
         self.aux = funcy.merge_with(''.join, self.aux, pvt.aux)
         return self
 
-    def ephemeris(self, columnnames=_ephemeris_columns, pvformats=(_pos_format, _vel_format)):
-        '''An AstroPy time series of PVT with `aux` variables (if any)'''
-        ts = TimeSeries(time=self.time, data=self.pv, names=columnnames[1:])
+    def ephemeris(self, elapsed=True, reftime='epoch', \
+                  columnnames=_ephemeris_columns, pvformats=(_pos_format, _vel_format)):
+        '''An AstroPy time series of PVT with `aux` variables (if
+        any). If `elapsed=True` (default), then add a column that
+        gives the elapsed time from the previous time step.'''
+        if self.aux:
+            columnnames = _ephemeris_columns_pos_xyz
+        if len(columnnames)==4:
+            ts = TimeSeries(time=self.time, data=self.pv[_eph_pos], names=columnnames[1:])
+        else:
+            ts = TimeSeries(time=self.time, data=self.pv, names=columnnames[1:])
         for key in self.aux:
-            ts[key] = list(self.aux[key])
-        ts[columnnames[1]].info.format = pvformats[0]
-        ts[columnnames[2]].info.format = pvformats[1]
+            n = int(len(self.aux[key])/len(self.time))
+            if n>1:
+                ts[key] = [(self.aux[key][i:i+n]) for i in range(0, len(self.aux[key]), n)]
+            else:
+                ts[key] = list(self.aux[key])
+        if len(columnnames)==4:
+            ts[columnnames[1]].info.format = pvformats[0]
+            ts[columnnames[2]].info.format = pvformats[0]
+            ts[columnnames[3]].info.format = pvformats[0]
+        else:
+            ts[columnnames[1]].info.format = pvformats[0]
+            ts[columnnames[2]].info.format = pvformats[1]
+        if elapsed:
+            elapsed = [dt.quantity_str for dt in np.diff(self.time)]
+            elapsed.insert(0,'')
+            ts.add_column(elapsed, index=1, name='elapsed')
+        if reftime is not None:
+            astro.fromtime(ts, reftime=reftime, copy=False)
         return ts
 
     def to_array(self, time_format=astro.prefnumabstime):
         '''Convert the PVT into a 7-column np.ndarray using SI units and the preferred time format ('mjd' default); `aux` values are not included'''
         return np.concatenate((self.pv.si[_eph_pos].value, self.pv.si[_eph_vel].value, \
                                self.time.to_array(time_format)))
-
-# TODO: Eliminate; used in _event_transition_table
-def tsephem(data, times=None, columnnames=_ephemeris_columns, \
-            pvformats=(_pos_format, _vel_format)):
-    '''Create an ephemeris table (timeseries) from the posvel and times or PVT data'''
-    if times==None:
-        (data, times, auxes) = zip(*data)
-    datdict = {columnnames[1]: [d[_eph_pos] for d in data], \
-               columnnames[2]: [d[_eph_vel] for d in data]}
-    ts = TimeSeries(time=times, data=datdict)
-    ts[columnnames[1]].info.format = pvformats[0]
-    ts[columnnames[2]].info.format = pvformats[1]
-    return ts
-
-# TODO: Eliminate, .ephemeris() should switch to posxyz or give option, used in _event_transition_table
-def posxyz(ephem):
-    '''Position only, separate x, y, z, components'''
-    txyz = TimeSeries(time=ephem['time'], data=ephem[_eph_pos])
-    txyz.rename_columns(('col0','col1','col2'), _eph_pos_xyz)
-    return txyz
 
 ##################################################
 ####   Tests for posvel and related types     ####

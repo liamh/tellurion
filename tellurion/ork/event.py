@@ -26,20 +26,13 @@ def _event_transition_table(loggers, column_label, state_labels, reftime='epoch'
     '''Create an ephemeris table with a column of transitions'''
     trans = [_event_transition_label(lg, ind, state_labels) \
              for (lg, ind) in zip(loggers, list(range(len(loggers)))) if lg is not None]
-    merged = sorted(list(itertools.chain.from_iterable(trans)), key=operator.itemgetter(2))
-    if len(merged) > 0:
-        pvs = u.Quantity([m[0] for m in merged])
-        times = astropy.time.Time([m[2] for m in merged])
-        # TODO: port to .ephemeris()
-        txyz = posvel.posxyz(posvel.tsephem(pvs, times))
-        txyz[column_label] = [m[1] for m in merged]
-        elapsed = [dt.quantity_str for dt in np.diff(txyz['time'])]
-        elapsed.insert(0,'')
-        txyz.add_column(elapsed, index=1, name='elapsed')
-        if reftime is not None:
-            astro.fromtime(txyz, reftime=reftime, copy=False)
-        return txyz
-    return None
+    merged_list = sorted(list(itertools.chain.from_iterable(trans)), key=lambda x: x.time)
+    if len(merged_list) > 1:
+        return merged_list[0].concatenate(merged_list[1:]).ephemeris()
+    elif len(merged_list) == 0:
+        return merged_list.ephemeris()
+    else:
+        return None
 
 def _spairs(string, reverse=False):
     '''Make a string of successive pairs of characters'''
@@ -56,8 +49,8 @@ def _event_transition_label(logger, ind, labels):
     def pvet(ev):
         '''A 3-tuple of posvel, event transition (2-character string with prior and posterior event state), and time.'''
         pvt = convert._pvt(ev.getState().getPVCoordinates())
-        st = _spairs(labels, not ev.isIncreasing())[ind]
-        return (pvt.pv, st, pvt.time)
+        pvt.aux = {'transition':_spairs(labels, not ev.isIncreasing())[ind]}
+        return pvt
     return [pvet(ev) for ev in loggedevents]
 
 def _label_positive_count(detectors, labels):
