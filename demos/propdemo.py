@@ -98,8 +98,8 @@ demoa.prop.ephem4x4hpB01 = tork.propagate(demoa.prop.gen4x4hpB01, prop5m1h, True
 demoa.prop.ephem4x4hpB01_posdiff = tell.magdiff(demoa.prop.ephem4x4hpB01['position'], demoa.prop.ephem['position'])
 
 # Effects of atmospheric drag in NTW and RSW (LVLH) relative coordinates
-demoa.prop.ss4x4hpB01 = tork.propagate(demoa.prop.gen4x4hpB01, prop5m1h, True, spacecraftstate=True)
-demoa.prop.ss4x4 = tork.propagate(demoa.prop.gen4x4, prop5m1h, True, spacecraftstate=True)
+demoa.prop.ss4x4hpB01 = tork.propagate(demoa.prop.gen4x4hpB01, prop5m1h, True, output='ss')
+demoa.prop.ss4x4 = tork.propagate(demoa.prop.gen4x4, prop5m1h, True, output='ss')
 demoa.prop.ntw_4x4hpB01_to_4x4 = tork.ntw(demoa.prop.ss4x4hpB01, demoa.prop.ss4x4, tell.siunits)
 demoa.prop.rsw_4x4hpB01_to_4x4 = tork.lvlh(demoa.prop.ss4x4hpB01, demoa.prop.ss4x4, tell.siunits)
 

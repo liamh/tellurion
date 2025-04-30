@@ -28,9 +28,9 @@ def _event_transition_table(loggers, column_label, state_labels, reftime='epoch'
              for (lg, ind) in zip(loggers, list(range(len(loggers)))) if lg is not None]
     merged_list = sorted(list(itertools.chain.from_iterable(trans)), key=lambda x: x.time)
     if len(merged_list) > 1:
-        return merged_list[0].concatenate(merged_list[1:]).ephemeris()
+        return merged_list[0].concatenate(merged_list[1:])
     elif len(merged_list) == 0:
-        return merged_list.ephemeris()
+        return merged_list
     else:
         return None
 

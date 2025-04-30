@@ -22,7 +22,8 @@ def _sun_states(umbpen):
     else:
         return sun_states[1] + sun_states[2]
 
-def _umbra_penumbra(umbra_penumbra, propagator, gendict, proptime, forceenv, reftime, occluder='earth'):
+def _umbra_penumbra(umbra_penumbra, propagator, gendict, proptime, forceenv, reftime, occluder='earth', \
+                    output='et'):
     '''Define eclipse detectors for umbra, penumbra, or both. The
     first argument `umbra_penumbra` should be a two-element Boolean
     list defining which events to include.'''
@@ -40,7 +41,8 @@ def _umbra_penumbra(umbra_penumbra, propagator, gendict, proptime, forceenv, ref
         gendict['propfn'](gendict['epoch'].shiftedBy(astro.timesec(proptime)))
         loggers = [logger_umb, logger_pen]
         gendict['eclipsedet'] = [detector_umb, detector_pen]
-        gendict['sun transition'] = _eclipse_transition_table(loggers, _sun_states(loggers), reftime)
+        gendict['sun transition'] = _eclipse_transition_table(loggers, _sun_states(loggers), reftime, \
+                                                              output=output)
     else:
         gendict['eclipsedet'] = [None, None]
     return gendict
@@ -55,8 +57,12 @@ def _make_eclipsedet(propagator, forceenv, umbra, occluder='earth'):
                                            forceenv[occluder]).withPenumbra()
     return (detector, event._make_evdet(propagator, detector, True))
 
-def _eclipse_transition_table(loggers, state_chars, reftime='epoch'):
-    return event._event_transition_table(loggers, 'suntrans', state_chars, reftime)
+def _eclipse_transition_table(loggers, state_chars, reftime='epoch', output='et'):
+    pvt = event._event_transition_table(loggers, 'suntrans', state_chars, reftime)
+    if output=='pvt':
+        return pvt
+    else:
+        return pvt.ephemeris()
 
 def _solar_illumination_state(detectors, spacecraft_state):
     '''A single character, one of 'u' (umbra, or total eclipse), 'p' (penumbra, or partial eclipse, or 's' (full sun).'''
