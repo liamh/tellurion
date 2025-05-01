@@ -10,6 +10,8 @@ from org.orekit.propagation.events import EclipseDetector
 from ..core import astro
 from . import event
 
+_eclipse_column_label = 'eclipse'
+
 def _do_eclipse(umbpen):
     return type(umbpen) is list and len(umbpen)==2 and any(umbpen)
 
@@ -58,7 +60,7 @@ def _make_eclipsedet(propagator, forceenv, umbra, occluder='earth'):
     return (detector, event._make_evdet(propagator, detector, True))
 
 def _eclipse_transition_table(loggers, state_chars, reftime='epoch', output='et'):
-    pvt = event._event_transition_table(loggers, 'suntrans', state_chars, reftime)
+    pvt = event._event_transition_table(loggers, _eclipse_column_label, state_chars, reftime)
     if output=='pvt':
         return pvt
     else:
@@ -79,6 +81,6 @@ def _solar_illumination_state(detectors, spacecraft_state):
             pensl = detectors[1].g(spacecraft_state)
         else:
             pensl = None
-        return ('sunlight', event._label_positive_count([umbsl, pensl], _sun_states([umbsl, pensl])))
+        return (_eclipse_column_label, event._label_positive_count([umbsl, pensl], _sun_states([umbsl, pensl])))
     else:
         return ()

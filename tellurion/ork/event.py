@@ -24,7 +24,7 @@ def _make_evdet(propagator, detector, continue_prop=True):
 
 def _event_transition_table(loggers, column_label, state_labels, reftime='epoch'):
     '''Create an ephemeris table with a column of transitions'''
-    trans = [_event_transition_label(lg, ind, state_labels) \
+    trans = [_event_transition_label(lg, ind, column_label, state_labels) \
              for (lg, ind) in zip(loggers, list(range(len(loggers)))) if lg is not None]
     merged_list = sorted(list(itertools.chain.from_iterable(trans)), key=lambda x: x.time)
     if len(merged_list) > 1:
@@ -43,13 +43,13 @@ def _spairs(string, reverse=False):
         str=string
         return [a+b for a, b in zip(str, str[1:])]
 
-def _event_transition_label(logger, ind, labels):
+def _event_transition_label(logger, ind, column_label, state_labels):
     '''A two-character transition label made from two one-character state labels'''
     loggedevents = logger.getLoggedEvents()
     def pvet(ev):
         '''A 3-tuple of posvel, event transition (2-character string with prior and posterior event state), and time.'''
         pvt = convert._pvt(ev.getState().getPVCoordinates())
-        pvt.aux = {'transition':_spairs(labels, not ev.isIncreasing())[ind]}
+        pvt.aux = {column_label:_spairs(state_labels, not ev.isIncreasing())[ind]}
         return pvt
     return [pvet(ev) for ev in loggedevents]
 
