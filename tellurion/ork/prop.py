@@ -132,7 +132,6 @@ def niprep(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None
 
     return gendict
 
-# spacecraftstate
 def propagate(generator, reltimes, include_init=True, reftime='epoch', output='et'):
     '''From an existing ephemeris generator, propagate to the time(s)
     relative to epoch of the initial state. The relative times must
@@ -164,8 +163,6 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', output='e
         reltimes = np.insert(atimes, 0, reft)
     atscalar = atimes.shape == ()
 
-    ecldet = generator.get('eclipsedet')
-
     if atscalar:
         # This includes the value of the event function "pvut" = position, velocity, umbra and time
         ss = _to_spacecraft_state(generator['propfn'](convert._okad(atimes)))
@@ -175,9 +172,8 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', output='e
             pvt = convert._pvt(ss)
             # If PVTs could have optional attributes, all this could be included in the one line above
             # See comment at definition of PVT()
-            event = eclipse._solar_illumination_state(ecldet, ss)
+            event = eclipse._solar_illumination_state(generator.get('eclipsedet'), ss)
             if event:
-                #pvt = PVT(pvt.pv, pvt.time, event)
                 pvt.aux[event[0]] = event[1]
             return pvt
     else:

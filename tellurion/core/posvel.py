@@ -34,7 +34,7 @@ _vel_format = '10.6f'
 #PVT = collections.namedtuple('PVT', 'pv time aux')
 
 @dataclasses.dataclass
-class PVT:
+class PVT(collections.abc.Sequence):
     '''Orbital state vector as position (Cartesian 3-vector), velocity (Cartesian 3-vector), time, and a dictionary of discrete attributes; each field can have multiple rows, corresponding to an ephemeris'''
     pv: u.Quantity
     '''The orbital state vector as an astropy.units 6-vector with structured quantity of physical dimension length, speed'''
@@ -198,7 +198,7 @@ def pvt(obj, item=None, aux=None):
         # Create a PVT from the three P, V, T
         res = PVT(pv(obj[0], obj[1]), obj[2])
     elif type(obj) is list:
-        return obj[0].concatenate(obj[1:])
+        return obj[0].copy().concatenate(obj[1:])
     elif type(obj) is np.ndarray:
         return PVT(pv(obj[0:3], obj[3:6], astro.siunits).to(astro.prefunits['posvel']), \
                    astro.abstime(astropy.time.Time(obj[6], format=astro.prefnumabstime).to_datetime()))
