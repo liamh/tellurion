@@ -47,13 +47,17 @@ class PVT(collections.abc.Sequence):
         pv1d = util.ensure_1d(self.pv)
         t1d = util.ensure_1d(self.time)
         return PVT(pv1d[index], t1d[index],
-                   {k: v[index] for k, v in self.aux.items()})
+                   {k: v.split(' ')[index] for k, v in self.aux.items()})
 
     def __len__(self):
         return len(self.time)
 
     def copy(self):
         return PVT(self.pv.copy(), self.time.copy(), self.aux.copy())
+
+    def timeorder(self):
+        '''Sort the PVT in increasing time order'''
+        return pvt(sorted(self, key=lambda x: x.time))
 
     def concatenate(self, pvt):
         '''Concatenate rows from another PVT onto the end of this PVT'''

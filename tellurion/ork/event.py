@@ -23,43 +23,30 @@ def _make_evdet(propagator, detector, continue_prop=True):
     return logger
 
 def _event_transition_table(loggers, column_label, state_labels, reftime='epoch'):
-    '''Create an ephemeris table with a column of transitions'''
-    trans = [_pvt_from_logger(lg, ind, column_label, state_labels) \
-             for (lg, ind) in zip(loggers, list(range(len(loggers)))) if lg is not None]
-    merged_list = sorted(list(itertools.chain.from_iterable(trans)), key=lambda x: x.time)
-    if len(merged_list) > 1:
-        return merged_list[0].concatenate(merged_list[1:])
-    elif len(merged_list) == 0:
-        return merged_list
-    else:
-        return None
+    '''Create an ephemeris PVT with the event added to the aux dict'''
+    def transition_pairs(string):
+        # _transition_pairs(state_labels)
+        # [['up', 'pu'], ['ps', 'sp']]
+        sp = [a+b for a, b in zip(string, string[1:])]
+        return [[pr, pr[::-1]] for pr in sp]
+    trprs = transition_pairs(state_labels)
+    pvtcat = posvel.pvt([_pvt_from_logger(lg, column_label, idl) \
+                         for (lg, idl) in zip(loggers, trprs) if lg is not None])
+    return pvtcat.timeorder()
 
-def _spairs(string, reverse=False):
-    '''Make a string of successive pairs of characters'''
-    if reverse:
-        str=string[::-1]
-        return [a+b for a, b in zip(str, str[1:])][::-1]
-    else:
-        str=string
-        return [a+b for a, b in zip(str, str[1:])]
-
-# New approach replacing _spairs() to avoid using index
-# _transition_pairs(state_labels)
-# [['up', 'pu'], ['ps', 'sp']]
-# Iterate over outer list, define a boolean function (increasing) to select from inner
-def _transition_pairs(string):
-    sp = [a+b for a, b in zip(string, string[1:])]
-    return [[pr, pr[::-1]] for pr in sp]
-
-def _pvt_from_logger(logger, ind, column_label, state_labels):
+def _pvt_from_logger(logger, column_label, inc_dec_labels):
     '''A two-character transition label made from two one-character state labels'''
     loggedevents = logger.getLoggedEvents()
     def pvet(ev):
         '''A 3-tuple of posvel, event transition (2-character string with prior and posterior event state), and time.'''
         pvt = convert._pvt(ev.getState().getPVCoordinates())
-        pvt.aux = {column_label:_spairs(state_labels, not ev.isIncreasing())[ind]}
+        if ev.isIncreasing():
+            trlabel = inc_dec_labels[0]
+        else:
+            trlabel = inc_dec_labels[1]
+        pvt.aux = {column_label:trlabel}
         return pvt
-    return [pvet(ev) for ev in loggedevents]
+    return posvel.pvt([pvet(ev) for ev in loggedevents])
 
 def _label_positive_count(detectors, labels):
     '''Determine the appropriate event label by the number of positive counts among the detectors.'''
