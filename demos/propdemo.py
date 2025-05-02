@@ -50,11 +50,16 @@ demoa.prop.pvapa = tell.hcat(demoa.prop.ephem, demoa.prop.altperapo) # Ephemeris
 # Eclipsing
 demoa.prop.eclipse = Munch()
 demoa.prop.eclipse.events = {'altitude': 125.0*u.km, 'eclipse': [True, True], 'visibility': []}
-demoa.prop.eclipse.genev = tork.prepare(demoa.init.pvt, 1*u.day, demoa.prop.eclipse.events)
-demoa.prop.eclipse.suntrans = demoa.prop.eclipse.genev['sun transition']
-demoa.prop.eclipse.ephem = tork.propagate(demoa.prop.eclipse.genev, np.linspace(5.0*u.minute, 5*60.0*u.minute, 60))
-demoa.prop.eclipse.um12h = tork.propagate(demoa.prop.eclipse.genev, 12*u.hour)
-demoa.prop.eclipse.um12h05m = tork.propagate(demoa.prop.eclipse.genev, tell.tq('12hr 5min'))
+# demoa.prop.eclipse.genev = tork.prepare(demoa.init.pvt, 1*u.day, demoa.prop.eclipse.events)
+#demoa.prop.eclipse.ephem = tork.propagate(demoa.prop.eclipse.genev, np.linspace(5.0*u.minute, 5*60.0*u.minute, 60))
+demoa.prop.eclipse.genevpvt = tork.prepare(demoa.init.pvt, 8*u.hour, demoa.prop.eclipse.events, output='pvt')
+demoa.prop.eclipse.suntrans = demoa.prop.eclipse.genevpvt['sun transition'].ephemeris()
+demoa.prop.eclipse.ephempvt = tork.propagate(demoa.prop.eclipse.genevpvt, np.linspace(0.25*u.hour, 8*u.hour, 32), output='pvt')
+demoa.prop.eclipse.ephem = demoa.prop.eclipse.ephempvt.ephemeris()
+demoa.prop.eclipse.merged = \
+    demoa.prop.eclipse.genevpvt['sun transition'].merge(demoa.prop.eclipse.ephempvt).ephemeris()
+demoa.prop.eclipse.um12h = tork.propagate(demoa.prop.eclipse.genevpvt, 12*u.hour)
+demoa.prop.eclipse.um12h05m = tork.propagate(demoa.prop.eclipse.genevpvt, tell.tq('12hr 5min'))
 
 ################ Propagation Kepler element
 

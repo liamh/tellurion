@@ -57,7 +57,7 @@ def abstime(ratimes, reftime='now'):
     if type(ratimes)==astropy.time.Time:
         return ratimes
     if type(ratimes) in [datetime.datetime, np.datetime64]:
-        return astropy.time.Time(ratimes)
+        return astropy.time.Time(ratimes.isoformat())
     if type(ratimes)==str:
         try:
             return (astropy.time.Time(ratimes, scale='utc'))
@@ -71,7 +71,18 @@ def abstime(ratimes, reftime='now'):
     if type(ratimes) == u.Quantity:
         return reftime + ratimes
     if isinstance(ratimes, collections.abc.Iterable):
-        return astropy.time.Time([abstime(tm, reftime) for tm in ratimes])
+        cum = abstime(ratimes[0], reftime)
+        for t1 in ratimes[1:]:
+            cum = time_concat(cum, abstime(t1, reftime))
+        return cum
+
+def time_concat(time1, time2):
+    def tval(time):
+        if time.isscalar:
+            return [time.value]
+        else:
+            return time.value
+    return astropy.time.Time(np.concatenate([tval(time1), tval(time2)]))
 
 def timesec(t):
     '''Convert a u.Quantity to seconds as a Python float'''

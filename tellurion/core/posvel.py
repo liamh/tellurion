@@ -67,9 +67,13 @@ class PVT(collections.abc.Sequence):
             else:
                 return self
         self.pv = np.concatenate((util.ensure_1d(self.pv), util.ensure_1d(pvt.pv)))
-        self.time = np.concatenate((util.ensure_1d(self.time), util.ensure_1d(pvt.time)))
+        self.time = astro.abstime([self.time, pvt.time])
         self.aux = funcy.merge_with(' '.join, self.aux, pvt.aux)
         return self
+
+    def merge(self, pvt):
+        '''Merge the two PVTs and put in time order'''
+        return self.copy().concatenate(pvt).timeorder()
 
     def ephemeris(self, elapsed=True, reftime='epoch', \
                   columnnames=_ephemeris_columns, pvformats=(_pos_format, _vel_format)):
@@ -78,10 +82,14 @@ class PVT(collections.abc.Sequence):
         gives the elapsed time from the previous time step.'''
         if self.aux:
             columnnames = _ephemeris_columns_pos_xyz
-        if len(columnnames)==4:
-            ts = TimeSeries(time=self.time, data=self.pv[_eph_pos], names=columnnames[1:])
+        if self.time.isscalar:
+            tm = astropy.time.Time([self.time.to_string()])
         else:
-            ts = TimeSeries(time=self.time, data=self.pv, names=columnnames[1:])
+            tm = self.time
+        if len(columnnames)==4:
+            ts = TimeSeries(time=tm, data=self.pv[_eph_pos], names=columnnames[1:])
+        else:
+            ts = TimeSeries(time=tm, data=self.pv, names=columnnames[1:])
         for key in self.aux:
             ts[key] = self.aux[key].split(' ')
         if len(columnnames)==4:
@@ -92,7 +100,7 @@ class PVT(collections.abc.Sequence):
             ts[columnnames[1]].info.format = pvformats[0]
             ts[columnnames[2]].info.format = pvformats[1]
         if elapsed:
-            elapsed = [dt.quantity_str for dt in np.diff(self.time)]
+            elapsed = [dt.quantity_str for dt in np.diff(tm)]
             elapsed.insert(0,'')
             ts.add_column(elapsed, index=1, name='elapsed')
         if reftime is not None:
@@ -101,8 +109,12 @@ class PVT(collections.abc.Sequence):
 
     def to_array(self, time_format=astro.prefnumabstime):
         '''Convert the PVT into a 7-column np.ndarray using SI units and the preferred time format ('mjd' default); `aux` values are not included'''
-        return np.concatenate((self.pv.si[_eph_pos].value, self.pv.si[_eph_vel].value, \
-                               self.time.to_array(time_format)))
+        if self.time.shape==():
+            return np.hstack((self.pv.si[_eph_pos].value, self.pv.si[_eph_vel].value, \
+                              self.time.to_array(time_format).reshape(1)))
+        else:
+            return np.hstack((self.pv.si[_eph_pos].value, self.pv.si[_eph_vel].value, \
+                              self.time.to_array(time_format).reshape(-1,1)))
 
 ##################################################
 ####   Tests for posvel and related types     ####
