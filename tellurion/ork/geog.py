@@ -52,5 +52,5 @@ def eciobs(loc, observation=None, name='eci obs', forceenv=force.deffe):
         ts[name].info.format = posvel._pos_format
         return ts
     else:
-        pos = convert._pvt(tf, getpvcargs=[dttm, forceenv['celestialframe']])[0]['position']
+        pos = convert._pvt(tf, getpvcargs=[dttm, forceenv['celestialframe']]).pv['position']
         return posvel.makept(pos, dttm)
