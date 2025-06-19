@@ -19,6 +19,9 @@ def test_allplane():
                          "ecc":0.0*u.dimensionless_unscaled, \
                          "inc":0.0*u.deg, "argper": 120.0*u.deg, \
                          "raan": 0.0*u.deg, "ma": 0.0*u.deg})
+    ell = tork.allplane({"altper":160*u.km, "altapo":20250*u.km, \
+                         "inc":28.5*u.deg, "argper": 0.0*u.deg, "raan": 0.0*u.deg, "ma": 0.0*u.deg})
+
 
     np.testing.assert_allclose(smaecc['sma'], 16583.13646*u.km)
     np.testing.assert_allclose(smaecc['ecc'], 0.60573583*u.dimensionless_unscaled)
