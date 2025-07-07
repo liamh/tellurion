@@ -29,10 +29,17 @@ def _event_transition_table(loggers, column_label, state_labels, reftime='epoch'
         # [['up', 'pu'], ['ps', 'sp']]
         sp = [a+b for a, b in zip(string, string[1:])]
         return [[pr, pr[::-1]] for pr in sp]
-    trprs = transition_pairs(state_labels)
-    pvtcat = posvel.pvt([_pvt_from_logger(lg, column_label, idl) \
-                         for (lg, idl) in zip(loggers, trprs) if lg is not None])
-    return pvtcat.timeorder()
+    if loggers:
+        trprs = transition_pairs(state_labels)
+        pvtlist = []
+        for (lg, idl) in zip(loggers, trprs):
+            if lg is not None:
+                pvtl = _pvt_from_logger(lg, column_label, idl)
+                if pvtl is not None:
+                    pvtlist.append(pvtl)
+        if pvtlist:
+            pvtcat = posvel.pvt(pvtlist)
+            return pvtcat.timeorder()
 
 def _pvt_from_logger(logger, column_label, inc_dec_labels):
     '''A two-character transition label made from two one-character state labels'''
@@ -46,7 +53,8 @@ def _pvt_from_logger(logger, column_label, inc_dec_labels):
             trlabel = inc_dec_labels[1]
         pvt.aux = {column_label:trlabel}
         return pvt
-    return posvel.pvt([pvet(ev) for ev in loggedevents])
+    if loggedevents:
+        return posvel.pvt([pvet(ev) for ev in loggedevents])
 
 def _label_positive_count(detectors, labels):
     '''Determine the appropriate event label by the number of positive counts among the detectors.'''
