@@ -213,8 +213,11 @@ def pvt(obj, item=None, aux=None):
     elif type(obj) is tuple:
         # Create a PVT from the three P, V, T
         res = PVT(pv(obj[0], obj[1]), obj[2])
-    elif type(obj) is list and len(obj)>1:
-        return obj[0].copy().concatenate(obj[1:])
+    elif type(obj) is list:
+        if len(obj)>1:
+            return obj[0].copy().concatenate(obj[1:])
+        elif len(obj)==1:
+            return obj[0]
     elif type(obj) is np.ndarray:
         return PVT(pv(obj[0:3], obj[3:6], astro.siunits).to(astro.prefunits['posvel']), \
                    astro.abstime(astropy.time.Time(obj[6], format=astro.prefnumabstime).to_datetime()))

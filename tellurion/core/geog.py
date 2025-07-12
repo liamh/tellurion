@@ -13,6 +13,19 @@ from . import astro
 from . import posvel
 from . import geonames
 
+def observer_location(location, name="Unnamed", minimum_elevation=coord.Angle(10.0, u.deg)):
+    '''Define an observer's location; location is an
+    `astropy.coordinates.earth.EarthLocation`, e.g. the output of
+    `earthloc()`. The `minimum_elevation` is used for visibility
+    calculation; if a number is specified, angle preferred units
+    `prefunits['angle']` are assumed.
+    '''
+    if type(minimum_elevation) is coord.Angle:
+        me = minimum_elevation
+    else:
+        me = coord.Angle(minimum_elevation, astro.prefunits['angle'])
+    return {'location': location, 'name': name, 'minelev': me}
+
 # List of sites: astropy.coordinates.EarthLocation.get_site_names()
 
 def earthloc(lon, lat, elevation=None):

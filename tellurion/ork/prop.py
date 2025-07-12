@@ -1,3 +1,10 @@
+"""Propagate a state in two steps: `prepare()` and `propagate()`
+
+Events (e.g. eclipse, visibility) should supply two functions `_add()`
+to add the event and `_statechar()` to generate a character indicating
+each state.
+"""
+
 import collections
 import collections.abc
 import numpy as np
@@ -22,6 +29,7 @@ from . import force
 from . import element as oelement
 from . import convert
 from . import eclipse
+from . import visibility
 
 defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
 
@@ -46,7 +54,8 @@ def SGP4prep(meanels, proptime, events=defev, forceenv=force.deffe, reftime=None
         propagator = TLEPropagator.selectExtrapolator(tle)
         gendict['propfn'] = lambda propto: propagator.getPVCoordinates(propto, forceenv['celestialframe'])
         gendict['pvt0'] = convert._pvt(gendict['propfn'](gendict['epoch']))
-        eclipse._umbra_penumbra(events['eclipse'], propagator, gendict, proptime, forceenv, reftime, occluder)
+        visibility._add(events['visibility'], propagator, gendict, proptime, forceenv, reftime)
+        eclipse._add(events['eclipse'], propagator, gendict, proptime, forceenv, reftime, occluder)
         return gendict
     else:
         raise ValueError("Can only propagate SGP4 mean elements with SGP4")
@@ -120,9 +129,10 @@ def niprep(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None
     # Events
     okprop.addEventDetector(AltitudeDetector(float(events['altitude'].si.value), forceenv['sphalt']))
 
-    # Set up eclipse detector
-    eclipse._umbra_penumbra(events['eclipse'], okprop, gendict, proptime, forceenv, reftime, occluder,
+    # Set up event detectors and propagate
+    eclipse._add(events['eclipse'], okprop, gendict, proptime, forceenv, reftime, occluder,
                             output=output)
+    visibility._add(events['visibility'], okprop, gendict, proptime, forceenv, reftime, output=output)
     gendict['propfn'](gendict['epoch'].shiftedBy(astro.timesec(proptime)))
 
     gge = generator.getGeneratedEphemeris()
@@ -164,17 +174,23 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', output='e
     atscalar = atimes.shape == ()
 
     if atscalar:
-        # This includes the value of the event function "pvut" = position, velocity, umbra and time
+        # This includes the value of the event function
         ss = _to_spacecraft_state(generator['propfn'](convert._okad(atimes)))
         if output=='ss':
             return ss
         else:
             pvt = convert._pvt(ss)
-            # If PVTs could have optional attributes, all this could be included in the one line above
-            # See comment at definition of PVT()
-            event = eclipse._solar_illumination_state(generator.get('eclipsedet'), ss)
-            if event:
-                pvt.aux[event[0]] = event[1]
+            def addaux(event):
+                if event:
+                    if type(event) is list:
+                        new = dict(event)
+                    else:
+                        new = {event[0]: event[1]}
+                else:
+                    new = {}
+                pvt.aux = pvt.aux | new
+            addaux(eclipse._statechar(generator.get('eclipsedet'), ss))
+            addaux(visibility._statechar(generator.get('visibilitydet'), ss))
             return pvt
     else:
         if output=='ss':
