@@ -1,8 +1,10 @@
 """Propagate a state in two steps: `prepare()` and `propagate()`
 
-Events (e.g. eclipse, visibility) should supply two functions `_add()`
-to add the event and `_statechar()` to generate a character indicating
-each state.
+Events (e.g. eclipse, visibility) should supply three functions
+`_mkdetlog()` to add the event detector(s)/logger(s), `_gentrans` to
+generate the event transitions, and `_statechar()` to generate a
+character indicating each state.
+
 """
 
 import collections
@@ -16,7 +18,6 @@ from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState, EphemerisGenerator
 from org.orekit.propagation.analytical.tle import TLE, TLEPropagator
-from org.orekit.propagation.events import AltitudeDetector
 from org.orekit.utils import AbsolutePVCoordinates, TimeStampedPVCoordinates, PVCoordinatesProvider
 import org.orekit.forces.gravity as okgrav
 
@@ -28,8 +29,7 @@ from ..core.spacetrack import MeanElementSetT
 from . import force
 from . import element as oelement
 from . import convert
-from . import eclipse
-from . import visibility
+from . import event
 
 defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
 
@@ -45,17 +45,16 @@ def prepare(initstate, proptime, events=defev, forceenv=force.deffe, reftime=Non
     elif type(initstate)==PVT:
         return niprep(initstate, proptime, events, forceenv, reftime, occluder, output=output)
 
-def SGP4prep(meanels, proptime, events=defev, forceenv=force.deffe, reftime=None, occluder='earth'):
+def SGP4prep(meanels, proptime, events=defev, forceenv=force.deffe, reftime=None, occluder='earth', \
+             output='et'):
     '''Propagate mean elements using SGP4'''
     if hasattr(meanels, 'model') and meanels.model == 'SGP4':
-        gendict = {}
         tle = TLE(*meanels.tle)
-        gendict['epoch'] = tle.getDate()
         propagator = TLEPropagator.selectExtrapolator(tle)
-        gendict['propfn'] = lambda propto: propagator.getPVCoordinates(propto, forceenv['celestialframe'])
+        gendict = _make_gendict(tle, lambda propto: \
+                                propagator.getPVCoordinates(propto, forceenv['celestialframe']))
         gendict['pvt0'] = convert._pvt(gendict['propfn'](gendict['epoch']))
-        visibility._add(events['visibility'], propagator, gendict, proptime, forceenv, reftime)
-        eclipse._add(events['eclipse'], propagator, gendict, proptime, forceenv, reftime, occluder)
+        event._add(events, propagator, gendict, proptime, forceenv, reftime, output)
         return gendict
     else:
         raise ValueError("Can only propagate SGP4 mean elements with SGP4")
@@ -122,24 +121,20 @@ def niprep(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None
     if 'dragforce' in forceenv:
         okprop.addForceModel(forceenv['dragforce'])
 
-    gendict = {}
-    gendict['epoch'] = ork0.getDate()
-    gendict['propfn'] = lambda propto: okprop.propagate(gendict['epoch'], propto)
-
-    # Events
-    okprop.addEventDetector(AltitudeDetector(float(events['altitude'].si.value), forceenv['sphalt']))
-
     # Set up event detectors and propagate
-    eclipse._add(events['eclipse'], okprop, gendict, proptime, forceenv, reftime, occluder,
-                            output=output)
-    visibility._add(events['visibility'], okprop, gendict, proptime, forceenv, reftime, output=output)
-    gendict['propfn'](gendict['epoch'].shiftedBy(astro.timesec(proptime)))
-
+    gendict = _make_gendict(ork0, lambda propto: okprop.propagate(gendict['epoch'], propto))
+    event._add(events, okprop, gendict, proptime, forceenv, reftime, output)
     gge = generator.getGeneratedEphemeris()
-    #gendict['propfn'] = lambda propto: gge.propagate(propto)
     gendict['mindate'] = gge.getMinDate()
     gendict['maxdate'] = gge.getMaxDate()
 
+    return gendict
+
+def _make_gendict(getdatefrom, propfn):
+    gendict = {}
+    gendict['event detectors'] = {}
+    gendict['epoch'] = getdatefrom.getDate()
+    gendict['propfn'] = propfn
     return gendict
 
 def propagate(generator, reltimes, include_init=True, reftime='epoch', output='et'):
@@ -179,19 +174,7 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', output='e
         if output=='ss':
             return ss
         else:
-            pvt = convert._pvt(ss)
-            def addaux(event):
-                if event:
-                    if type(event) is list:
-                        new = dict(event)
-                    else:
-                        new = {event[0]: event[1]}
-                else:
-                    new = {}
-                pvt.aux = pvt.aux | new
-            addaux(eclipse._statechar(generator.get('eclipsedet'), ss))
-            addaux(visibility._statechar(generator.get('visibilitydet'), ss))
-            return pvt
+            return event._ephemeris(generator, ss)
     else:
         if output=='ss':
             datalist = [propagate(generator, rt, False, reftime, output) for rt in reltimes]

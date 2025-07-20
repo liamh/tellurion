@@ -20,22 +20,31 @@ from . import event
 ### Required by the propagator (prop.py) ###
 ############################################
 
-def _add(locations, propagator, gendict, proptime, forceenv, reftime, output='et'):
-    '''Add detectors to the propagator giving visibility for an observer at the requested locations.
+def _mkdetlog(events, propagator, forceenv):
+    '''Add detectors and loggers to the propagator giving visibility
+    for an observer at the requested locations.
 
     `locations`: A list of dicts with the following keys
         `'location'`: The location of the observer (an astropy.coordinates.earth.EarthLocation)
         `'minelev'` : The minimum elevation (a u.Angle)
         `'name'`    : The name of the observing location (a string)
+
     '''
 
-    def mkdet(obsloc, observer_body='earth'):
-        '''Make a visibility detector for a single location and add it
-        to the `propagator`.'''
+    def single(obsloc, observer_body='earth'):
+        '''Make a visibility detector and logger for a single location
+        and add it to the `propagator`.'''
         tf = TopocentricFrame(forceenv[observer_body], \
                               geog.geodpt(obsloc['location']), obsloc['name'])
         detector = ElevationDetector(tf).withConstantElevation(obsloc['minelev'].radian)
         return (detector, event._make_evdet(propagator, detector, True))
+
+    locations = events[_column_label]
+    return [single(ol) for ol in locations] # Add detectors and loggers for all locations
+
+def _gentrans(detlogs, events, gendict, reftime, output='et'):
+    '''Generate visibility transitions for an observer at the requested locations.
+    '''
 
     def transtable(obsloc, logger):
         '''Add a column with the visibility transitions for a single observer location.'''
@@ -48,13 +57,12 @@ def _add(locations, propagator, gendict, proptime, forceenv, reftime, output='et
                 else:
                     return pvt.ephemeris()
 
-    dls = [mkdet(ol) for ol in locations] # Add detectors for all locations
-    gendict['propfn'](gendict['epoch'].shiftedBy(astro.timesec(proptime))) # Propagate
+    locations = events[_column_label]
     names = [ol['name'] for ol in locations]
-    gendict['visibilitydet'] = dict(zip(names, [dl[0] for dl in dls]))
+    gendict['event detectors'][_column_label] = dict(zip(names, [dl[0] for dl in detlogs]))
     # Make a dict of the visibility transition ephemerides for all the locations
     gendict[_column_label] \
-        = dict(zip(names, [transtable(ol, dl[1]) for (ol, dl) in zip(locations, dls)]))
+        = dict(zip(names, [transtable(ol, dl[1]) for (ol, dl) in zip(locations, detlogs)]))
     return gendict
 
 def _statechar(detectors, spacecraft_state):

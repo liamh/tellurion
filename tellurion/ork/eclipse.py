@@ -14,8 +14,7 @@ from . import event
 ### Required by the propagator (prop.py) ###
 ############################################
 
-def _add(umbra_penumbra, propagator, gendict, proptime, forceenv, reftime, occluder='earth', \
-                    output='et'):
+def _mkdetlog(events, propagator, forceenv, occluder='earth'):
     '''Define eclipse detectors for umbra, penumbra, or both, and add
     them to the propagator. The first argument `umbra_penumbra` should
     be a two-element Boolean list defining which events to include.
@@ -31,13 +30,7 @@ def _add(umbra_penumbra, propagator, gendict, proptime, forceenv, reftime, occlu
                                                forceenv[occluder]).withPenumbra()
         return (detector, event._make_evdet(propagator, detector, True))
 
-    def transtable(loggers, state_chars, reftime='epoch', output='et'):
-        pvt = event._event_transition_table(loggers, _eclipse_column_label, state_chars, reftime)
-        if output=='pvt':
-            return pvt
-        elif hasattr(pvt,'ephemeris'):
-            return pvt.ephemeris()
-
+    umbra_penumbra = events[_column_label]
     if _do_eclipse(umbra_penumbra):
         if umbra_penumbra[0]:
             (detector_umb, logger_umb) = mkdet(propagator, forceenv, True, occluder)
@@ -49,14 +42,22 @@ def _add(umbra_penumbra, propagator, gendict, proptime, forceenv, reftime, occlu
         else:
             logger_pen = None
             detector_pen = None
-        gendict['propfn'](gendict['epoch'].shiftedBy(astro.timesec(proptime)))
-        loggers = [logger_umb, logger_pen]
-        gendict['eclipsedet'] = [detector_umb, detector_pen]
-        gendict['sun transition'] = transtable(loggers, _sun_states(loggers), reftime, \
+        return ((detector_umb, detector_pen), (logger_umb, logger_pen))
+
+def _gentrans(detlogs, gendict, reftime, output='et'):
+    '''Generate eclipse transitions.'''
+
+    def transtable(loggers, state_chars, reftime='epoch', output='et'):
+        pvt = event._event_transition_table(loggers, _column_label, state_chars, reftime)
+        if output=='pvt':
+            return pvt
+        elif hasattr(pvt,'ephemeris'):
+            return pvt.ephemeris()
+
+    if detlogs:
+        gendict['event detectors'][_column_label] = detlogs[0]
+        gendict['sun transition'] = transtable(detlogs[1], _sun_states(detlogs[1]), reftime, \
                                                output=output)
-    else:
-        gendict['eclipsedet'] = [None, None]
-    return gendict
 
 def _statechar(detectors, spacecraft_state):
     '''A single character, one of 'u' (umbra, or total eclipse), 'p' (penumbra, or partial eclipse, or 's' (full sun).'''
@@ -73,7 +74,7 @@ def _statechar(detectors, spacecraft_state):
             pensl = detectors[1].g(spacecraft_state)
         else:
             pensl = None
-        return (_eclipse_column_label, event._label_positive_count([umbsl, pensl], _sun_states([umbsl, pensl])))
+        return (_column_label, event._label_positive_count([umbsl, pensl], _sun_states([umbsl, pensl])))
     else:
         return ()
 
@@ -81,7 +82,7 @@ def _statechar(detectors, spacecraft_state):
 ### Internal definitions                 ###
 ############################################
 
-_eclipse_column_label = 'eclipse'
+_column_label = 'eclipse'
 
 def _do_eclipse(umbpen):
     return type(umbpen) is list and len(umbpen)==2 and any(umbpen)
