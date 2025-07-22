@@ -12,8 +12,8 @@ import astropy.time
 from astropy.timeseries import TimeSeries
 import astropy.table.row
 import astropy.coordinates as coord
-from . import util
-from . import astro
+from tellurion.core import util
+from tellurion.core import astro
 
 ##################################################
 ####   Constants used to define field names   ####

@@ -11,11 +11,11 @@ from . import (
     geog
 )
 
-from .force import *
-from .element import *
-from .prop import *
-from .relative import *
-from .geog import *
+from tellurion.ork.force import *
+from tellurion.ork.element import *
+from tellurion.ork.prop import *
+from tellurion.ork.relative import *
+from tellurion.ork.geog import *
 
 # Define the __all__ variable
 __all__ = ["force", "element", "prop", "relative", "geog"]
