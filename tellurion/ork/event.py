@@ -18,9 +18,9 @@ from . import visibility
 ### High level, called by prop()        ####
 ############################################
 
-def _add(events, propagator, gendict, proptime, forceenv, reftime, output='et'):
+def _add(events, propagator, generator, proptime, forceenv, reftime, output='et'):
     '''Add detectors and loggers for all events, propagate, then
-    generate the event transition tables and add them to `gendict`.'''
+    generate the event transition tables and add them to `generator`.'''
 
     # Altitude detector to stop propagating if too low; this should always be present
     propagator.addEventDetector(AltitudeDetector(float(events['altitude'].si.value), \
@@ -31,14 +31,14 @@ def _add(events, propagator, gendict, proptime, forceenv, reftime, output='et'):
     visdls = visibility._mkdetlog(events, propagator, forceenv)
 
     # Propagate
-    gendict['propfn'](gendict['epoch'].shiftedBy(astro.timesec(proptime)))
+    generator['propfn'](generator['epoch'].shiftedBy(astro.timesec(proptime)))
 
     # Generate the event transition tables
-    eclipse._gentrans(eccdls, gendict, reftime, output)
-    visibility._gentrans(visdls, events, gendict, reftime, output)
-    return gendict
+    eclipse._gentrans(eccdls, generator, reftime, output)
+    visibility._gentrans(visdls, events, generator, reftime, output)
+    return generator
 
-def _ephemeris(gendict, spacecraft_state):
+def _ephemeris(generator, spacecraft_state):
     '''Create the ephemeris with a column for each event.'''
     pvt = convert._pvt(spacecraft_state)
     def aa(event):
@@ -50,7 +50,7 @@ def _ephemeris(gendict, spacecraft_state):
         else:
             new = {}
         pvt.aux = pvt.aux | new
-    ed = gendict['event detectors']
+    ed = generator['event detectors']
     aa(eclipse._statechar(ed.get(eclipse._column_label), spacecraft_state))
     aa(visibility._statechar(ed.get(visibility._column_label), spacecraft_state))
     return pvt

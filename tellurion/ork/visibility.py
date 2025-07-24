@@ -42,7 +42,7 @@ def _mkdetlog(events, propagator, forceenv):
     locations = events[_column_label]
     return [single(ol) for ol in locations] # Add detectors and loggers for all locations
 
-def _gentrans(detlogs, events, gendict, reftime, output='et'):
+def _gentrans(detlogs, events, generator, reftime, output='et'):
     '''Generate visibility transitions for an observer at the requested locations.
     '''
 
@@ -59,11 +59,11 @@ def _gentrans(detlogs, events, gendict, reftime, output='et'):
 
     locations = events[_column_label]
     names = [ol['name'] for ol in locations]
-    gendict['event detectors'][_column_label] = dict(zip(names, [dl[0] for dl in detlogs]))
+    generator['event detectors'][_column_label] = dict(zip(names, [dl[0] for dl in detlogs]))
     # Make a dict of the visibility transition ephemerides for all the locations
-    gendict[_column_label] \
+    generator[_column_label] \
         = dict(zip(names, [transtable(ol, dl[1]) for (ol, dl) in zip(locations, detlogs)]))
-    return gendict
+    return generator
 
 def _statechar(detectors, spacecraft_state):
     '''A single character, one of 'n' or 'y', for each location at each time step.'''

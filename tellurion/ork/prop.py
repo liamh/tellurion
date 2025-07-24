@@ -51,11 +51,11 @@ def SGP4prep(meanels, proptime, events=defev, forceenv=force.deffe, reftime=None
     if hasattr(meanels, 'model') and meanels.model == 'SGP4':
         tle = TLE(*meanels.tle)
         propagator = TLEPropagator.selectExtrapolator(tle)
-        gendict = _make_gendict(tle, lambda propto: \
+        generator = _make_generator(tle, lambda propto: \
                                 propagator.getPVCoordinates(propto, forceenv['celestialframe']))
-        gendict['pvt0'] = convert._pvt(gendict['propfn'](gendict['epoch']))
-        event._add(events, propagator, gendict, proptime, forceenv, reftime, output)
-        return gendict
+        generator['pvt0'] = convert._pvt(generator['propfn'](generator['epoch']))
+        event._add(events, propagator, generator, proptime, forceenv, reftime, output)
+        return generator
     else:
         raise ValueError("Can only propagate SGP4 mean elements with SGP4")
 
@@ -114,7 +114,7 @@ def niprep(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None
     okprop = NumericalPropagator(integrator)
     okprop.setOrbitType(OrbitType.CARTESIAN)
     okprop.setInitialState(initialState)
-    generator = okprop.getEphemerisGenerator()
+    ephgen = okprop.getEphemerisGenerator()
 
     # Forces
     okprop.addForceModel(okgrav.HolmesFeatherstoneAttractionModel(forceenv['earthframe'], forceenv['gravity']))
@@ -122,20 +122,20 @@ def niprep(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None
         okprop.addForceModel(forceenv['dragforce'])
 
     # Set up event detectors and propagate
-    gendict = _make_gendict(ork0, lambda propto: okprop.propagate(gendict['epoch'], propto))
-    event._add(events, okprop, gendict, proptime, forceenv, reftime, output)
-    gge = generator.getGeneratedEphemeris()
-    gendict['mindate'] = gge.getMinDate()
-    gendict['maxdate'] = gge.getMaxDate()
+    generator = _make_generator(ork0, lambda propto: okprop.propagate(generator['epoch'], propto))
+    event._add(events, okprop, generator, proptime, forceenv, reftime, output)
+    gge = ephgen.getGeneratedEphemeris()
+    generator['mindate'] = gge.getMinDate()
+    generator['maxdate'] = gge.getMaxDate()
 
-    return gendict
+    return generator
 
-def _make_gendict(getdatefrom, propfn):
-    gendict = {}
-    gendict['event detectors'] = {}
-    gendict['epoch'] = getdatefrom.getDate()
-    gendict['propfn'] = propfn
-    return gendict
+def _make_generator(getdatefrom, propfn):
+    generator = {}
+    generator['event detectors'] = {}
+    generator['epoch'] = getdatefrom.getDate()
+    generator['propfn'] = propfn
+    return generator
 
 def propagate(generator, reltimes, include_init=True, reftime='epoch', output='et'):
     '''From an existing ephemeris generator, propagate to the time(s)

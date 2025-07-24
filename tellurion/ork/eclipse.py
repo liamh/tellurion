@@ -44,7 +44,7 @@ def _mkdetlog(events, propagator, forceenv, occluder='earth'):
             detector_pen = None
         return ((detector_umb, detector_pen), (logger_umb, logger_pen))
 
-def _gentrans(detlogs, gendict, reftime, output='et'):
+def _gentrans(detlogs, generator, reftime, output='et'):
     '''Generate eclipse transitions.'''
 
     def transtable(loggers, state_chars, reftime='epoch', output='et'):
@@ -55,8 +55,8 @@ def _gentrans(detlogs, gendict, reftime, output='et'):
             return pvt.ephemeris()
 
     if detlogs:
-        gendict['event detectors'][_column_label] = detlogs[0]
-        gendict['sun transition'] = transtable(detlogs[1], _sun_states(detlogs[1]), reftime, \
+        generator['event detectors'][_column_label] = detlogs[0]
+        generator['sun transition'] = transtable(detlogs[1], _sun_states(detlogs[1]), reftime, \
                                                output=output)
 
 def _statechar(detectors, spacecraft_state):
