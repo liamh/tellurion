@@ -29,7 +29,7 @@ from ..core.spacetrack import MeanElementSetT
 from . import force
 from . import element as oelement
 from . import convert
-from . import event
+from .event import prop as event
 
 defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
 
@@ -38,15 +38,14 @@ defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
 # sentprep = tork.SGP4prep(isssent['SENTINEL 3A'], 1*u.day, {'altitude': 125.0*u.km, 'eclipse': [True, True], 'visibility': []})
 # tork.propagate(sentprep, np.linspace(5.0*u.minute, 60.0*u.minute, 12), True)
 
-def prepare(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None, occluder='earth', \
-            output='et'):
+def prepare(initstate, proptime, events=defev, forceenv=force.deffe, \
+            reftime='epoch', occluder='earth', output='et'):
     if type(initstate)==MeanElementSetT:
-        return SGP4prep(initstate, proptime, events, forceenv, reftime, occluder)
+        return SGP4prep(initstate, proptime, events, forceenv, reftime, occluder, output)
     elif type(initstate)==PVT:
-        return niprep(initstate, proptime, events, forceenv, reftime, occluder, output=output)
+        return niprep(initstate, proptime, events, forceenv, reftime, occluder, output)
 
-def SGP4prep(meanels, proptime, events=defev, forceenv=force.deffe, reftime=None, occluder='earth', \
-             output='et'):
+def SGP4prep(meanels, proptime, events, forceenv, reftime, occluder, output):
     '''Propagate mean elements using SGP4'''
     if hasattr(meanels, 'model') and meanels.model == 'SGP4':
         tle = TLE(*meanels.tle)
@@ -59,8 +58,7 @@ def SGP4prep(meanels, proptime, events=defev, forceenv=force.deffe, reftime=None
     else:
         raise ValueError("Can only propagate SGP4 mean elements with SGP4")
 
-def niprep(initstate, proptime, events=defev, forceenv=force.deffe, reftime=None, occluder='earth', \
-           output='et'):
+def niprep(initstate, proptime, events, forceenv, reftime, occluder, output):
     """Make a generator for an ephemeris, optionally include eclipse
     information. The result of this function is passed as the first
     argument to `propagate()`.

@@ -67,7 +67,7 @@ demod.mcd_cb_vis = Munch() # Visibility from McDonald and Carbarn
 demod.mcd_cb_vis.ev = {'altitude': 125.0*u.km, 'eclipse': [], \
                        'visibility': [tell.observer_location(eloc.mcd, "McDonald"), \
                                       tell.observer_location(eloc.carbarn, "Carbarn", 30.0)]}
-demod.mcd_cb_vis.prep = tork.SGP4prep(demod.sentinel3A, 1*u.day, demod.mcd_cb_vis.ev)
+demod.mcd_cb_vis.prep = tork.prepare(demod.sentinel3A, 1*u.day, demod.mcd_cb_vis.ev)
 demod.mcd_cb_vis.mcdonald = demod.mcd_cb_vis.prep['visibility']['McDonald'] # McDonald visibility transitions
 demod.mcd_cb_vis.carbarn = demod.mcd_cb_vis.prep['visibility']['Carbarn'] # Carbarn visibility transitions
 demod.mcd_cb_vis.ephempvt = tork.propagate(demod.mcd_cb_vis.prep, np.linspace(0.25*u.hour, 8*u.hour, 32), output='pvt')
@@ -75,10 +75,12 @@ demod.mcd_cb_vis.ephem = tork.propagate(demod.mcd_cb_vis.prep, np.linspace(0.25*
 demod.mcd_ecl = Munch()  # Visibility from McDonald and eclipses
 demod.mcd_ecl.ev = {'altitude': 125.0*u.km, 'eclipse': [True, True], \
                     'visibility': [tell.observer_location(eloc.mcd, "McDonald")]}
-demod.mcd_ecl.prep = tork.SGP4prep(demod.sentinel3A, 1*u.day, demod.mcd_ecl.ev)
+demod.mcd_ecl.prep = tork.prepare(demod.sentinel3A, 1*u.day, demod.mcd_ecl.ev)
 demod.mcd_ecl.mcdonald = demod.mcd_ecl.prep['visibility']['McDonald'] # McDonald visibility transitions
 demod.mcd_ecl.suntrans = demod.mcd_ecl.prep['sun transition']
 demod.mcd_ecl.ephem = tork.propagate(demod.mcd_ecl.prep, np.linspace(0.25*u.hour, 8*u.hour, 32))
+
+############ Upward transitions not present
 
 demoa.prop.vis = Munch() # Example with numerical propagation defined in demoa
 demoa.prop.vis.events = {'altitude': 125.0*u.km, 'eclipse': [], \

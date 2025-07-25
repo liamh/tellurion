@@ -7,8 +7,8 @@ add a column `sunlight` that shows the sunlight state (`u`= umbra,
 """
 
 from org.orekit.propagation.events import EclipseDetector
-from ..core import astro
-from . import event
+from tellurion.core import astro
+from . import util
 
 ############################################
 ### Required by the propagator (prop.py) ###
@@ -28,7 +28,7 @@ def _mkdetlog(events, propagator, forceenv, occluder='earth'):
         else:
             detector = EclipseDetector(forceenv['sun'], forceenv['sunrad'].si.value, \
                                                forceenv[occluder]).withPenumbra()
-        return (detector, event._make_evdet(propagator, detector, True))
+        return (detector, util._make_evdet(propagator, detector, True))
 
     umbra_penumbra = events[_column_label]
     if _do_eclipse(umbra_penumbra):
@@ -44,11 +44,10 @@ def _mkdetlog(events, propagator, forceenv, occluder='earth'):
             detector_pen = None
         return ((detector_umb, detector_pen), (logger_umb, logger_pen))
 
-def _gentrans(detlogs, generator, reftime, output='et'):
+def _gentrans(detlogs, generator, reftime, output):
     '''Generate eclipse transitions.'''
-
-    def transtable(loggers, state_chars, reftime='epoch', output='et'):
-        pvt = event._event_transition_table(loggers, _column_label, state_chars, reftime)
+    def transtable(loggers, state_chars, reftime, output):
+        pvt = util._event_transition_table(loggers, _column_label, state_chars, reftime)
         if output=='pvt':
             return pvt
         elif hasattr(pvt,'ephemeris'):
@@ -56,8 +55,7 @@ def _gentrans(detlogs, generator, reftime, output='et'):
 
     if detlogs:
         generator['event detectors'][_column_label] = detlogs[0]
-        generator['sun transition'] = transtable(detlogs[1], _sun_states(detlogs[1]), reftime, \
-                                               output=output)
+        generator['sun transition'] = transtable(detlogs[1], _sun_states(detlogs[1]), reftime, output)
 
 def _statechar(detectors, spacecraft_state):
     '''A single character, one of 'u' (umbra, or total eclipse), 'p' (penumbra, or partial eclipse, or 's' (full sun).'''
@@ -74,7 +72,7 @@ def _statechar(detectors, spacecraft_state):
             pensl = detectors[1].g(spacecraft_state)
         else:
             pensl = None
-        return (_column_label, event._label_positive_count([umbsl, pensl], _sun_states([umbsl, pensl])))
+        return (_column_label, util._label_positive_count([umbsl, pensl], _sun_states([umbsl, pensl])))
     else:
         return ()
 
@@ -85,7 +83,7 @@ def _statechar(detectors, spacecraft_state):
 _column_label = 'eclipse'
 
 def _do_eclipse(umbpen):
-    return type(umbpen) is list and len(umbpen)==2 and any(umbpen)
+    return hasattr(umbpen,'__len__') and len(umbpen)==2 and any(umbpen)
 
 def _sun_states(umbpen):
     sun_states = 'ups' # Umbra, penumbra, sun

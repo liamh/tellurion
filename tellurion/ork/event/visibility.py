@@ -12,9 +12,9 @@ import astropy.coordinates as coord
 import astropy.units as u
 from org.orekit.propagation.events import ElevationDetector
 from org.orekit.frames import TopocentricFrame
-from ..core import astro
-from ..ork import geog
-from . import event
+from tellurion.core import astro
+from tellurion.ork import geog
+from . import util
 
 ############################################
 ### Required by the propagator (prop.py) ###
@@ -37,7 +37,7 @@ def _mkdetlog(events, propagator, forceenv):
         tf = TopocentricFrame(forceenv[observer_body], \
                               geog.geodpt(obsloc['location']), obsloc['name'])
         detector = ElevationDetector(tf).withConstantElevation(obsloc['minelev'].radian)
-        return (detector, event._make_evdet(propagator, detector, True))
+        return (detector, util._make_evdet(propagator, detector, True))
 
     locations = events[_column_label]
     return [single(ol) for ol in locations] # Add detectors and loggers for all locations
@@ -50,7 +50,7 @@ def _gentrans(detlogs, events, generator, reftime, output='et'):
         '''Add a column with the visibility transitions for a single observer location.'''
         colname = " ".join([obsloc['name'],_column_label])
         if logger:
-            pvt = event._event_transition_table([logger], colname, _states, reftime)
+            pvt = util._event_transition_table([logger], colname, _states, reftime)
             if pvt:
                 if output=='pvt':
                     return pvt
@@ -72,7 +72,7 @@ def _statechar(detectors, spacecraft_state):
         for name, det in detectors.items():
             visst = det.g(spacecraft_state)
             colname = " ".join([name, _column_label])
-            dvis.append((colname, event._label_positive_count([visst], _states)))
+            dvis.append((colname, util._label_positive_count([visst], _states)))
         return dvis
     return None
 

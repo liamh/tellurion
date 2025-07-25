@@ -50,7 +50,10 @@ class PVT(collections.abc.Sequence):
                    {k: v.split(' ')[index] for k, v in self.aux.items()})
 
     def __len__(self):
-        return len(self.time)
+        if type(self.time) is np.ndarray:
+            return len(self.time)
+        else:
+            return 1
 
     def copy(self):
         return PVT(self.pv.copy(), self.time.copy(), self.aux.copy())
