@@ -53,10 +53,16 @@ def SGP4prep(meanels, proptime, events, forceenv, reftime, occluder, output):
         generator = _make_generator(tle, lambda propto: \
                                 propagator.getPVCoordinates(propto, forceenv['celestialframe']))
         generator['pvt0'] = convert._pvt(generator['propfn'](generator['epoch']))
-        event._add(events, propagator, generator, proptime, forceenv, reftime, output)
+        _additional(events, propagator, generator, proptime, forceenv, reftime, output)
         return generator
     else:
         raise ValueError("Can only propagate SGP4 mean elements with SGP4")
+
+def _additional(events, propagator, generator, proptime, forceenv, reftime, output):
+    '''Additional calculations when propagating initially'''
+    detlogs = event._add_pre(events, propagator, forceenv)
+    generator['propfn'](generator['epoch'].shiftedBy(astro.timesec(proptime)))
+    event._add_post(detlogs, events, generator, reftime, output)
 
 def niprep(initstate, proptime, events, forceenv, reftime, occluder, output):
     """Make a generator for an ephemeris, optionally include eclipse
@@ -109,19 +115,19 @@ def niprep(initstate, proptime, events, forceenv, reftime, occluder, output):
     integrator.setInitialStepSize(initStep)
 
     initialState = SpacecraftState(ork0, forceenv['mass'])
-    okprop = NumericalPropagator(integrator)
-    okprop.setOrbitType(OrbitType.CARTESIAN)
-    okprop.setInitialState(initialState)
-    ephgen = okprop.getEphemerisGenerator()
+    propagator = NumericalPropagator(integrator)
+    propagator.setOrbitType(OrbitType.CARTESIAN)
+    propagator.setInitialState(initialState)
+    ephgen = propagator.getEphemerisGenerator()
 
     # Forces
-    okprop.addForceModel(okgrav.HolmesFeatherstoneAttractionModel(forceenv['earthframe'], forceenv['gravity']))
+    propagator.addForceModel(okgrav.HolmesFeatherstoneAttractionModel(forceenv['earthframe'], forceenv['gravity']))
     if 'dragforce' in forceenv:
-        okprop.addForceModel(forceenv['dragforce'])
+        propagator.addForceModel(forceenv['dragforce'])
 
-    # Set up event detectors and propagate
-    generator = _make_generator(ork0, lambda propto: okprop.propagate(generator['epoch'], propto))
-    event._add(events, okprop, generator, proptime, forceenv, reftime, output)
+    # Make generator, additional calculations, and initial propagation
+    generator = _make_generator(ork0, lambda propto: propagator.propagate(generator['epoch'], propto))
+    _additional(events, propagator, generator, proptime, forceenv, reftime, output)
     gge = ephgen.getGeneratedEphemeris()
     generator['mindate'] = gge.getMinDate()
     generator['maxdate'] = gge.getMaxDate()
@@ -134,6 +140,16 @@ def _make_generator(getdatefrom, propfn):
     generator['epoch'] = getdatefrom.getDate()
     generator['propfn'] = propfn
     return generator
+
+def _additional(events, propagator, generator, proptime, forceenv, reftime, output):
+    '''Additional calculations when propagating initially; returns the propagated SpacecraftState'''
+    # 1) Add pre-propagation actions (events)
+    # 2) Propagate, saving output (SpacecraftState)
+    # 3) Add post-propagation actions and save results to `generator`
+    detlogs = event._add_pre(events, propagator, forceenv)
+    finalss = generator['propfn'](generator['epoch'].shiftedBy(astro.timesec(proptime)))
+    event._add_post(detlogs, events, generator, reftime, output)
+    return finalss
 
 def propagate(generator, reltimes, include_init=True, reftime='epoch', output='et'):
     '''From an existing ephemeris generator, propagate to the time(s)

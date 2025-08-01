@@ -6,24 +6,19 @@ from tellurion.ork import convert
 from . import eclipse
 from . import visibility
 
-def _add(events, propagator, generator, proptime, forceenv, reftime, output):
-    '''Add detectors and loggers for all events, propagate, then
-    generate the event transition tables and add them to `generator`.'''
-
+def _add_pre(events, propagator, forceenv):
+    '''Add detectors and loggers for all events.'''
     # Altitude detector to stop propagating if too low; this should always be present
     propagator.addEventDetector(AltitudeDetector(float(events['altitude'].si.value), \
                                                  forceenv['sphalt']))
-
     # Make the detectors and loggers
-    eccdls = eclipse._mkdetlog(events, propagator, forceenv)
-    visdls = visibility._mkdetlog(events, propagator, forceenv)
+    return {'eclipse': eclipse._mkdetlog(events, propagator, forceenv), \
+            'visibility': visibility._mkdetlog(events, propagator, forceenv)}
 
-    # Propagate
-    generator['propfn'](generator['epoch'].shiftedBy(astro.timesec(proptime)))
-
-    # Generate the event transition tables
-    eclipse._gentrans(eccdls, generator, reftime, output)
-    visibility._gentrans(visdls, events, generator, reftime, output)
+def _add_post(detlogs, events, generator, reftime, output):
+    '''Generate the event transition tables and add them to `generator`.'''
+    eclipse._gentrans(detlogs['eclipse'], generator, reftime, output)
+    visibility._gentrans(detlogs['visibility'], events, generator, reftime, output)
     return generator
 
 def _ephemeris(generator, spacecraft_state):
