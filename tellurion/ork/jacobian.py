@@ -11,5 +11,5 @@ def _add_stm(propagator, dimension):
     return propagator.setupMatricesComputation("STM", initstm, None);
 
 def stm(harvester, finalstate):
-    '''Return the computed state-transition matrix; note that there are no units conversion, this is in SI units per Orekit standard.'''
+    '''Return the computed state-transition matrix with dimensions in 3x3 blocks [[none, seconds],[1/seconds, none]].'''
     return np.array(harvester.getStateTransitionMatrix(finalstate).getData())

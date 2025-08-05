@@ -145,7 +145,8 @@ def _additional(events, propagator, generator, proptime, forceenv, reftime, outp
         harvester = jacobian._add_stm(propagator, 6)  # State-transition matrix
 
     # 2) Propagate, saving output (SpacecraftState)
-    generator['final'] = {'state': generator['propfn'](generator['epoch'].shiftedBy(astro.timesec(proptime)))}
+    ss = generator['propfn'](generator['epoch'].shiftedBy(astro.timesec(proptime)))
+    generator['final'] = {'state': ss, 'pvt': convert._pvt(ss)}
 
     # 3) Add post-propagation actions and save results to `generator`
     event._add_post(detlogs, events, generator, reftime, output)
