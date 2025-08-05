@@ -39,7 +39,9 @@ demoa.prop = Munch()
 demoa.prop.check = Munch()
 
 # The generator
-demoa.prop.gen = tork.prepare(demoa.init.pvt, 1*u.day) # Use generator for any propagation up to 1 day
+# STM calculation
+demoa.prop.wstm = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': [], 'stm': True}
+demoa.prop.gen = tork.prepare(demoa.init.pvt, 1*u.day, demoa.prop.wstm) # Use generator for any propagation up to 1 day
 
 # The example pvt as a CartesianOrbit
 demoa.prop.ephem = tork.propagate(demoa.prop.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table

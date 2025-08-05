@@ -32,7 +32,7 @@ from . import convert
 from . import jacobian
 from .event import prop as event
 
-defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
+defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': [], 'stm': False}
 
 # import astropy.units as u
 # isssent = tell.spacetrack_latest(stclient, [25544, 41335])
@@ -54,7 +54,7 @@ def SGP4prep(meanels, proptime, events, forceenv, reftime, occluder, output):
         generator = _make_generator(tle, lambda propto: \
                                 propagator.getPVCoordinates(propto, forceenv['celestialframe']))
         generator['pvt0'] = convert._pvt(generator['propfn'](generator['epoch']))
-        _additional(events, False, propagator, generator, proptime, forceenv, reftime, output)
+        _additional(events, propagator, generator, proptime, forceenv, reftime, output)
         return generator
     else:
         raise ValueError("Can only propagate SGP4 mean elements with SGP4")
@@ -122,7 +122,7 @@ def niprep(initstate, proptime, events, forceenv, reftime, occluder, output):
 
     # Make generator, additional calculations, and initial propagation
     generator = _make_generator(ork0, lambda propto: propagator.propagate(generator['epoch'], propto))
-    _additional(events, True, propagator, generator, proptime, forceenv, reftime, output)
+    _additional(events, propagator, generator, proptime, forceenv, reftime, output)
     gge = ephgen.getGeneratedEphemeris()
     generator['mindate'] = gge.getMinDate()
     generator['maxdate'] = gge.getMaxDate()
@@ -136,21 +136,21 @@ def _make_generator(getdatefrom, propfn):
     generator['propfn'] = propfn
     return generator
 
-def _additional(events, stm, propagator, generator, proptime, forceenv, reftime, output):
+def _additional(events, propagator, generator, proptime, forceenv, reftime, output):
     '''Additional calculations when propagating initially'''
 
     # 1) Add pre-propagation actions
     detlogs = event._add_pre(events, propagator, forceenv) # Events
-    if stm:
+    if events.get('stm'):
         harvester = jacobian._add_stm(propagator, 6)  # State-transition matrix
 
     # 2) Propagate, saving output (SpacecraftState)
-    generator['final state'] = generator['propfn'](generator['epoch'].shiftedBy(astro.timesec(proptime)))
+    generator['final'] = {'state': generator['propfn'](generator['epoch'].shiftedBy(astro.timesec(proptime)))}
 
     # 3) Add post-propagation actions and save results to `generator`
     event._add_post(detlogs, events, generator, reftime, output)
-    if stm:
-        generator['final stm'] = jacobian.stm(harvester, generator['final state'])
+    if events.get('stm'):
+        generator['final']['stm'] = jacobian.stm(harvester, generator['final']['state'])
 
 def propagate(generator, reltimes, include_init=True, reftime='epoch', output='et'):
     '''From an existing ephemeris generator, propagate to the time(s)
