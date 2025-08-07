@@ -141,8 +141,9 @@ def _additional(events, propagator, generator, proptime, forceenv, reftime, outp
 
     # 1) Add pre-propagation actions
     detlogs = event._add_pre(events, propagator, forceenv) # Events
-    if events.get('stm'):
-        harvester = jacobian._add_stm(propagator, 6)  # State-transition matrix
+    compute_pjac = force.compute_drag_pjac(forceenv)
+    if events.get('stm') or compute_pjac:
+        harvester = jacobian._add_stm(propagator)  # State-transition matrix
 
     # 2) Propagate, saving output (SpacecraftState)
     ss = generator['propfn'](generator['epoch'].shiftedBy(astro.timesec(proptime)))
@@ -152,6 +153,9 @@ def _additional(events, propagator, generator, proptime, forceenv, reftime, outp
     event._add_post(detlogs, events, generator, reftime, output)
     if events.get('stm'):
         generator['final']['stm'] = jacobian.stm(harvester, generator['final']['state'])
+    if compute_pjac:
+        generator['final']['parameters jacobian'] \
+            = jacobian.pjac(harvester, generator['final']['state'])
 
 def propagate(generator, reltimes, include_init=True, reftime='epoch', output='et'):
     '''From an existing ephemeris generator, propagate to the time(s)

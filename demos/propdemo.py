@@ -96,8 +96,8 @@ demoa.prop.ephem4x4_posdiff = tell.magdiff(demoa.prop.ephem4x4['position'], demo
 
 # It would be nice to have the ability to assemble table with any columns, appropriately renamed, generalize hcat
 
-# Atmospheric drag
-demoa.prop.fe4x4hpB01 = tork.dragforce(demoa.prop.fe4x4, 'hp')
+# Atmospheric drag with Jacobian calculation
+demoa.prop.fe4x4hpB01 = tork.dragforce(demoa.prop.fe4x4, 'hp', [1.0, True], [1.0, True])
 demoa.prop.gen4x4hpB01 = tork.prepare(demoa.init.pvt, 1*u.day, forceenv=demoa.prop.fe4x4hpB01)
 demoa.prop.ephem4x4hpB01 = tork.propagate(demoa.prop.gen4x4hpB01, prop5m1h, True)
 demoa.prop.ephem4x4hpB01_posdiff = tell.magdiff(demoa.prop.ephem4x4hpB01['position'], demoa.prop.ephem['position'])
