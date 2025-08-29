@@ -113,6 +113,8 @@ def _v3d(arg, unit=u.dimensionless_unscaled):
     argtype = type(arg)
     if argtype == list:
         return Vector3D(arg)
+    elif argtype == u.Quantity:
+        return _v3d(arg.to(astro.orkunits["length"]).value)
     elif argtype == np.ndarray:
         return Vector3D(arg.tolist())
     elif argtype == Vector3D:

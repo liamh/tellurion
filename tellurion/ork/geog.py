@@ -16,6 +16,7 @@ import org.orekit.models.earth as oearth
 
 from ..core import posvel
 from ..core import astro
+from ..core import geog
 from . import force
 from . import convert
 
@@ -27,11 +28,14 @@ def geodpt(earthloc):
     altitude_m = float(geod.height.si.value)
     return GeodeticPoint(lat_rdn, lon_rdn, altitude_m)
 
+def _topoframe(loc, name, forceenv=force.deffe):
+    return TopocentricFrame(forceenv['earth'], geodpt(loc), name)
+
 def eciobs(loc, observation=None, name='eci obs', forceenv=force.deffe):
     '''Find the ECI position and time of the observations made from
     the location. If observation is a Time or multiple times, find the site
     vector(s). Uses Orekit.'''
-    tf = TopocentricFrame(forceenv['earth'], geodpt(loc), name)
+    tf = _topoframe(loc, name, forceenv)
     if type(observation) is coord.sky_coordinate.SkyCoord:
         tf = TopocentricFrame(forceenv['earth'], \
                               tf.pointAtDistance(
@@ -54,3 +58,16 @@ def eciobs(loc, observation=None, name='eci obs', forceenv=force.deffe):
     else:
         pos = convert._pvt(tf, getpvcargs=[dttm, forceenv['celestialframe']]).pv['position']
         return posvel.makept(pos, dttm)
+
+def aer(postime, location, forceenv=force.deffe):
+    '''The az-el-range for a position-time (output of `makept()`) from an observer location'''
+    eci = postime.cartesian.xyz
+    pt = convert._v3d(eci)
+    tf = _topoframe(location, "local frame", forceenv)
+    cf = forceenv['celestialframe']
+    time = postime.obstime
+    oktime = convert._okad(time)
+    azm = tf.getAzimuth(pt, cf, oktime)
+    elv = tf.getElevation(pt, cf, oktime)
+    rng = tf.getRange(pt, cf, oktime)*astro.orkunits["length"] # Can't convert units .to(astro.prefunits["length"])
+    return geog.azelrange(coord.Angle(azm, u.radian), coord.Angle(elv, u.radian), rng, location, time)
