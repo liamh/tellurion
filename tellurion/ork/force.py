@@ -10,6 +10,7 @@ from org.orekit.models.earth.atmosphere.data import CssiSpaceWeatherData
 from org.orekit.forces.drag import IsotropicDrag
 
 from org.orekit.frames import FramesFactory
+from org.orekit.time import TimeScalesFactory
 from org.orekit.utils import IERSConventions
 from org.orekit.bodies import OneAxisEllipsoid, CelestialBodyFactory
 
@@ -17,7 +18,7 @@ OneAxisEllipsoid.__repr__ =    lambda self: f"<Near-spherical body equatorial ra
 
 def setgravity(degree, order, mass = 100.0):
     """Set the environmental constants such as reference frame and
-    planeatry properties.  Arguments are the degree and order of the
+    planetary properties.  Arguments are the degree and order of the
     gravitational model to use, and the mass of the spacecraft.
     """
     celestdflt = {
@@ -26,7 +27,8 @@ def setgravity(degree, order, mass = 100.0):
         'earthangspd': Constants.IERS2010_EARTH_ANGULAR_VELOCITY,
         'earthflat': Constants.IERS2010_EARTH_FLATTENING,
         'sun': CelestialBodyFactory.getSun(),
-        'sunrad': Constants.SUN_RADIUS*u.m
+        'sunrad': Constants.SUN_RADIUS*u.m,
+        'gmst': IERSConventions.IERS_2010.getGMSTFunction(TimeScalesFactory.getUT1(IERSConventions.IERS_2010, True))
     }
     eg = GravityFieldFactory.getNormalizedProvider(degree, order)
     force = {'gravity': eg,

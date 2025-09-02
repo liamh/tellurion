@@ -97,7 +97,10 @@ def _tspvc(obj, time=None):
 def _okad(t):
     """ Convert time in any form to Orekit AbsoluteDate (okad), or from okad to AstroPy """
     if posvel.isdttm(t): # AstroPy
-        return pyhelp.datetime_to_absolutedate(t.datetime)
+        if t.isscalar:
+            return pyhelp.datetime_to_absolutedate(t.datetime)
+        else:
+            return [pyhelp.datetime_to_absolutedate(s.datetime) for s in t]
     elif type(t) == np.datetime64: # NumPy
         return pyhelp.datetime_to_absolutedate(pd.Timestamp(t).to_pydatetime())
     elif type(t) == datetime.datetime:  # Python
