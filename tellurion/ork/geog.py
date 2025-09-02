@@ -19,8 +19,13 @@ from ..core import geog
 from . import force
 from . import convert
 
-def siderealtime(time, location = False, forceenv=force.deffe):
-    '''The Greenwich or local sidereal time(s)'''
+def siderealtime(time = None, location = None, forceenv=force.deffe):
+    '''The Greenwich or local sidereal time(s). Default `time` is the
+    current time, default `location` is the prime meridian (i.e.,
+    Greenwich sidereal time).
+    '''
+    if not time:
+        time = astro.abstime(0)
     def gst(time):
         if time.isscalar:
             vs = forceenv['gmst'].value(convert._okad(time))
@@ -28,7 +33,7 @@ def siderealtime(time, location = False, forceenv=force.deffe):
             vs = [gst(tm) for tm in time]
         return coord.Longitude(vs, u.radian).to(u.deg)
     if hasattr(location, 'lon'):
-        return gst(time) - location.lon
+        return coord.Longitude(gst(time) - location.lon)
     else:
         return gst(time)
 
