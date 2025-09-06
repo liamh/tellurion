@@ -33,7 +33,10 @@ def earthloc(lon, lat, elevation=None):
     longi = coord.Angle(lon)
     latit = coord.Angle(lat)
     if elevation is None:
-        elevation = geonames.elev(latit.value, longi.value)*u.m
+        try:
+            elevation = geonames.elev(latit.value, longi.value)*u.m
+        except:
+            elevation = 0.0*u.m
     return coord.EarthLocation.from_geodetic(lon=longi, lat=latit, height=elevation.si)
 
 nullisland = earthloc(0*u.deg, 0*u.deg, 0*u.m)

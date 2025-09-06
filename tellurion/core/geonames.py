@@ -26,14 +26,20 @@ def gnuserid():
 
 def location(place):
     '''Find the location in Geonames from the name.'''
-    resp = geocoder.geonames(place, key=gnuserid())
-    props = resp.geojson['features'][0]['properties']
-    lat = float(props['lat'])
-    lon = float(props['lng'])
-    return [lat, lon, elev(lat, lon), props['address'], props['state'], props['country']]
+    try:
+        resp = geocoder.geonames(place, key=gnuserid())
+        props = resp.geojson['features'][0]['properties']
+        lat = float(props['lat'])
+        lon = float(props['lng'])
+        return [lat, lon, elev(lat, lon), props['address'], props['state'], props['country']]
+    except:
+        return None
 
 def elev(lat, lon):
     '''Find the elevation from the latitude and longitude from opentopodata.org.'''
-    r = requests.get(f"https://api.opentopodata.org/v1/aster30m?locations={lat},{lon}")
-    data = r.json()
-    return data['results'][0]['elevation']
+    try:
+        r = requests.get(f"https://api.opentopodata.org/v1/aster30m?locations={lat},{lon}")
+        data = r.json()
+        return data['results'][0]['elevation']
+    except:
+        return None
