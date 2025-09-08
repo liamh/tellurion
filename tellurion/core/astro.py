@@ -140,6 +140,7 @@ def makesq(values, names=None, units=None, phystype=None, unitlookup=prefunits):
     units : the units the structure; size must match number of values, optional
     phystype : the physical type (dimension) of the each argument, units are looked
       up in `unitlookup`, may specified instead of `units`, optional
+      Must be a dict if `values` is a dict
     unitlookup : a dict of physical type strings and preferred units, defaults to `prefunits`, optional
 
     Returns
@@ -165,6 +166,11 @@ def makesq(values, names=None, units=None, phystype=None, unitlookup=prefunits):
 
     >>> makesq({'sma' : 12345.0*u.km, 'inc' : 45.0*u.deg}, units = ('meter', 'radian'))
     <Quantity (12345000., 0.78539816) (m, rad)>
+
+    >>> obsdict = {'azim': 'angle', 'elev': 'angle', 'range': 'length', 'rangerate': 'speed'}
+    >>> makesq({'azim': 110.0, 'elev': 81.0, 'range': 662.1}, phystype=obsdict)
+    <Quantity (110., 81., 662.1) (deg, deg, km)>
+
     """
     def conv(val, unit):
         if type(val) is u.Quantity:

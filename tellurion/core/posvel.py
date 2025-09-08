@@ -180,11 +180,11 @@ def pv(position, velocity, unitlookup=astro.prefunits):
 #def utcdt(datetime):
 #    return pytz.utc.localize(datetime)
 
-# A PVT consists of a tuple a posvel (as defined by ispv()) and an astropy.time.Time
 def pvt(obj, item=None, aux=None):
-    '''Return a tuple of posvel and time from a variety of sources.
-    '''
+    '''Return an instance of PVT (position, velocity and time), from a
+    variety of sources. Sequence in time can be length 1 or more.
 
+    '''
     if isephrow(obj):
         # PVT from an ephemeris row
         pos = obj[_eph_pos]
