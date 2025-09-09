@@ -7,6 +7,39 @@ from astropy.timeseries import TimeSeries
 from . import astro
 from . import posvel
 
+###############################
+#### State function values ####
+###############################
+
+def statefnval (orbstate, quantname, sfdict, constants=None):
+    """
+    Compute value(s) given by function(s) of the orbital state
+    Arguments
+      orbstate:   Representation of orbital state in any form
+      quantname:  Name(s) of quantity; may be a list, e.g. ["sma", "ecc"]
+      constants:  Quantities independent of the orbital state
+    """
+    if isinstance(quantname, list):
+        return [statefnval(orbstate, itm, sfdict, constants) for itm in quantname]
+    else:
+        lookup = sfdict[quantname]
+        getter = lookup["getter"]
+        if '__code__' in dir(getter) and len(getter.__code__.co_varnames) > 1:
+            orkval = getter(orbstate, constants)
+        else:
+            orkval = getter(orbstate)
+        orkunit = lookup["orkunit"]
+        return u.Quantity(orkval, orkunit).to(astro.prefunits[lookup["phystype"]])
+
+def sfdict(sfvbl):
+    '''Make a state function dictionary of the state function variables'''
+    keys = ["name", "description", "phystype", "orkunit", "getter"]
+    return dict(zip([ev[0] for ev in sfvbl], [dict(zip(keys,ev)) for ev in sfvbl]))
+
+##############################
+####  Element sets        ####
+##############################
+
 ElementSetT = collections.namedtuple('ElementSetT', 'els t')
 
 kepeltma_names = ["ecc", "sma", "inc", "argper", "raan", "ma"]
