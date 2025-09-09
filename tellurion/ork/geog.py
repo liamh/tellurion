@@ -45,6 +45,15 @@ def geodpt(earthloc):
     altitude_m = float(geod.height.si.value)
     return GeodeticPoint(lat_rdn, lon_rdn, altitude_m)
 
+
+###########################################
+#### Observation state function values ####
+###########################################
+
+# Make use of element.statefnval
+# element.statefnval(pvt, ['azim', 'elev'], obsdict, location)
+# make new file ork/obs.py
+
 def _topoframe(loc, name, forceenv=force.deffe):
     return TopocentricFrame(forceenv['earth'], geodpt(loc), name)
 
