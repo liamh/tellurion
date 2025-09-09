@@ -232,8 +232,6 @@ def pvt(obj, item=None, aux=None):
 
 def makepos(pos, unit=astro.prefunits['length']):
     '''Create a position vector or convert units'''
-    if type(pos) is coord.SkyCoord:
-        return makepos(pos.cartesian, unit)
     if type(pos) is coord.representation.cartesian.CartesianRepresentation:
         return makepos(pos.xyz, unit)
     if type(pos) is tuple:
@@ -247,10 +245,6 @@ def makepos(pos, unit=astro.prefunits['length']):
             return pos*unit
     else:
         raise ValueError('Unit does not represent a position')
-
-def makept(pos, dttm, frame='gcrs'):
-    '''Make a SkyCoord GCRS location'''
-    return coord.SkyCoord(coord.CartesianRepresentation(pos), obstime=dttm, frame=frame)
 
 ##################################################
 #### Compare positions, velocities            ####

@@ -14,9 +14,9 @@ from ..core import element
 from . import force
 from . import convert
 
-########################################
-####    Element values              ####
-########################################
+###########################################
+#### Element values from orbital state ####
+###########################################
 
 _eldict = element.sfdict([["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],
                           ["ecc", "eccentricity", "dimensionless", u.dimensionless_unscaled, KeplerianOrbit.getE],
