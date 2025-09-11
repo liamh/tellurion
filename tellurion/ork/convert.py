@@ -33,12 +33,20 @@ from . import element as oelement
 # _pvt(): Convert from orekit objects to PV or PVT
 # _tspvc(): Convert from PV/PVT to org.orekit.utils.PVCoordinates or TimeStampedPVCoordinates
 
+
 def _pvt(object, unitlookup=astro.prefunits, getpvcargs=[], additional=None):
     '''Make the postion, velocity, and time tuple (posvel.pv(),
     astropy.time.Time) or position and velocity from the Orekit object
     that has them defined; there is no transformation (e.g., from
     Kepler elements).
     '''
+
+    def addtime(pv):
+        if type(additional) is astropy.time.Time:
+            return posvel.pvt(pv, additional)
+        else:
+            error("Need datetime")
+
     if hasattr(object, 'getPosition') and hasattr(object, 'getVelocity'):
         pos = _v3d(object.getPosition(), astro.posvelsiu[0])
         vel = _v3d(object.getVelocity(), astro.posvelsiu[1])
@@ -46,7 +54,7 @@ def _pvt(object, unitlookup=astro.prefunits, getpvcargs=[], additional=None):
         if hasattr(object, 'getDate'):
             return posvel.pvt(pv, _okad(object.getDate()))
         else:
-            return pv
+            return addtime(pv)
     elif hasattr(object, 'pVCoordinates'):
         return _pvt(object.pVCoordinates, unitlookup)
     elif hasattr(object, 'getPVCoordinates'):
@@ -63,7 +71,7 @@ def _pvt(object, unitlookup=astro.prefunits, getpvcargs=[], additional=None):
         if type(object) is TimeStampedPVCoordinates:
             return posvel.pvt(pv, _okad(object.getDate()))
         else:
-            return pv
+            return addtime(pv)
     else:
         raise ValueError("Cannot convert value to position, value, and time (PVT)")
 

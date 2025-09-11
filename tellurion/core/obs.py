@@ -23,4 +23,4 @@ def azelrange(azim, elev, range, obsloc, obstime):
         sq = astro.makesq({'azim' : azim, 'elev' : elev}, obsdict1)
     else:
         sq = astro.makesq({'azim' : azim, 'elev' : elev, 'range' : range}, obsdict1)
-    return EarthObservationT(obsloc, sq, obstime)
+    return EarthObservationT(obsloc, astro.changeunits(sq), obstime)
