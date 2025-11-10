@@ -41,3 +41,4 @@ def _relframe(frame, relsc, refsc, unitlookup=astro.prefunits):
 # import astropy.coordinates as coord
 # cart12 = coord.CartesianRepresentation(demoa.prop.ntw_4x4hpB01_to_4x4[12]['NTW position'])
 # coord.SphericalRepresentation.from_cartesian(cart12)
+# [2025-09-12 Fri 13:42] .spherical method for PVT will do this, want to cyclic permute to WNT?

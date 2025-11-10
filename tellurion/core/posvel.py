@@ -110,6 +110,24 @@ class PVT(collections.abc.Sequence):
             astro.fromtime(ts, reftime=reftime, copy=False)
         return ts
 
+    def cartesian(self):
+        spv = util.ensure_1d(self.pv)
+        return coord.CartesianRepresentation(spv['position'], \
+                                             differentials=coord.CartesianDifferential(spv['velocity'], \
+                                                                                       xyz_axis=1), \
+                                             xyz_axis=1)
+
+    def spherical(self):
+        '''Spherical coordinates and time rates; for ECI vectors, the right ascension, declination, and geocentric distance, and their time rates of change.'''
+        cr = self.cartesian()
+        sphrad = cr.represent_as(coord.SphericalRepresentation, coord.SphericalDifferential) # Angles are in radians
+        sphdpua = sphrad.differentials # need to change angle units
+        sphpua = coord.SphericalRepresentation(lon=sphrad.lon.to(astro.prefunits['angle']), \
+                                               lat=sphrad.lat.to(astro.prefunits['angle']), \
+                                               distance=sphrad.distance, \
+                                               differentials=sphdpua)
+        return sphpua
+
     def to_array(self, time_format=astro.prefnumabstime):
         '''Convert the PVT into a 7-column np.ndarray using SI units and the preferred time format ('mjd' default); `aux` values are not included'''
         if self.time.shape==():
