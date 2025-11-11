@@ -20,7 +20,7 @@ EarthObservationT = collections.namedtuple('EarthObservationT', 'loc obs time')
 def azelrange(azim, elev, range, obsloc, obstime):
     '''Create an azimuth, elevation, and range observation'''
     if range == None:
-        sq = astro.makesq({'azim' : azim, 'elev' : elev}, obsdict1)
+        sq = astro.structquant({'azim' : azim, 'elev' : elev}, obsdict1)
     else:
-        sq = astro.makesq({'azim' : azim, 'elev' : elev, 'range' : range}, obsdict1)
+        sq = astro.structquant({'azim' : azim, 'elev' : elev, 'range' : range}, obsdict1)
     return EarthObservationT(obsloc, astro.changeunits(sq), obstime)

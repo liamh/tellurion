@@ -118,125 +118,6 @@ def tq(compstr):
     """
     return astropy.time.TimeDelta(compstr).to_value('sec')*u.s
 
-# sq2split = splitsq(sq2)
-# sq2sq = makesq(*sq2split)
-
-# kep1vals = {"argper":66.0, "ecc":0.1, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25, "sma":8000.0}
-# kep1pt = {"sma":'length', "ecc":'dimensionless', "inc":'angle', "argper":'angle', "raan":'angle', "ma":'angle'}
-# kep1 = makesq(kep1vals, phystype=kep1pt)
-
-def makesq(values, names=None, units=None, phystype=None, unitlookup=prefunits):
-    """Make a structured quantity from numbers or quantities
-
-    Parameters
-    ----------
-    values : dict of numbers, dict of `u.Quantity`, list or array of numbers, list or array of `u.Quantity`
-      If a dict is given, the keys are the names of the structure elements, and `names` is ignored
-      If numbers are given for values, `units` or `phystype` must be specified
-      If `u.Quanitity` are given for values, they are converted to `units` or `phystype` and `unitlookup`
-      Each value can be scalars or vectors
-    names : the names of the fields of the structure;
-      size must match number of values (ignored if `values` is a dict), optional
-    units : the units the structure; size must match number of values, optional
-    phystype : the physical type (dimension) of the each argument, units are looked
-      up in `unitlookup`, may specified instead of `units`, optional
-      Must be a dict if `values` is a dict
-    unitlookup : a dict of physical type strings and preferred units, defaults to `prefunits`, optional
-
-    Returns
-    -------
-    A structured `u.Quantity`
-
-    Examples
-    --------
-    >>> makesq([[1,2,3],[4,5,6]], ('pos','vel'), phystype=('length', 'speed'))
-    <Quantity ([1., 2., 3.], [4., 5., 6.]) (km, km / s)>
-
-    >>> makesq([12345.0, 45.0], ('sma','inc'), phystype=('length', 'angle'))
-    <Quantity (12345., 45.) (km, deg)>
-
-    >>> makesq([12345.0, 45.0], ('sma','inc'), ('km', 'deg'))
-    <Quantity (12345., 45.) (km, deg)>
-
-    >>> makesq([12345.0*u.km, 45.0*u.deg], ('sma','inc'), units = ('meter', 'radian'))
-    <Quantity (12345000., 0.78539816) (m, rad)>
-
-    >>> makesq([12345000*u.m, 0.125*u.rev], ('sma','inc'), phystype = ('length', 'angle'))
-    <Quantity (12345., 45.) (km, deg)>
-
-    >>> makesq({'sma' : 12345.0*u.km, 'inc' : 45.0*u.deg}, units = ('meter', 'radian'))
-    <Quantity (12345000., 0.78539816) (m, rad)>
-
-    >>> obsdict = {'azim': 'angle', 'elev': 'angle', 'range': 'length', 'rangerate': 'speed'}
-    >>> makesq({'azim': 110.0, 'elev': 81.0, 'range': 662.1}, phystype=obsdict)
-    <Quantity (110., 81., 662.1) (deg, deg, km)>
-
-    """
-    def conv(val, unit):
-        if type(val) is u.Quantity:
-            return val.to(unit).value
-        else:
-            return val
-    def scvec(size):
-        if size==1:
-            return f"f8"
-        else:
-            return f"({size},)f8"
-    def pqlen(item):
-        if type(item) is u.Quantity:
-            if type(item.value) is np.ndarray:
-                return len(item)
-            else:
-                return 1
-        else:
-            if type(item) is list or type(item) is tuple or type(item) is np.ndarray:
-                return len(item)
-            else:
-                return 1
-    if type(values) is dict:
-        names = tuple(values.keys())
-        vals = tuple(values.values())
-        if type(vals[0]) is u.Quantity:  # convert units unless units=unitlookup=None
-            if units==None:
-                units = tuple([v.unit for v in vals])
-                vals = tuple([v.value for v in vals])
-            else:
-                vals = [conv(v, un) for (v, un) in zip(vals, units)]
-        else:
-            # If values is a dict, units/phystype must also be a dict
-            if units==None:
-                units = tuple([unitlookup[phystype[nm]] for nm in names])
-            else:
-                units = tuple(units[nm] for nm in names) # units must also be a dict
-    else:
-        if units==None:
-            if phystype==None: # values is a quantity
-                units = tuple([v.unit for v in values])
-                vals = tuple([v.value for v in values])
-            else:
-                units = tuple([unitlookup[pt] for pt in phystype])
-                vals = tuple([conv(v, u) for (v, u) in zip(values, units)])
-        else:
-            if type(values[0]) is u.Quantity:
-                vals = [conv(v, un) for (v, un) in zip(values, units)]
-            else:
-                vals = values
-    sizes = [pqlen(v) for v in vals]
-    dtype = [(n, scvec(s)) for (n, s) in zip(names, sizes)]
-    npa = np.array(tuple(vals), dtype = dtype)
-    return u.Quantity(npa, u.StructuredUnit(units))
-
-def splitsq(stqu, quant=True, readably=False):
-    '''Make a dict of names and quantities, or values, names, and units from the structured quantity. To recreate a structured quantity, set `quant` to False; this results in input for makesq. For example, `makesq(*splitsq(sq, False))` copies `sq`.'''
-    if quant:
-        vnu = splitsq(stqu, False)
-        qs = [v*u for (v, u) in zip(vnu[0], vnu[2])]
-        return {un:val for (val, un) in zip(qs, vnu[1])}
-    elif readably:
-        return (stqu.value.tolist(), stqu.dtype.names, tuple(un.to_string() for un in stqu.unit.values()))
-    else:
-        return (stqu.value.tolist(), stqu.dtype.names, stqu.unit.values())
-
 def changeunits(qsq, unitlookup=prefunits):
     '''Change the units for the quantity or structured quantity to the system of units.'''
     if type(qsq.unit) is u.StructuredUnit:
@@ -255,11 +136,12 @@ def normalizeangle(angle, wrapat=u.rev/2, exclude=[]):
     exclude==True, no values are changed. Default is to exclude
     nothing.
     '''
+    from tellurion.core import nquant
     if type(angle) is u.Quantity:
         if type(angle.unit) is u.StructuredUnit and exclude != True:
-            return makesq([normalizeangle(kv[1], wrapat, kv[0] in exclude)
-                           for kv in splitsq(angle).items()],
-                          angle.dtype.names)
+            return nquant.structquant([normalizeangle(kv[1], wrapat, kv[0] in exclude)
+                                  for kv in nquant.namedquant(angle).items()],
+                                 angle.dtype.names)
         else:
             if u.get_physical_type(angle)=='angle' and exclude != True:
                 return normalizeangle(Angle(angle), wrapat)

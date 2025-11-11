@@ -30,13 +30,13 @@ demoa.init.vel = [-2.75082684,  4.76457184,  5.50165367]
 demoa.init.pvt = tell.pvt((demoa.init.pos, demoa.init.vel, newyear))  # A tuple (Quantity, Time)
 # Cartesian or Kepler transformation
 demoa.init.kep = tork.kepler(demoa.init.pvt)  # Convert PVT to Kepler elements
-demoa.init.seekep = tell.splitsq(demoa.init.kep[0])  # Easier to read Kepler elements
-demoa.init.cart = tork.cartesian(demoa.init.kep)  # Convert back to Cartesian, same as demoa.init.pvt
+demoa.init.seekep = tell.namedquant(demoa.init.kep[0])  # Easier to read Kepler elements
+demoa.init.cart = tork.pvt(demoa.init.kep)  # Convert back to Cartesian, same as demoa.init.pvt
 
 demob = Munch()
 demob.kep = tell.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25},
                            tell.abstime('2023-09-14T08:30:00'))
-demob.pvt = tork.cartesian(demob.kep) # Convert Kepler elements to PVT
+demob.pvt = tork.pvt(demob.kep) # Convert Kepler elements to PVT
 demob.rekep = tork.kepler(demob.pvt)
 
 #############################

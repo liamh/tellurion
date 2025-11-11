@@ -2,8 +2,10 @@ import collections
 import itertools
 import astropy.units as u
 import spacetrack
-from . import astro
-from . import posvel
+from tellurion.core import astro
+from tellurion.core import nquant
+from tellurion.core import posvel
+
 
 # Set stclient using registered space-track.org username and password
 # Place these lines with correct username and password in ~/.ipython/profile_default/startup/50-spacetrack.py
@@ -29,7 +31,7 @@ def mestrt(mest):
     function to create the readable tuple, save to a Python source
     file and call `makemest()` on it.
     '''
-    return(astro.splitsq(astro.makesq(mest.els), False, True), \
+    return(nquant.namedquant(mest.els, False, True), \
            mest.t.to_string(), \
            mest.tle, \
            mest.model, \
@@ -37,7 +39,7 @@ def mestrt(mest):
 
 def makemest(elstuples, timestr, tle, model, scdata):
     '''Create a MeanElementSetT from readable arguments'''
-    return MeanElementSetT(astro.splitsq(astro.makesq(*elstuples)), \
+    return MeanElementSetT(nquant.namedquant(*elstuples), \
                            astro.abstime(timestr), tle, model, scdata)
 
 def satdata(stdict):

@@ -5,6 +5,7 @@ import astropy.constants # astropy.constants.R_earth
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
 from . import astro
+from . import nquant
 from . import posvel
 
 ###############################
@@ -66,7 +67,7 @@ def kepler(oes, dttm=None, units=(astro.prefunits['length'], astro.prefunits['an
 
     keppt = {"inc":'angle', "argper":'angle', "raan":'angle'} | plane | timeelt
     ordoes = {k:oes[k] for k in keppt.keys()}
-    kepsq = astro.makesq(ordoes, phystype=keppt)
+    kepsq = nquant.structquant(ordoes, phystype=keppt)
     if not astro.isupperhalfplane(kepsq['inc']):
         raise ValueError('Inclination must be between 0 and 180 degrees, inclusive')
     kepsqn = astro.normalizeangle(kepsq, u.rev/2, timeelements)

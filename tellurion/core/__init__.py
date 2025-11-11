@@ -1,6 +1,7 @@
 from . import (
     util,
     astro,
+    nquant,
     posvel,
     element,
     geog,
@@ -11,6 +12,7 @@ from . import (
 
 from tellurion.core.util import *
 from tellurion.core.astro import *
+from tellurion.core.nquant import *
 from tellurion.core.posvel import *
 from tellurion.core.posvel import PVT
 from tellurion.core.element import *
@@ -22,4 +24,4 @@ from tellurion.core.spacetrack import *
 from tellurion.core.spacetrack import MeanElementSetT
 
 # Define the __all__ variable
-__all__ = ["util", "astro", "posvel", "element", "geog", "obs", "geonames", "spacetrack"]
+__all__ = ["util", "astro", "nquant", "posvel", "element", "geog", "obs", "geonames", "spacetrack"]
