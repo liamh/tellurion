@@ -1,3 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Sphinx documentation build
+docs/build/
+docs/_build/
+docs/source/_autosummary/
+docs/source/_generated/
+docs/source/api/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Distribution / packaging
+*.whl
+pip-wheel-metadata/
+
+# Temporary files
+*.log
+*.tmp
+.cache/
+
 /env.sh
 __pycache__
 *.db

@@ -1,0 +1,10 @@
+sphinx>=7.0
+sphinx-automodapi
+sphinx-astropy
+numpydoc
+sphinx-rtd-theme
+nbsphinx
+nbsphinx-link
+ipython
+ipykernel
+astropy
