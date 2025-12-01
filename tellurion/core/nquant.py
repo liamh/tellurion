@@ -49,7 +49,7 @@ def namedquant(values, names=string.ascii_letters, units=None, unitlookup={}):
     if type(values) is u.Quantity and type(values.unit) is u.StructuredUnit:
         return _splitsq(values)
     else:
-        (rvals, runits, rnames) = _namedquant_tuple(values, names, units, unitlookup)
+        (rvals, runits, rnames, vect) = _namedquant_tuple(values, names, units, unitlookup)
         vals = zip(rnames, [val*u.Unit(unit) for val, unit in zip(rvals, runits)])
         return {name: value for name, value in vals}
 
@@ -76,6 +76,7 @@ def structquant(values, names=string.ascii_letters, units=None, unitlookup={}):
     Examples
     --------
     tell.structquant([[1,2,3],[4,5,6]], ['pos','vel'], ['length', 'speed'], {'length': 'km', 'speed': 'km/s'})
+    tell.structquant([[[1,2,3],[4,5,6]], [[-1,-2,-3],[-4,-5,-6]]], ['pos','vel'], ['length', 'speed'], {'length': 'km', 'speed': 'km/s'})
     tell.structquant(np.array([[1,2,3],[4,5,6]]), ['pos','vel'], ['length', 'speed'], {'length': 'km', 'speed': 'km/s'})
     tell.structquant([12345.0, 45.0], ['sma','inc'], ['km', 'deg'])
     tell.structquant([12345.0*u.km, 45.0*u.deg], ['sma','inc'], ['meter', 'radian'])
@@ -89,7 +90,7 @@ def structquant(values, names=string.ascii_letters, units=None, unitlookup={}):
     #     return structquant(namedquant(values, units=units, phystype=phystype, unitlookup=unitlookup), \
     #                        unitlookup=unitlookup)
 
-    (rvals, runits, rnames) = _namedquant_tuple(values, names, units, unitlookup)
+    (rvals, runits, rnames, vect) = _namedquant_tuple(values, names, units, unitlookup)
 
     def scvec(size):
         if size==1:
@@ -109,9 +110,12 @@ def structquant(values, names=string.ascii_letters, units=None, unitlookup={}):
                 return 1
 
     # Build the structured array
-    sizes = [pqlen(v) for v in rvals]
+    if vect:
+        sizes = [pqlen(v) for v in rvals[0]]
+    else:
+        sizes = [pqlen(v) for v in rvals]
     dtype = [(n, scvec(s)) for (n, s) in zip(rnames, sizes)]
-    npa = np.array(tuple(rvals), dtype=dtype)
+    npa = np.array(rvals, dtype=dtype)
     return u.Quantity(npa, u.StructuredUnit(runits))
 
 def _namedquant_tuple(values, names=string.ascii_letters, units=None, unitlookup={}):
@@ -132,7 +136,7 @@ def _namedquant_tuple(values, names=string.ascii_letters, units=None, unitlookup
     values : dictionary, list, or array. May contain numbers, or u.Quantity (unless array).
       If a dict is given, the keys are the names of the structure elements, and `names` is ignored.
       If numbers are given for values, `units` or `unitlookup` must be specified
-      If `u.Quanitity` are given for values, they are converted using
+      If `u.Quantity` are given for values, they are converted using
       `units` or `unitlookup` if either (or both) are specified.
       >>>> Each value can be scalars or vectors
     names : the names of the fields or keys, required if `values` is a list
@@ -157,14 +161,28 @@ def _namedquant_tuple(values, names=string.ascii_letters, units=None, unitlookup
     if type(values) is dict:
         names = tuple(values.keys())
         vals = tuple(values.values())
+        vals0 = vals
+        vect = False
+    elif type(values) is list and all(isinstance(item, dict) for item in values) \
+         and all(set(d.keys()) == set(values[0].keys()) for d in values):
+        # Make a non-scalar structured/named quantity from a list of dicts
+        names = tuple(values[0].keys())
+        vals = [tuple(w.values()) for w in values]
+        vals0 = vals[0]
+        vect = True
     else:
         vals = values
+        vals0 = vals
+        vect = False
 
     # If there are any u.Quantity in values, all values without units are assumed to be u.dimensionless.
-    if any([hasattr(v, 'unit') for v in vals]):
-        vals = [v*u.dimensionless_unscaled for v in vals]
-        units_in_values = [v.unit.to_string() for v in vals]
-        phtys_in_values = [u.get_physical_type(v.unit)._physical_type_list[0] for v in vals]
+    if any([hasattr(v, 'unit') for v in vals0]):
+        if vect:
+            vals = [[v*u.dimensionless_unscaled for v in w] for w in vals]
+        else:
+            vals = [v*u.dimensionless_unscaled for v in vals]
+        units_in_values = [v.unit.to_string() for v in vals0]
+        phtys_in_values = [u.get_physical_type(v.unit)._physical_type_list[0] for v in vals0]
     else:
         units_in_values = None
 
@@ -175,21 +193,24 @@ def _namedquant_tuple(values, names=string.ascii_letters, units=None, unitlookup
     newunits = units_in_values
     if units_in_values: # Convert the u.Quantity given
         if type(units) is dict:
-            newunits = tuple([lookuppt(units.get(nm), val.unit.to_string()) for nm, val in zip(names, vals)])
+            newunits = tuple([lookuppt(units.get(nm), val.unit.to_string()) for nm, val in zip(names, vals0)])
         elif type(units) is list:
-            newunits = tuple([lookuppt(un, val.unit.to_string()) for un, val in zip(units, vals)])
+            newunits = tuple([lookuppt(un, val.unit.to_string()) for un, val in zip(units, vals0)])
         else:
             newunits = tuple([unitlookup.get(pt) or un for un, pt in zip(units_in_values, phtys_in_values)])
-        vals = tuple([val.to(u.Unit(un)).value for val, un in zip(vals, newunits)])
+        if vect:
+            vals = [tuple([val.to(u.Unit(un)).value for val, un in zip(w, newunits)]) for w in vals]
+        else:
+            vals = tuple([val.to(u.Unit(un)).value for val, un in zip(vals, newunits)])
     else:  # Assign units for numbers
         if type(units) is dict:
             newunits = tuple([lookuppt(units.get(nm)) for nm in names])
         elif type(units) is list:
             newunits = tuple([lookuppt(un) for un in units])
         else:
-            newunits = tuple(['1']*len(vals))
+            newunits = tuple(['1']*len(vals0))
 
-    return (vals, newunits, names[0:len(vals)])
+    return (vals, newunits, names[0:len(vals)], vect)
 
 # generate_variations_nquant({'alength':1000.0*u.km, 'amass':200.0*u.kg, 'atime':3.0*u.hour}, {'alength':'m', 'amass':'g', 'atime':'s'})
 def generate_variations_nquant(dict_with_units, new_units, \
