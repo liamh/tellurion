@@ -40,6 +40,7 @@ def namedquant(values, names=string.ascii_letters, units=None, unitlookup={}):
     tell.namedquant([12345.0, 45.0], ['sma','inc'], ['km', 'deg'])
     tell.namedquant([12345.0*u.km, 45.0*u.deg], ['sma','inc'], ['meter', 'radian'])
     tell.namedquant({'sma' : 12345.0*u.km, 'inc' : 45.0*u.deg}, units = {'sma': 'meter', 'inc': 'radian'})
+    tell.namedquant([{'sma' : 12345.0*u.km, 'inc' : 45.0*u.deg}, {'sma' : 23456.0*u.km, 'inc' : -45.0*u.deg}], units = {'sma': 'meter', 'inc': 'radian'})
     """
     # if units and unitlookup:
     #     # Make the quantities and then convert
@@ -47,11 +48,18 @@ def namedquant(values, names=string.ascii_letters, units=None, unitlookup={}):
     #                       units=None, phystype=phystype, unitlookup=unitlookup)
     # el
     if type(values) is u.Quantity and type(values.unit) is u.StructuredUnit:
-        return _splitsq(values)
+        if values.isscalar:
+            return _splitsq(values)
+        else:
+            return [_splitsq(v) for v in values]
     else:
         (rvals, runits, rnames, vect) = _namedquant_tuple(values, names, units, unitlookup)
-        vals = zip(rnames, [val*u.Unit(unit) for val, unit in zip(rvals, runits)])
-        return {name: value for name, value in vals}
+        if vect:
+            return [{name: value for name, value in zip(rnames, [val*u.Unit(unit) for val, unit in zip(rv, runits)])} \
+                    for rv in rvals]
+        else:
+            vals = zip(rnames, [val*u.Unit(unit) for val, unit in zip(rvals, runits)])
+            return {name: value for name, value in vals}
 
 def structquant(values, names=string.ascii_letters, units=None, unitlookup={}):
     """Make a structured quantity from numbers or quantities
@@ -81,6 +89,7 @@ def structquant(values, names=string.ascii_letters, units=None, unitlookup={}):
     tell.structquant([12345.0, 45.0], ['sma','inc'], ['km', 'deg'])
     tell.structquant([12345.0*u.km, 45.0*u.deg], ['sma','inc'], ['meter', 'radian'])
     tell.structquant({'sma' : 12345.0*u.km, 'inc' : 45.0*u.deg}, units = {'sma': 'meter', 'inc': 'radian'})
+    tell.structquant([{'sma' : 12345.0*u.km, 'inc' : 45.0*u.deg}, {'sma' : 23456.0*u.km, 'inc' : -45.0*u.deg}], units = {'sma': 'meter', 'inc': 'radian'})
     """
     # tell.structquant(np.array([[[1,2,3],[4,5,6]], [[10,20,30],[40,50,60]]]), ['pos','vel'], ['length', 'speed'], {'length': 'km', 'speed': 'km/s'})
 
