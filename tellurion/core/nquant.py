@@ -1,8 +1,12 @@
-"""From a set of named quantities or structured quantity, make a dictionary (`namedquant`) or structured quantity (`structquant`)"""
+"""Make a dictionary (`namedquant`) of named quantities or structured quantity (`structquant`)"""
 
 import string
 import numpy as np
 import astropy.units as u
+
+# Extract value as np.array from quantities
+u.Quantity.to_array = lambda self: np.array(self.value.tolist()) if self.isscalar \
+    else self.value.view(np.float64).reshape(self.value.shape + (-1,))
 
 # Now
 # values.ndim = 1 => scalar value per name
@@ -117,14 +121,16 @@ def structquant(values, names=string.ascii_letters, units=None, unitlookup={}):
                 return len(item)
             else:
                 return 1
-
     # Build the structured array
     if vect:
         sizes = [pqlen(v) for v in rvals[0]]
     else:
         sizes = [pqlen(v) for v in rvals]
     dtype = [(n, scvec(s)) for (n, s) in zip(rnames, sizes)]
-    npa = np.array(rvals, dtype=dtype)
+    if vect:
+        npa = np.array([tuple(v) for v in rvals], dtype=dtype)
+    else:
+        npa = np.array(tuple(rvals), dtype=dtype)
     return u.Quantity(npa, u.StructuredUnit(runits))
 
 def _namedquant_tuple(values, names=string.ascii_letters, units=None, unitlookup={}):
