@@ -8,6 +8,14 @@ import astropy.units as u
 u.Quantity.to_array = lambda self: np.array(self.value.tolist()) if self.isscalar \
     else self.value.view(np.float64).reshape(self.value.shape + (-1,))
 
+# Make the structured quantity a singleton vector if it is a scalar
+u.Quantity.tovector = lambda self: u.Quantity([self]) if self.isscalar else self
+
+# Concatenate rows of the same structures
+u.Quantity.vstack = lambda self, second: (self.vstack(second[0]).vstack(second[1:]) if len(second)>1 \
+                                          else self.vstack(second[0])) if type(second) is list \
+                                          else np.hstack((self.tovector(), second.tovector()))
+
 # Now
 # values.ndim = 1 => scalar value per name
 # values.ndim = 2 => vector value per name
