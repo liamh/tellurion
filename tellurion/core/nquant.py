@@ -97,6 +97,7 @@ def structquant(values, names=string.ascii_letters, units=None, unitlookup={}):
     --------
     tell.structquant([[1,2,3],[4,5,6]], ['pos','vel'], ['length', 'speed'], {'length': 'km', 'speed': 'km/s'})
     tell.structquant([[[1,2,3],[4,5,6]], [[-1,-2,-3],[-4,-5,-6]]], ['pos','vel'], ['length', 'speed'], {'length': 'km', 'speed': 'km/s'})
+    tell.structquant([[[1,2,3],6,[4,5,6]], [[10,20,30],60,[40,50,60]]], ['pos','sum','vel'], ['length', 'length', 'speed'], {'length': 'km', 'speed': 'km/s'})
     tell.structquant(np.array([[1,2,3],[4,5,6]]), ['pos','vel'], ['length', 'speed'], {'length': 'km', 'speed': 'km/s'})
     tell.structquant([12345.0, 45.0], ['sma','inc'], ['km', 'deg'])
     tell.structquant([12345.0*u.km, 45.0*u.deg], ['sma','inc'], ['meter', 'radian'])
@@ -141,6 +142,8 @@ def structquant(values, names=string.ascii_letters, units=None, unitlookup={}):
         npa = np.array(tuple(rvals), dtype=dtype)
     return u.Quantity(npa, u.StructuredUnit(runits))
 
+def depth(L): return isinstance(L, list) and max(map(depth, L))+1
+
 def _namedquant_tuple(values, names=string.ascii_letters, units=None, unitlookup={}):
     """Return a tuple (values, units, names) where values are numbers or u.Quantity,
     units are names of units corresponding to the values, and `names`
@@ -184,19 +187,22 @@ def _namedquant_tuple(values, names=string.ascii_letters, units=None, unitlookup
     if type(values) is dict:
         names = tuple(values.keys())
         vals = tuple(values.values())
-        vals0 = vals
         vect = False
     elif type(values) is list and all(isinstance(item, dict) for item in values) \
          and all(set(d.keys()) == set(values[0].keys()) for d in values):
         # Make a non-scalar structured/named quantity from a list of dicts
         names = tuple(values[0].keys())
         vals = [tuple(w.values()) for w in values]
-        vals0 = vals[0]
         vect = True
-    else:
+    else: # values is not a dict or list of dicts
+        # [[1,2],[3,4],[5,6]] # could be vector of scalars or scalar of vectors
+        # It will always be interpreted as a scalar of vectors
         vals = values
+        vect = depth(values)==3
+    if vect:
+        vals0 = vals[0]
+    else:
         vals0 = vals
-        vect = False
 
     # If there are any u.Quantity in values, all values without units are assumed to be u.dimensionless.
     if any([hasattr(v, 'unit') for v in vals0]):
@@ -232,8 +238,7 @@ def _namedquant_tuple(values, names=string.ascii_letters, units=None, unitlookup
             newunits = tuple([lookuppt(un) for un in units])
         else:
             newunits = tuple(['1']*len(vals0))
-
-    return (vals, newunits, names[0:len(vals)], vect)
+    return (vals, newunits, names[0:len(vals0)], vect)
 
 # generate_variations_nquant({'alength':1000.0*u.km, 'amass':200.0*u.kg, 'atime':3.0*u.hour}, {'alength':'m', 'amass':'g', 'atime':'s'})
 def generate_variations_nquant(dict_with_units, new_units, \
