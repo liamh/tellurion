@@ -2,6 +2,7 @@
 
 import string
 import numpy as np
+from numpy.lib import recfunctions as rfn
 import astropy.units as u
 
 # Extract value as np.array from quantities
@@ -11,19 +12,56 @@ u.Quantity.to_array = lambda self: np.array(self.value.tolist()) if self.isscala
 # Make the structured quantity a singleton vector if it is a scalar
 u.Quantity.tovector = lambda self: u.Quantity([self]) if self.isscalar else self
 
+# Serialize a structured array
+u.Quantity.decompose = lambda self: (self.to_array().tolist(), self.dtype.descr, self.unit.to_string())
+# recompose with rfn.unstructured_to_structured(np.array(dec[0]), dtype=dec[1])*u.Unit(dec[2])
+
 # Concatenate rows of the same structures
 u.Quantity.vstack = lambda self, second: (self.vstack(second[0]).vstack(second[1:]) if len(second)>1 \
                                           else self.vstack(second[0])) if type(second) is list \
                                           else np.hstack((self.tovector(), second.tovector()))
 
-# Now
-# values.ndim = 1 => scalar value per name
-# values.ndim = 2 => vector value per name
-# Need option
-# values.ndim = 2 => vector of scalar value per name, i.e., len(pv) exists
-# Need
-# values.ndim = 3 => vector of vectors as in pv example https://docs.astropy.org/en/stable/units/structured_units.html, take as input
-# np.array([[[1., 0., 0.], [ 0.,  0.125,  0.]], [[0., 1., 0.], [-0.125,  0.,  0.]]])
+def structquant_from_array(values, names_size_units, unitlookup={}):
+    """Make a struct quantity from arrays. Make a scalar struct if
+    `values` is a 1d np.array, or a vector struct if it is a 2d
+    np.array.  `names_size_units` is a sequence of 3-tuples (name size
+    units).
+
+    structquant_from_array(np.array([[1,2,3,6,4,5,6], [10,20,30,60,40,50,60]]), \
+                                    [('pos', 3, 'length'), ('sum', 1, 'length'), ('vel', 3, 'speed')], \
+                                    {'length': 'km', 'speed': 'km/s'})
+
+    """
+    def lookuppt(un, default=None):
+        return unitlookup.get(un) or un or default
+    dtype = [(nsu[0], scvec(nsu[1])) for nsu in names_size_units]
+    unit = tuple([lookuppt(nsu[2]) for nsu in names_size_units])
+    return rfn.unstructured_to_structured(values, dtype=dtype)*u.Unit(unit)
+
+############################################################
+## Useful to have _splitsq, make it a method .to_dict()?
+############################################################
+
+def _splitsq(stqu, quant=True, readably=False):
+    '''Make a dict of names and quantities, or values, names, and units from the structured quantity. To recreate a structured quantity, set `quant` to False; this results in input for structquant. For example, `structquant(*_splitsq(sq, False))` copies `sq`.'''
+    if quant:
+        vnu = _splitsq(stqu, False)
+        qs = [v*u for (v, u) in zip(vnu[0], vnu[2])]
+        return {un:val for (val, un) in zip(qs, vnu[1])}
+    elif readably:
+        return (stqu.value.tolist(), stqu.dtype.names, tuple(un.to_string() for un in stqu.unit.values()))
+    else:
+        return (stqu.value.tolist(), stqu.dtype.names, stqu.unit.values())
+
+def scvec(size):
+    if size==1:
+        return f"f8"
+    else:
+        return f"({size},)f8"
+
+############################################################
+## namedquant(), structquant() from lists, dicts -- need this?
+############################################################
 
 def namedquant(values, names=string.ascii_letters, units=None, unitlookup={}):
     """Make a dictionary of quantities by name from numbers or quantities (including structured quantities).
@@ -105,20 +143,7 @@ def structquant(values, names=string.ascii_letters, units=None, unitlookup={}):
     tell.structquant([{'sma' : 12345.0*u.km, 'inc' : 45.0*u.deg}, {'sma' : 23456.0*u.km, 'inc' : -45.0*u.deg}], units = {'sma': 'meter', 'inc': 'radian'})
     """
     # tell.structquant(np.array([[[1,2,3],[4,5,6]], [[10,20,30],[40,50,60]]]), ['pos','vel'], ['length', 'speed'], {'length': 'km', 'speed': 'km/s'})
-
-
-
-    # if units and unitlookup:
-    #     return structquant(namedquant(values, units=units, phystype=phystype, unitlookup=unitlookup), \
-    #                        unitlookup=unitlookup)
-
     (rvals, runits, rnames, vect) = _namedquant_tuple(values, names, units, unitlookup)
-
-    def scvec(size):
-        if size==1:
-            return f"f8"
-        else:
-            return f"({size},)f8"
     def pqlen(item):
         if type(item) is u.Quantity:
             if type(item.value) is np.ndarray:
@@ -179,7 +204,7 @@ def _namedquant_tuple(values, names=string.ascii_letters, units=None, unitlookup
 
     Returns
     -------
-    Tuple of (values, units, names)
+    Tuple of (values, units, names, vect)
 
     """
 
@@ -287,15 +312,3 @@ def generate_variations_nquant(dict_with_units, new_units, \
         {'values': list_with_units, 'names': names, 'units': list_phystype, 'unitlookup': dict_ul}, # as list, "convert" to original units by physical type
         ]
     return (argsets, [fn(**a) for a in argsets])
-
-
-def _splitsq(stqu, quant=True, readably=False):
-    '''Make a dict of names and quantities, or values, names, and units from the structured quantity. To recreate a structured quantity, set `quant` to False; this results in input for structquant. For example, `structquant(*_splitsq(sq, False))` copies `sq`.'''
-    if quant:
-        vnu = _splitsq(stqu, False)
-        qs = [v*u for (v, u) in zip(vnu[0], vnu[2])]
-        return {un:val for (val, un) in zip(qs, vnu[1])}
-    elif readably:
-        return (stqu.value.tolist(), stqu.dtype.names, tuple(un.to_string() for un in stqu.unit.values()))
-    else:
-        return (stqu.value.tolist(), stqu.dtype.names, stqu.unit.values())
