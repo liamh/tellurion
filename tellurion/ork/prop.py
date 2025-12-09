@@ -13,11 +13,12 @@ import numpy as np
 import astropy.units as u
 import astropy.time
 import astropy.table
-from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit, KeplerianOrbit
+from org.orekit.orbits import CartesianOrbit, OrbitType, KeplerianOrbit
 from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState, EphemerisGenerator
 from org.orekit.propagation.analytical.tle import TLE, TLEPropagator
+from org.orekit.propagation.analytical import KeplerianPropagator
 from org.orekit.utils import AbsolutePVCoordinates, TimeStampedPVCoordinates, PVCoordinatesProvider
 import org.orekit.forces.gravity as okgrav
 
@@ -43,7 +44,10 @@ def prepare(initstate, proptime, events=defev, forceenv=force.deffe, \
     if type(initstate)==MeanElementSetT:
         return SGP4prep(initstate, proptime, events, forceenv, reftime, occluder, output)
     elif type(initstate)==PVT:
-        return niprep(initstate, proptime, events, forceenv, reftime, occluder, output)
+        if forceenv.get('gravity-degree-order'):
+            return niprep(initstate, proptime, events, forceenv, reftime, occluder, output)
+        else:
+            return kaprep(initstate, proptime, events, forceenv, reftime, occluder, output)
 
 def SGP4prep(meanels, proptime, events, forceenv, reftime, occluder, output):
     '''Propagate mean elements using SGP4'''
@@ -57,6 +61,15 @@ def SGP4prep(meanels, proptime, events, forceenv, reftime, occluder, output):
         return generator
     else:
         raise ValueError("Can only propagate SGP4 mean elements with SGP4")
+
+# demoa.prop.genka = tork.prepare(demoa.init.pvt, 1*u.day, forceenv=tork.kepleranalytic())
+def kaprep(initstate, proptime, events, forceenv, reftime, occluder, output):
+    '''Prepare the Keplerian (two-body) analytic propagator'''
+    ork0 = CartesianOrbit(convert._tspvc(initstate), \
+                          forceenv['celestialframe'], forceenv['earthmu'].si.value)
+    propagator = KeplerianPropagator(ork0, forceenv['earthmu'].si.value)
+    generator = _make_generator(ork0, lambda propto: propagator.propagate(propto))
+    return generator
 
 def _additional(events, propagator, generator, proptime, forceenv, reftime, output):
     '''Additional calculations when propagating initially'''

@@ -38,6 +38,7 @@ demoa.init.cart = tork.cartesian(demoa.init.kep)  # Convert back to Cartesian, s
 demoa.prop = Munch()
 demoa.prop.check = Munch()
 
+### Numerical
 # The generator
 demoa.prop.gen = tork.prepare(demoa.init.pvt, 1*u.day) # Use generator for any propagation up to 1 day
 
@@ -58,6 +59,11 @@ demoa.prop.eclipse.merged = \
     demoa.prop.eclipse.genevpvt['sun transition'].merge(demoa.prop.eclipse.ephempvt).ephemeris()
 demoa.prop.eclipse.um12h = tork.propagate(demoa.prop.eclipse.genevpvt, 12*u.hour)
 demoa.prop.eclipse.um12h05m = tork.propagate(demoa.prop.eclipse.genevpvt, tell.tq('12hr 5min'))
+
+### Analytical
+demoa.propa = Munch()
+demoa.propa.gen = tork.prepare(demoa.init.pvt, 1*u.day, forceenv=tork.kepleranalytic())
+demoa.propa.ephem = tork.propagate(demoa.propa.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
 
 ################ Propagation Kepler element
 

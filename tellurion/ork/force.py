@@ -16,20 +16,20 @@ from org.orekit.bodies import OneAxisEllipsoid, CelestialBodyFactory
 
 OneAxisEllipsoid.__repr__ =    lambda self: f"<Near-spherical body equatorial radius {self.getEquatorialRadius()}m, polar radius difference {-self.getEquatorialRadius()*self.getFlattening()}m >"
 
+def celestial():
+    return {'earthframe': FramesFactory.getITRF(IERSConventions.IERS_2010, True), \
+            'celestialframe': FramesFactory.getGCRF(), \
+            'earthangspd': Constants.IERS2010_EARTH_ANGULAR_VELOCITY, \
+            'earthflat': Constants.IERS2010_EARTH_FLATTENING, \
+            'sun': CelestialBodyFactory.getSun(), \
+            'sunrad': Constants.SUN_RADIUS*u.m, \
+            'gmst': IERSConventions.IERS_2010.getGMSTFunction(TimeScalesFactory.getUT1(IERSConventions.IERS_2010, True))}
+
 def setgravity(degree, order, mass = 100.0):
     """Set the environmental constants such as reference frame and
     planetary properties.  Arguments are the degree and order of the
     gravitational model to use, and the mass of the spacecraft.
     """
-    celestdflt = {
-        'earthframe': FramesFactory.getITRF(IERSConventions.IERS_2010, True),
-        'celestialframe': FramesFactory.getGCRF(),
-        'earthangspd': Constants.IERS2010_EARTH_ANGULAR_VELOCITY,
-        'earthflat': Constants.IERS2010_EARTH_FLATTENING,
-        'sun': CelestialBodyFactory.getSun(),
-        'sunrad': Constants.SUN_RADIUS*u.m,
-        'gmst': IERSConventions.IERS_2010.getGMSTFunction(TimeScalesFactory.getUT1(IERSConventions.IERS_2010, True))
-    }
     eg = GravityFieldFactory.getNormalizedProvider(degree, order)
     force = {'gravity': eg,
              'gravity-degree-order': [eg.getMaxDegree(), eg.getMaxOrder()],
@@ -37,12 +37,19 @@ def setgravity(degree, order, mass = 100.0):
              'earthmu': eg.getMu()*u.m**3/u.s**2,
              'mass': mass} # Needed by several forces but not gravity
     # Define spherical altitude for convience, not specifically force related, but uses the definitions
-    return celestdflt | force | \
+    celestdflt = celestial()
+    return  celestdflt | force | \
         {'earth': OneAxisEllipsoid(force['earthrad'].si.value,
                                    celestdflt['earthflat'],  celestdflt['earthframe']),
          'sphalt': OneAxisEllipsoid(force['earthrad'].si.value, 0.0, celestdflt['earthframe']),
          'moon': OneAxisEllipsoid(Constants.MOON_EQUATORIAL_RADIUS, 0.0012, \
                                   CelestialBodyFactory.getMoon().getBodyOrientedFrame())}
+
+def kepleranalytic():
+    eg = GravityFieldFactory.getNormalizedProvider(0,0)
+    force = {'earthrad': eg.getAe()*u.m,
+             'earthmu': eg.getMu()*u.m**3/u.s**2}
+    return  celestial() | force
 
 # Default force & environment
 deffe = setgravity(0,0)
