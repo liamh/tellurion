@@ -142,6 +142,7 @@ def niprep(initstate, proptime, events, forceenv, reftime, occluder, output):
     generator = _make_generator(ork0, lambda propto: propagator.propagate(generator['epoch'], propto))
     _additional(events, propagator, generator, proptime, forceenv, reftime, output)
     gge = ephgen.getGeneratedEphemeris()
+    generator['propfn'] = lambda propto: gge.propagate(propto) # Redefine the propfn because previous one is inaccurate
     generator['mindate'] = gge.getMinDate()
     generator['maxdate'] = gge.getMaxDate()
 

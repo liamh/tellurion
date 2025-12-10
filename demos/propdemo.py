@@ -57,8 +57,8 @@ demoa.prop.eclipse.ephempvt = tork.propagate(demoa.prop.eclipse.genevpvt, np.lin
 demoa.prop.eclipse.ephem = demoa.prop.eclipse.ephempvt.ephemeris()
 demoa.prop.eclipse.merged = \
     demoa.prop.eclipse.genevpvt['sun transition'].merge(demoa.prop.eclipse.ephempvt).ephemeris()
-demoa.prop.eclipse.um12h = tork.propagate(demoa.prop.eclipse.genevpvt, 12*u.hour)
-demoa.prop.eclipse.um12h05m = tork.propagate(demoa.prop.eclipse.genevpvt, tell.tq('12hr 5min'))
+demoa.prop.eclipse.um4h = tork.propagate(demoa.prop.eclipse.genevpvt, 4*u.hour)
+demoa.prop.eclipse.um4h15m = tork.propagate(demoa.prop.eclipse.genevpvt, tell.tq('4hr 15min'))
 
 ### Analytical
 demoa.propa = Munch()
