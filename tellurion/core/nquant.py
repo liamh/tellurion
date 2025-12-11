@@ -12,9 +12,16 @@ u.Quantity.to_array = lambda self: np.array(self.value.tolist()) if self.isscala
 # Make the structured quantity a singleton vector if it is a scalar
 u.Quantity.tovector = lambda self: u.Quantity([self]) if self.isscalar else self
 
-# Serialize a structured array
+# Make Python source
+# compose_sq(*sq.decompose()) returns a copy of the structured quantity sq
 u.Quantity.decompose = lambda self: (self.to_array().tolist(), self.dtype.descr, self.unit.to_string())
-# recompose with rfn.unstructured_to_structured(np.array(dec[0]), dtype=dec[1])*u.Unit(dec[2])
+def compose_sq(values, dtype, unit_string):
+    '''Make a structured quantity from an np.array, dtype, and unit string'''
+    if type(values) is list:
+        nparr = np.array(values)
+    else:
+        nparr = values
+    return rfn.unstructured_to_structured(nparr, dtype=dtype)*u.Unit(unit_string)
 
 # Concatenate rows of the same structures
 u.Quantity.vstack = lambda self, second: (self.vstack(second[0]).vstack(second[1:]) if len(second)>1 \
@@ -36,7 +43,7 @@ def structquant_from_array(values, names_size_units, unitlookup={}):
         return unitlookup.get(un) or un or default
     dtype = [(nsu[0], scvec(nsu[1])) for nsu in names_size_units]
     unit = tuple([lookuppt(nsu[2]) for nsu in names_size_units])
-    return rfn.unstructured_to_structured(values, dtype=dtype)*u.Unit(unit)
+    return compose_sq(values, dtype, unit)
 
 ############################################################
 ## Useful to have _splitsq, make it a method .to_dict()?
