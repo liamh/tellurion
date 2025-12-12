@@ -16,7 +16,7 @@ def eciobs(loc, observation=None, name='eci obs'):
     if type(observation) is Time:
         if type(observation.value) is np.ndarray:
             arr = [eciobs(loc, obs) for obs in observation]
-            datdict = {name: [posvel.makepos(ob) for ob in arr]}
+            datdict = {name: [makepos(ob) for ob in arr]}
             times = [ob.obstime for ob in arr]
             ts = TimeSeries(time=times, data=datdict)
             ts[name].info.format = posvel._pos_format
@@ -39,7 +39,7 @@ def radecrange(ra, dec, rang, obsloc, obstime, frame='gcrs'):
     '''Create an right ascension, declination, and range observation'''
     # This doesn't seem to offset the origin to the observer location
     return coord.SkyCoord(ra=ra, dec=dec, distance=rang, obstime=obstime, frame=frame, \
-                          obsgeoloc=posvel.makepos(obsloc))
+                          obsgeoloc=makepos(obsloc))
 
 def siderealtime(time = None, location = nullisland):
     '''
@@ -50,3 +50,23 @@ def siderealtime(time = None, location = nullisland):
         time = astro.abstime(0)
     obstm = Time(time, location = location)
     return obstm.sidereal_time('mean')
+
+##################################################
+####   Make posvel and related types          ####
+##################################################
+
+def makepos(pos, unit=astro.prefunits['length']):
+    '''Create a position vector or convert units'''
+    if type(pos) is coord.representation.cartesian.CartesianRepresentation:
+        return makepos(pos.xyz, unit)
+    if type(pos) is tuple:
+        return u.Quantity(pos, unit)
+    if u.get_physical_type(unit) == 'length':
+        if isq3vec(pos, 'length'):
+            return pos.to(unit)
+        elif type(pos) is u.Quantity:
+            raise ValueError('Argument does not represent a position 3-vector')
+        else:
+            return pos*unit
+    else:
+        raise ValueError('Unit does not represent a position')

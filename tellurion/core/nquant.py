@@ -28,13 +28,13 @@ u.Quantity.vstack = lambda self, second: (self.vstack(second[0]).vstack(second[1
                                           else self.vstack(second[0])) if type(second) is list \
                                           else np.hstack((self.tovector(), second.tovector()))
 
-def structquant_from_array(values, names_size_units, unitlookup={}):
+def sq(values, names_size_units, unitlookup={}):
     """Make a struct quantity from arrays. Make a scalar struct if
     `values` is a 1d np.array, or a vector struct if it is a 2d
     np.array.  `names_size_units` is a sequence of 3-tuples (name size
     units).
 
-    structquant_from_array(np.array([[1,2,3,6,4,5,6], [10,20,30,60,40,50,60]]), \
+    sq(np.array([[1,2,3,6,4,5,6], [10,20,30,60,40,50,60]]), \
                                     [('pos', 3, 'length'), ('sum', 1, 'length'), ('vel', 3, 'speed')], \
                                     {'length': 'km', 'speed': 'km/s'})
 
