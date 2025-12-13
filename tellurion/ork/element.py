@@ -155,7 +155,7 @@ def allplane(oesdict, forceenv=force.deffe, unitlookup=astro.prefunits):
                           "ecc":0.0*u.dimensionless_unscaled, \
                           "inc":0.0*u.deg, "argper": 120.0*u.deg, "raan": 0.0*u.deg, "ma": 0.0*u.deg})
     '''
-    oesdict = nquant.namedquant(oesdict, phystype=_elphystype, unitlookup=unitlookup)
+    oesdict = nquant.namedquant(oesdict, units=_elphystype, unitlookup=unitlookup)
     names = oesdict.keys()
     if ('sma' in names or 'memo' in names) and 'ecc' in names:  # OR PERIOD IN NAMES
         if 'memo' in names:

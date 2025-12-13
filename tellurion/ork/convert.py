@@ -16,9 +16,10 @@ from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.orekit.propagation import Propagator, BoundedPropagator
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 
-from ..core import astro
-from ..core import element
-from ..core import posvel
+from tellurion.core import astro
+from tellurion.core import element
+from tellurion.core import posvel
+from tellurion.core import pvhelper
 from . import force
 from . import element as oelement
 
@@ -77,7 +78,7 @@ def _pvt(object, unitlookup=astro.prefunits, getpvcargs=[], additional=None):
 
 def _tspvc(obj, time=None):
     '''Convert tuple (posvel.pv(), astropy.time.Time) or ephemeris row to Orekit TimeStampedPVCoordinates or posvel.pv() to PVCoordinates'''
-    if posvel.isephrow(obj):
+    if pvhelper.isephrow(obj):
         opvt = posvel.pvt(obj)
         if time==None:
             return _tspvc(opvt.pv, opvt.time)
@@ -87,10 +88,10 @@ def _tspvc(obj, time=None):
             return _tspvc(opvt.pv, opvt.time+time)
     elif posvel.ispvt(obj):
         return _tspvc(obj.pv, obj.time)
-    elif posvel.ispv(obj):
+    elif pvhelper.ispv(obj):
         conv = obj.to(astro.posvelsiu)
-        vecp = _v3d(conv[posvel._eph_pos].value)
-        vecv = _v3d(conv[posvel._eph_vel].value)
+        vecp = _v3d(conv[pvhelper._eph_pos].value)
+        vecv = _v3d(conv[pvhelper._eph_vel].value)
         if time==None:
             return PVCoordinates(vecp, vecv)
         else:
@@ -104,7 +105,7 @@ def _tspvc(obj, time=None):
 
 def _okad(t):
     """ Convert time in any form to Orekit AbsoluteDate (okad), or from okad to AstroPy """
-    if posvel.isdttm(t): # AstroPy
+    if pvhelper.isdttm(t): # AstroPy
         if t.isscalar:
             return pyhelp.datetime_to_absolutedate(t.datetime)
         else:

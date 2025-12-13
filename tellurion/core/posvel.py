@@ -142,7 +142,7 @@ class PositionBase(abc.ABC):
 
     def __len__(self):
         """Return the number of time steps."""
-        if self.time.isscalar:
+        if self.isscalar:
             return 1
         else:
             return len(self.time)
@@ -346,6 +346,7 @@ class PositionT(PositionBase):
             spherical: Spherical position (r, theta, phi)
         """
         self.time = time
+        self.isscalar = self.time.isscalar
         self.aux = aux if aux is not None else {}
 
         # Ensure only one coordinate system is provided
@@ -475,6 +476,7 @@ class PositionVelocityT(PositionBase, collections.abc.Sequence):
             pv: Legacy parameter name for cartesian (for backwards compatibility)
         """
         self.time = time
+        self.isscalar = self.time.isscalar
         self.aux = aux if aux is not None else {}
 
         # Handle legacy pv parameter
@@ -639,10 +641,20 @@ class PositionVelocityT(PositionBase, collections.abc.Sequence):
 ##################################################
 
 def pvtcart(pv, time, specunits=astro.prefunits['posvel']):
-    return PositionVelocityT(time=astro.abstime(time), cartesian=pvhelper.cartesianpv(pv, specunits))
+    '''Define a PositionVelocityT or PositionT by its Cartesian
+       component pv: An array or list convertible to an array with
+       numerical values time: Any time representation that serve as
+       input to astro.abstime specunit: The units to be assigned to
+       the numbers in `pv`
 
+    '''
+    (cart, velp) = pvhelper.cartesianpv(pv, specunits)
+    if velp:
+        return PositionVelocityT(time=astro.abstime(time), cartesian=cart)
+    else:
+        return PositionT(time=astro.abstime(time), cartesian=cart)
 
-def pvt(obj, item=None, aux=None):
+def OLD_pvt(obj, item=None, aux=None):
     '''Return an instance of PositionVelocityT (position, velocity and time), from a
     variety of sources. Sequence in time can be length 1 or more.
 
@@ -670,7 +682,7 @@ def pvt(obj, item=None, aux=None):
             # Add the specified time to the PV
             res = PositionVelocityT(time=astro.abstime(item), cartesian=obj)
     elif ispvt(obj):
-        if isdttm(item):
+        if pvhelper.isdttm(item):
             # Replace the timestamp in the PositionVelocityT
             res = PositionVelocityT(time=item, cartesian=obj.cartesian, aux=obj.aux)
         else:
@@ -694,7 +706,7 @@ def pvt(obj, item=None, aux=None):
 
 def ispvt(obj):
     """Check if object is a PositionVelocityT (or legacy PVT)."""
-    return type(obj).__name__ in ('PositionVelocityT', 'PVT') and pvhelper.ispv(obj.cartesian) and isdttm(obj.time)
+    return type(obj).__name__ in ('PositionVelocityT', 'PVT') and pvhelper.ispv(obj.cartesian) and pvhelper.isdttm(obj.time)
 
 def ispvter(obj):
     return ispvt(obj) or isephrow(obj)
