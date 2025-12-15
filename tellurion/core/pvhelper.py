@@ -44,6 +44,15 @@ def cartesianpv(array, units=['length', 'speed'], unitlookup=astro.prefunits):
         raise ValueError(f"Incorrect shape of array to make posvel {arr.shape}")
     return (nquant.sq(arr, nsu, unitlookup=unitlookup), velp)
 
+def cartesianpv_sep(position, velocity, unitlookup=astro.prefunits):
+    '''Make a Cartesian position-velocity from separate position and
+    velocity structured quantities, converting them to the desired
+    units.'''
+    return nquant.structquant([position, velocity], \
+                              [_eph_pos, _eph_vel], \
+                              units={'position':'length', 'velocity':'speed'}, \
+                              unitlookup=unitlookup)
+
 
 def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distance'], unitlookup=astro.prefunits):
     '''Make a spherical coordinate set for position and velocity

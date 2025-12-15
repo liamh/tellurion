@@ -36,24 +36,25 @@ from . import element as oelement
 
 
 def _pvt(object, unitlookup=astro.prefunits, getpvcargs=[], additional=None):
-    '''Make the postion, velocity, and time tuple (posvel.pv(),
-    astropy.time.Time) or position and velocity from the Orekit object
-    that has them defined; there is no transformation (e.g., from
-    Kepler elements).
+    '''Make the postion, velocity (), and time tuple
+    (astropy.time.Time) or position and velocity from the Orekit
+    object that has them defined; there is no transformation (e.g.,
+    from Kepler elements).
+
     '''
 
     def addtime(pv):
         if type(additional) is astropy.time.Time:
-            return posvel.pvt(pv, additional)
+            return posvel.PositionVelocityT(time=additional, cartesian=pv)
         else:
             error("Need datetime")
 
     if hasattr(object, 'getPosition') and hasattr(object, 'getVelocity'):
         pos = _v3d(object.getPosition(), astro.posvelsiu[0])
         vel = _v3d(object.getVelocity(), astro.posvelsiu[1])
-        pv = astro.changeunits(posvel.pv(pos, vel, astro.orkunits), unitlookup)
+        pv = astro.changeunits(pvhelper.cartesianpv_sep(pos, vel, astro.orkunits), unitlookup)
         if hasattr(object, 'getDate'):
-            return posvel.pvt(pv, _okad(object.getDate()))
+            return posvel.PositionVelocityT(time=_okad(object.getDate()), cartesian=pv)
         else:
             return addtime(pv)
     elif hasattr(object, 'pVCoordinates'):

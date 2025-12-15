@@ -24,9 +24,8 @@ demoa = Munch()
 demoa.init = Munch()
 demoa.init.check = Munch()
 
-demoa.init.pos = [5740.13268349, 3314.06715   ,    0.]
-demoa.init.vel = [-2.75082684,  4.76457184,  5.50165367]
-demoa.init.pvt = tell.pvt((demoa.init.pos, demoa.init.vel, newyear))  # A tuple (Quantity, Time)
+demoa.init.pv = [5740.13268349, 3314.06715, 0., -2.75082684, 4.76457184, 5.50165367]
+demoa.init.pvt = tell.pvtcart(demoa.init.pv, newyear)
 # Cartesian or Kepler transformation
 demoa.init.altper = tork.elementval(demoa.init.pvt, 'altper')  # Altitude of perigee for the initial state
 demoa.init.kep = tork.kepler(demoa.init.pvt)  # Convert PVT to Kepler elements
@@ -38,6 +37,7 @@ demoa.init.cart = tork.pvt(demoa.init.kep)  # Convert back to Cartesian, same as
 demoa.prop = Munch()
 demoa.prop.check = Munch()
 
+### Numerical
 # The generator
 demoa.prop.gen = tork.prepare(demoa.init.pvt, 1*u.day) # Use generator for any propagation up to 1 day
 
@@ -56,8 +56,13 @@ demoa.prop.eclipse.ephempvt = tork.propagate(demoa.prop.eclipse.genevpvt, np.lin
 demoa.prop.eclipse.ephem = demoa.prop.eclipse.ephempvt.ephemeris()
 demoa.prop.eclipse.merged = \
     demoa.prop.eclipse.genevpvt['sun transition'].merge(demoa.prop.eclipse.ephempvt).ephemeris()
-demoa.prop.eclipse.um12h = tork.propagate(demoa.prop.eclipse.genevpvt, 12*u.hour)
-demoa.prop.eclipse.um12h05m = tork.propagate(demoa.prop.eclipse.genevpvt, tell.tq('12hr 5min'))
+demoa.prop.eclipse.um4h = tork.propagate(demoa.prop.eclipse.genevpvt, 4*u.hour)
+demoa.prop.eclipse.um4h15m = tork.propagate(demoa.prop.eclipse.genevpvt, tell.tq('4hr 15min'))
+
+### Analytical
+demoa.propa = Munch()
+demoa.propa.gen = tork.prepare(demoa.init.pvt, 1*u.day, forceenv=tork.kepleranalytic())
+demoa.propa.ephem = tork.propagate(demoa.propa.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
 
 ################ Propagation Kepler element
 
@@ -65,7 +70,7 @@ demob = Munch()
 
 demob.kep = tell.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25},
                            tell.abstime('2023-09-14T08:30:00'))
-demob.pvt = tork.pvt(demob.kep) # Convert Kepler elements to PVT
+demob.pvt = tork.cartesian(demob.kep) # Convert Kepler elements to PVT
 demob.gen = tork.prepare(demob.pvt, 1*u.day)
 demob.eph = tork.propagate(demob.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
 # tell.pvt(demob.eph, 35*u.min)
@@ -109,7 +114,7 @@ demoa.prop.rsw_4x4hpB01_to_4x4 = tork.lvlh(demoa.prop.ss4x4hpB01, demoa.prop.ss4
 # Lifetime - need a very low orbit to avoid a long integration, but don't go below 100km altitude, HP will fail
 democ = Munch()
 democ.kep = tell.kepler({"sma":6600.0, "ecc":0.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25}, newyear)
-democ.pvt = tork.pvt(democ.kep) # Convert Kepler elements to PVT
+democ.pvt = tork.cartesian(democ.kep) # Convert Kepler elements to PVT
 democ.gen = tork.prepare(democ.pvt, 10*u.day, forceenv=demoa.prop.fe4x4hpB01) # Ask for 10 days, but it only lasts about 6
 democ.tspan = tork.timerange(democ.gen) # <Quantity 518050.233819 s> ; time until altitude threshold is hit
 democ.tspan_dhms = tell.tc(democ.tspan) # '5d 23hr 54min 10.233s'
