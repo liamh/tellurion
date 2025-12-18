@@ -1,32 +1,14 @@
 """Make a dictionary (`namedquant`) of named quantities or structured quantity (`structquant`)"""
 
 import string
+import collections.abc
 import numpy as np
 from numpy.lib import recfunctions as rfn
 import astropy.units as u
 
-# Extract value as np.array from quantities
-u.Quantity.to_array = lambda self: np.array(self.value.tolist()) if self.isscalar \
-    else self.value.view(np.float64).reshape(self.value.shape + (-1,))
-
-# Make the structured quantity a singleton vector if it is a scalar
-u.Quantity.tovector = lambda self: u.Quantity([self]) if self.isscalar else self
-
-# Make Python source
-# compose_sq(*sq.decompose()) returns a copy of the structured quantity sq
-u.Quantity.decompose = lambda self: (self.to_array().tolist(), self.dtype.descr, self.unit.to_string())
-def compose_sq(values, dtype, unit_string):
-    '''Make a structured quantity from an np.array, dtype, and unit string'''
-    if type(values) is list:
-        nparr = np.array(values)
-    else:
-        nparr = values
-    return rfn.unstructured_to_structured(nparr, dtype=dtype)*u.Unit(unit_string)
-
-# Concatenate rows of the same structures
-u.Quantity.vstack = lambda self, second: (self.vstack(second[0]).vstack(second[1:]) if len(second)>1 \
-                                          else self.vstack(second[0])) if type(second) is list \
-                                          else np.hstack((self.tovector(), second.tovector()))
+############################################################
+## Make structured quantities from arrays and other sq
+############################################################
 
 def sq(values, names_size_units, unitlookup={}):
     """Make a struct quantity from arrays. Make a scalar struct if
@@ -45,30 +27,47 @@ def sq(values, names_size_units, unitlookup={}):
     unit = tuple([lookuppt(nsu[2]) for nsu in names_size_units])
     return compose_sq(values, dtype, unit)
 
-############################################################
-## Useful to have _splitsq, make it a method .to_dict()?
-############################################################
+# Make the structured quantity a singleton vector if it is a scalar
+u.Quantity.tovector = lambda self: u.Quantity([self]) if self.isscalar else self
 
-def _splitsq(stqu, quant=True, readably=False):
-    '''Make a dict of names and quantities, or values, names, and units from the structured quantity. To recreate a structured quantity, set `quant` to False; this results in input for structquant. For example, `structquant(*_splitsq(sq, False))` copies `sq`.'''
-    if quant:
-        vnu = _splitsq(stqu, False)
-        qs = [v*u for (v, u) in zip(vnu[0], vnu[2])]
-        return {un:val for (val, un) in zip(qs, vnu[1])}
-    elif readably:
-        return (stqu.value.tolist(), stqu.dtype.names, tuple(un.to_string() for un in stqu.unit.values()))
+# Extract value as np.array from quantities
+u.Quantity.to_array = lambda self: rfn.structured_to_unstructured(self.value)
+
+# Decompose SQ into an array, dtype, and unit string
+u.Quantity.decompose = lambda self: (self.to_array(), self.dtype.descr, self.unit.to_string()) \
+    if self.dtype.names else (self.value, None, self.unit)
+
+def compose_sq(values, dtype, unit_string):
+    '''Make a structured quantity from an np.array, dtype, and unit string'''
+    return rfn.unstructured_to_structured(np.array(values), dtype=dtype)*u.Unit(unit_string)
+
+def vstack(sqs):
+    """Concatenate the structured quantities with identical structure as rows"""
+    # np.vstack does not work correctly on SQ
+    alleq = lambda itb: all([x==itb[0] for x in itb])
+    parts = [a.decompose() for a in sqs]
+    dtypes = [p[1] for p in parts]
+    units = [p[2] for p in parts]
+    if alleq(dtypes) and alleq(units):
+        return compose_sq(np.vstack(tuple([p[0] for p in parts])), \
+                          dtypes[0], units[0])
     else:
-        return (stqu.value.tolist(), stqu.dtype.names, stqu.unit.values())
+        raise ValueError('Structured quantities must have the same dtype an units')
+
+# Make a dictionary by structure components
+u.Quantity.to_dict = lambda self: {nm: self[nm] for nm in self.dtype.names}
+
+
+############################################################
+## Make scalar sq from lists, dicts and vice versa
+##  namedquant(), structquant()
+############################################################
 
 def scvec(size):
     if size==1:
         return f"f8"
     else:
         return f"({size},)f8"
-
-############################################################
-## namedquant(), structquant() from lists, dicts -- need this?
-############################################################
 
 def namedquant(values, names=string.ascii_letters, units=None, unitlookup={}):
     """Make a dictionary of quantities by name from numbers or quantities (including structured quantities).
@@ -117,6 +116,17 @@ def namedquant(values, names=string.ascii_letters, units=None, unitlookup={}):
         else:
             vals = zip(rnames, [val*u.Unit(unit) for val, unit in zip(rvals, runits)])
             return {name: value for name, value in vals}
+
+def _splitsq(stqu, quant=True, readably=False):
+    '''Make a dict of names and quantities, or values, names, and units from the structured quantity. To recreate a structured quantity, set `quant` to False; this results in input for structquant. For example, `structquant(*_splitsq(sq, False))` copies `sq`.'''
+    if quant:
+        vnu = _splitsq(stqu, False)
+        qs = [v*u for (v, u) in zip(vnu[0], vnu[2])]
+        return {un:val for (val, un) in zip(qs, vnu[1])}
+    elif readably:
+        return (stqu.value.tolist(), stqu.dtype.names, tuple(un.to_string() for un in stqu.unit.values()))
+    else:
+        return (stqu.value.tolist(), stqu.dtype.names, stqu.unit.values())
 
 def structquant(values, names=string.ascii_letters, units=None, unitlookup={}):
     """Make a structured quantity from numbers or quantities

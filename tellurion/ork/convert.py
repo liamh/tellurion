@@ -80,7 +80,7 @@ def _pvt(object, unitlookup=astro.prefunits, getpvcargs=[], additional=None):
 def _tspvc(obj, time=None):
     '''Convert tuple (posvel.pv(), astropy.time.Time) or ephemeris row to Orekit TimeStampedPVCoordinates or posvel.pv() to PVCoordinates'''
     if pvhelper.isephrow(obj):
-        opvt = posvel.pvt(obj)
+        opvt = posvel.pvt(obj) # pvhelper.cartesianpv_sep(obj['position'], obj['velocity'])
         if time==None:
             return _tspvc(opvt.pv, opvt.time)
         elif isdttm(time):

@@ -74,8 +74,8 @@ class PositionBase(abc.ABC):
         """
         cart = self.cartesian
         # Check if it's a structured quantity with position/velocity fields
-        if hasattr(cart, 'dtype') and cart.dtype.names and _eph_pos in cart.dtype.names:
-            return cart[_eph_pos]
+        if hasattr(cart, 'dtype') and cart.dtype.names and pvhelper._eph_pos in cart.dtype.names:
+            return cart[pvhelper._eph_pos]
         else:
             return cart
 
@@ -88,7 +88,7 @@ class PositionBase(abc.ABC):
         """
         cart = self.cartesian
         return (hasattr(cart, 'dtype') and cart.dtype.names and
-                _eph_vel in cart.dtype.names)
+                pvhelper._eph_vel in cart.dtype.names)
 
     @abc.abstractmethod
     def _cartesian_to_spherical(self, cartesian):
@@ -237,7 +237,7 @@ class PositionBase(abc.ABC):
         if self.time is None:
             # No time information
             if has_velocity:
-                vel = self.cartesian[_eph_vel]
+                vel = self.cartesian[pvhelper._eph_vel]
                 return np.hstack((pos.si.value, vel.si.value))
             else:
                 return pos.si.value
@@ -249,7 +249,7 @@ class PositionBase(abc.ABC):
                 time_array = self.time.to_array(time_format).reshape(-1, 1)
 
             if has_velocity:
-                vel = self.cartesian[_eph_vel]
+                vel = self.cartesian[pvhelper._eph_vel]
                 return np.hstack((pos.si.value, vel.si.value, time_array))
             else:
                 return np.hstack((pos.si.value, time_array))
@@ -526,8 +526,8 @@ class PositionVelocityT(PositionBase, collections.abc.Sequence):
         from astropy.coordinates import CartesianDifferential, SphericalDifferential
 
         # Extract position and velocity from the structured quantity
-        pos = cartesian[_eph_pos]  # position 3-vector
-        vel = cartesian[_eph_vel]  # velocity 3-vector
+        pos = cartesian[pvhelper._eph_pos]  # position 3-vector
+        vel = cartesian[pvhelper._eph_vel]  # velocity 3-vector
 
         # Create CartesianRepresentation with position
         cart_repr = CartesianRepresentation(x=pos[0], y=pos[1], z=pos[2])
@@ -640,31 +640,36 @@ class PositionVelocityT(PositionBase, collections.abc.Sequence):
 ####    Make PositionT,  PositionVelocityT    ####
 ##################################################
 
-def pvtcart(pv, time, specunits=astro.prefunits['posvel']):
+def pvtcart(pv, time=None, specunits=astro.prefunits['posvel']):
     '''Define a PositionVelocityT or PositionT by its Cartesian
-       component pv: An array or list convertible to an array with
-       numerical values time: Any time representation that serve as
-       input to astro.abstime specunit: The units to be assigned to
-       the numbers in `pv`
+       component
+
+       pv: An array or list convertible to an array with  numerical values
+       time: Any time representation that serve as input to astro.abstime
+       specunits: The units to be assigned to the numbers in `pv`
 
     '''
+    if hasattr(pv, pvhelper._eph_pos) and hasattr(pv, pvhelper._eph_vel):
+       None
+
     (cart, velp) = pvhelper.cartesianpv(pv, specunits)
     if velp:
         return PositionVelocityT(time=astro.abstime(time), cartesian=cart)
     else:
         return PositionT(time=astro.abstime(time), cartesian=cart)
 
+
+
 def OLD_pvt(obj, item=None, aux=None):
     '''Return an instance of PositionVelocityT (position, velocity and time), from a
     variety of sources. Sequence in time can be length 1 or more.
 
     '''
-    if isephrow(obj):
+    if pvhelper.isephrow(obj):
         # PositionVelocityT from an ephemeris row
-        pos = obj[_eph_pos]
-        vel = obj[_eph_vel]
-        ##NEED TO CONVERT
-        return PositionVelocityT(time=obj[_eph_time], cartesian=pvhelper.cartesianpv(pv))
+        pos = obj[pvhelper._eph_pos]
+        vel = obj[pvhelper._eph_vel]
+        return pvhelper.cartesianpv_sep(time=obj[pvhelper._eph_time], cartesian=pvhelper.cartesianpv(pv))
     elif type(obj) is TimeSeries:
         # Select a row from an ephemeris by index, absolute time, or relative time
         if item == None:   # Return the last row
@@ -709,7 +714,7 @@ def ispvt(obj):
     return type(obj).__name__ in ('PositionVelocityT', 'PVT') and pvhelper.ispv(obj.cartesian) and pvhelper.isdttm(obj.time)
 
 def ispvter(obj):
-    return ispvt(obj) or isephrow(obj)
+    return ispvt(obj) or pvhelper.isephrow(obj)
 
 ##################################################
 #### Legacy aliases for backward compatibility ####

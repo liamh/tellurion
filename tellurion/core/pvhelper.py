@@ -53,7 +53,6 @@ def cartesianpv_sep(position, velocity, unitlookup=astro.prefunits):
                               units={'position':'length', 'velocity':'speed'}, \
                               unitlookup=unitlookup)
 
-
 def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distance'], unitlookup=astro.prefunits):
     '''Make a spherical coordinate set for position and velocity
 
