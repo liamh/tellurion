@@ -60,9 +60,9 @@ demoa.prop.eclipse.um4h = tork.propagate(demoa.prop.eclipse.genevpvt, 4*u.hour)
 demoa.prop.eclipse.um4h15m = tork.propagate(demoa.prop.eclipse.genevpvt, tell.tq('4hr 15min'))
 
 ### Analytical
-demoa.propa = Munch()
-demoa.propa.gen = tork.prepare(demoa.init.pvt, 1*u.day, forceenv=tork.kepleranalytic())
-demoa.propa.ephem = tork.propagate(demoa.propa.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
+#demoa.propa = Munch()
+#demoa.propa.gen = tork.prepare(demoa.init.pvt, 1*u.day, forceenv=tork.kepleranalytic())
+#demoa.propa.ephem = tork.propagate(demoa.propa.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
 
 ################ Propagation Kepler element
 
