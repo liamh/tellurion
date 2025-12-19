@@ -48,10 +48,16 @@ def cartesianpv_sep(position, velocity, unitlookup=astro.prefunits):
     '''Make a Cartesian position-velocity from separate position and
     velocity structured quantities, converting them to the desired
     units.'''
-    return nquant.structquant([position, velocity], \
-                              [_eph_pos, _eph_vel], \
-                              units={'position':'length', 'velocity':'speed'}, \
-                              unitlookup=unitlookup)
+    if type(position) is u.Quantity and type(velocity) is u.Quantity:
+      posdec = position.decompose()
+      veldec = velocity.decompose()
+      dval = [(_eph_pos, '<f8', (3,)), (_eph_vel, '<f8', (3,))]
+      return nquant.compose_sq(np.hstack((posdec[0], veldec[0])), dval, (posdec[2], veldec[2]))
+    else:
+        return nquant.structquant([position, velocity], \
+                                  [_eph_pos, _eph_vel], \
+                                  units={'position':'length', 'velocity':'speed'}, \
+                                  unitlookup=unitlookup)
 
 def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distance'], unitlookup=astro.prefunits):
     '''Make a spherical coordinate set for position and velocity

@@ -658,7 +658,22 @@ def pvtcart(pv, time=None, specunits=astro.prefunits['posvel']):
     else:
         return PositionT(time=astro.abstime(time), cartesian=cart)
 
+hasthing = lambda object, thing: hasattr(object,thing) or (hasattr(object,'colnames') and thing in object.colnames)
 
+def pvtattr(object):
+    '''Create PositionVelocityT or PositionT from any object (e.g., ephemeris) that has the time, position, and optionally velocity, properties.'''
+    if hasthing(object,pvhelper._eph_time) and hasthing(object,pvhelper._eph_pos):
+        if hasthing(object,pvhelper._eph_vel):
+            cart = pvhelper.cartesianpv_sep(object[pvhelper._eph_pos], \
+                                            object[pvhelper._eph_vel], unitlookup=convunits)
+            return PositionVelocityT(time=object[pvhelper._eph_time], cartesian=cart)
+        else:
+            return PositionT(time=object[pvhelper._eph_time], cartesian=object[pvhelper._eph_pos])
+    else:
+        raise ValueError('Cannot make a PositionVelocityT or PositionT from this object')
+
+astropy.timeseries.TimeSeries.pvt = lambda self: pvtattr(self)
+astropy.table.row.Row.pvt = lambda self: pvtattr(self)
 
 def OLD_pvt(obj, item=None, aux=None):
     '''Return an instance of PositionVelocityT (position, velocity and time), from a
