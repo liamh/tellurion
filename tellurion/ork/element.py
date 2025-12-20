@@ -54,7 +54,7 @@ def tselements(ephem, elements):
     '''Make a time series of selected orbital elements'''
     return TimeSeries(time=ephem.time,
                       data=[dict(zip(elements, elementval(ephrow, elements)))
-                            for ephrow in ephem])
+                            for ephrow in ephem.pvt()])
 
 ########################################
 ####    Make Kepler element set     ####
@@ -70,9 +70,11 @@ def _keplerianorbit(oes, units=(astro.prefunits['length'], astro.prefunits['angl
     elif posvel.ispvtcart(oes):
         co = CartesianOrbit(convert._tspvc(oes),
                             forceenv['celestialframe'], forceenv['earthmu'].si.value)
+        return OrbitType.KEPLERIAN.convertType(co)
+    elif hasattr(oes,'pvt'):
+        _keplerianorbit(oes.pvt(), units=units, forceenv=forceenv)
     else:
         raise ValueError('Cannot transform to Keplerian elements')
-    return OrbitType.KEPLERIAN.convertType(co)
 
 def _keporb_from_components(oes, epoch, units=(astro.prefunits['length'], astro.prefunits['angle']), fe=force.deffe):
     '''Make a org.orekit.orbits.KeplerianOrbit from orbital elements as a u.Quantity or Dict'''

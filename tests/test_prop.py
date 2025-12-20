@@ -25,9 +25,8 @@ demoa = Munch()
 demoa.init = Munch()
 demoa.init.check = Munch()
 
-demoa.init.pos = [5740.13268349, 3314.06715   ,    0.]
-demoa.init.vel = [-2.75082684,  4.76457184,  5.50165367]
-demoa.init.pvt = tell.pvt((demoa.init.pos, demoa.init.vel, newyear))  # A tuple (Quantity, Time)
+demoa.init.pv = [5740.13268349, 3314.06715, 0., -2.75082684, 4.76457184, 5.50165367]
+demoa.init.pvt = tell.pvtcart(demoa.init.pv, newyear)
 # Cartesian or Kepler transformation
 demoa.init.kep = tork.kepler(demoa.init.pvt)  # Convert PVT to Kepler elements
 demoa.init.seekep = tell.namedquant(demoa.init.kep[0])  # Easier to read Kepler elements
@@ -68,9 +67,6 @@ sent3a.gen = tork.prepare(sent3a.mest, 1*u.day, {'altitude': 125.0*u.km, 'eclips
 ##########################
 ####      Tests       ####
 ##########################
-
-def test_pvt():
-    tell.pvt(demoa.init.pvt.to_array()) == demoa.init.pvt
 
 def test_kepcart():
     np.testing.assert_allclose(demoa.init.pvt.to_array(), \

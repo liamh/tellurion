@@ -324,6 +324,8 @@ class PositionBase(abc.ABC):
 
         return ts
 
+# END class PositionBase()
+
 ##################################################
 ####   PositionT: Position with optional time ####
 ##################################################
@@ -635,6 +637,11 @@ class PositionVelocityT(PositionBase, collections.abc.Sequence):
     def _make_instance(self, time, cartesian, aux):
         """Factory method to create a new PositionVelocityT instance."""
         return PositionVelocityT(time=time, cartesian=cartesian, aux=aux)
+
+    def pvt(self):
+        return self
+
+# END class PositionVelocityT
 
 ##################################################
 ####    Make PositionT,  PositionVelocityT    ####
