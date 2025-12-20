@@ -649,14 +649,16 @@ def pvtcart(pv, time=None, specunits=astro.prefunits['posvel']):
        specunits: The units to be assigned to the numbers in `pv`
 
     '''
-    if hasattr(pv, pvhelper._eph_pos) and hasattr(pv, pvhelper._eph_vel):
-       None
-
     (cart, velp) = pvhelper.cartesianpv(pv, specunits)
     if velp:
         return PositionVelocityT(time=astro.abstime(time), cartesian=cart)
     else:
         return PositionT(time=astro.abstime(time), cartesian=cart)
+
+def ispvtcart(obj):
+    """Check if object is a PositionVelocityT (or legacy PVT)."""
+    return type(obj).__name__ in ('PositionVelocityT', 'PVT') \
+        and pvhelper.ispv(obj.cartesian) and pvhelper.isdttm(obj.time)
 
 hasthing = lambda object, thing: hasattr(object,thing) or (hasattr(object,'colnames') and thing in object.colnames)
 
@@ -665,7 +667,7 @@ def pvtattr(object):
     if hasthing(object,pvhelper._eph_time) and hasthing(object,pvhelper._eph_pos):
         if hasthing(object,pvhelper._eph_vel):
             cart = pvhelper.cartesianpv_sep(object[pvhelper._eph_pos], \
-                                            object[pvhelper._eph_vel], unitlookup=convunits)
+                                            object[pvhelper._eph_vel])
             return PositionVelocityT(time=object[pvhelper._eph_time], cartesian=cart)
         else:
             return PositionT(time=object[pvhelper._eph_time], cartesian=object[pvhelper._eph_pos])
@@ -674,62 +676,6 @@ def pvtattr(object):
 
 astropy.timeseries.TimeSeries.pvt = lambda self: pvtattr(self)
 astropy.table.row.Row.pvt = lambda self: pvtattr(self)
-
-def OLD_pvt(obj, item=None, aux=None):
-    '''Return an instance of PositionVelocityT (position, velocity and time), from a
-    variety of sources. Sequence in time can be length 1 or more.
-
-    '''
-    if pvhelper.isephrow(obj):
-        # PositionVelocityT from an ephemeris row
-        pos = obj[pvhelper._eph_pos]
-        vel = obj[pvhelper._eph_vel]
-        return pvhelper.cartesianpv_sep(time=obj[pvhelper._eph_time], cartesian=pvhelper.cartesianpv(pv))
-    elif type(obj) is TimeSeries:
-        # Select a row from an ephemeris by index, absolute time, or relative time
-        if item == None:   # Return the last row
-            item = -1
-        try:
-            row = obj[item]
-        except:
-            row = obj.loc[astro.abstime(obj[0]['time'])]
-        return pvt(row, aux = aux)
-    elif pvhelper.ispv(obj):
-        if item==None:
-            # Add the current time to the PV
-            res = PositionVelocityT(time=astro.abstime(0), cartesian=obj)
-        else:
-            # Add the specified time to the PV
-            res = PositionVelocityT(time=astro.abstime(item), cartesian=obj)
-    elif ispvt(obj):
-        if pvhelper.isdttm(item):
-            # Replace the timestamp in the PositionVelocityT
-            res = PositionVelocityT(time=item, cartesian=obj.cartesian, aux=obj.aux)
-        else:
-            # Displace the timestamp in the PositionVelocityT by the given relative time
-            res = PositionVelocityT(time=obj.time + item, cartesian=obj.cartesian, aux=obj.aux)
-    elif type(obj) is list:
-        if len(obj)>1:
-            return obj[0].copy().concatenate(obj[1:])
-        elif len(obj)==1:
-            return obj[0]
-    elif type(obj) is np.ndarray:
-        return PositionVelocityT(
-            time=astro.abstime(astropy.time.Time(obj[6], format=astro.prefnumabstime).to_datetime()),
-            cartesian=pvhelper.cartesianpv(obj[0:6], astro.siunits).to(astro.prefunits['posvel'])
-        )
-    else:
-        raise ValueError('Cannot make a PositionVelocityT from this object')
-    if aux: # only one attribute for now
-        res.aux[aux[0]] = aux[1]
-    return res
-
-def ispvt(obj):
-    """Check if object is a PositionVelocityT (or legacy PVT)."""
-    return type(obj).__name__ in ('PositionVelocityT', 'PVT') and pvhelper.ispv(obj.cartesian) and pvhelper.isdttm(obj.time)
-
-def ispvter(obj):
-    return ispvt(obj) or pvhelper.isephrow(obj)
 
 ##################################################
 #### Legacy aliases for backward compatibility ####

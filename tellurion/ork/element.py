@@ -67,7 +67,7 @@ def _keplerianorbit(oes, units=(astro.prefunits['length'], astro.prefunits['angl
         return _keporb_from_components(oes.els, oes.t, units, forceenv)
     elif type(oes) is KeplerianOrbit:
         return oes
-    elif posvel.ispvter(oes):
+    elif posvel.ispvtcart(oes):
         co = CartesianOrbit(convert._tspvc(oes),
                             forceenv['celestialframe'], forceenv['earthmu'].si.value)
     else:

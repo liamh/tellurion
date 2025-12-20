@@ -15,7 +15,7 @@ def ntw(relsc, refsc, unitlookup=astro.prefunits):
     org.orekit.propagation.SpacecraftState (set the `spacecraftstate`
     argument of `prop()` to `True`)
     '''
-    rf =  posvel.pvt(_relframe(LOFType.NTW, relsc, refsc, unitlookup))
+    rf = _relframe(LOFType.NTW, relsc, refsc, unitlookup)
     return rf.ephemeris(['time', 'NTW position', 'NTW velocity'])
 
 def lvlh(relsc, refsc, unitlookup=astro.prefunits):
@@ -24,7 +24,7 @@ def lvlh(relsc, refsc, unitlookup=astro.prefunits):
     org.orekit.propagation.SpacecraftState (set the `spacecraftstate`
     argument of `prop()` to `True`)
     '''
-    rf = posvel.pvt(_relframe(LOFType.LVLH, relsc, refsc, unitlookup))
+    rf = _relframe(LOFType.LVLH, relsc, refsc, unitlookup)
     return rf.ephemeris(['time', 'LVLH position', 'LVLH velocity'])
 
 def _relframe(frame, relsc, refsc, unitlookup=astro.prefunits):

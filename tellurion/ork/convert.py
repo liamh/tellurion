@@ -42,21 +42,14 @@ def _pvt(object, unitlookup=astro.prefunits, getpvcargs=[], additional=None):
     from Kepler elements).
 
     '''
-
-    def addtime(pv):
-        if type(additional) is astropy.time.Time:
-            return posvel.PositionVelocityT(time=additional, cartesian=pv)
-        else:
-            error("Need datetime")
-
     if hasattr(object, 'getPosition') and hasattr(object, 'getVelocity'):
         pos = _v3d(object.getPosition(), astro.posvelsiu[0])
         vel = _v3d(object.getVelocity(), astro.posvelsiu[1])
         pv = astro.changeunits(pvhelper.cartesianpv_sep(pos, vel, astro.orkunits), unitlookup)
         if hasattr(object, 'getDate'):
             return posvel.PositionVelocityT(time=_okad(object.getDate()), cartesian=pv)
-        else:
-            return addtime(pv)
+        elif type(additional) is astropy.time.Time:
+            return posvel.PositionVelocityT(time=additional, cartesian=pv)
     elif hasattr(object, 'pVCoordinates'):
         return _pvt(object.pVCoordinates, unitlookup)
     elif hasattr(object, 'getPVCoordinates'):
@@ -66,14 +59,6 @@ def _pvt(object, unitlookup=astro.prefunits, getpvcargs=[], additional=None):
             return _pvt(object.getPVCoordinates(), unitlookup)
     elif hasattr(object, 'initialState'):
         return _pvt(object.initialState, unitlookup)
-    elif hasattr(object, 'position') and hasattr(object, 'velocity'):
-        pos = _v3d(object.position, astro.posvelsiu[0])
-        vel = _v3d(object.velocity, astro.posvelsiu[1])
-        pv = astro.changeunits(posvel.pv(pos, vel, astro.orkunits), unitlookup)
-        if type(object) is TimeStampedPVCoordinates:
-            return posvel.pvt(pv, _okad(object.getDate()))
-        else:
-            return addtime(pv)
     else:
         raise ValueError("Cannot convert value to position, value, and time (PVT)")
 
@@ -87,7 +72,7 @@ def _tspvc(obj, time=None):
             return _tspvc(opvt.pv, time)
         elif isreltime(time):
             return _tspvc(opvt.pv, opvt.time+time)
-    elif posvel.ispvt(obj):
+    elif posvel.ispvtcart(obj):
         return _tspvc(obj.pv, obj.time)
     elif pvhelper.ispv(obj):
         conv = obj.to(astro.posvelsiu)
