@@ -198,9 +198,9 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', output='e
             for rt in reltimes[1:]:
                 retpvt.concatenate(propagate(generator, rt, False, reftime, 'pvt'))
             if output=='pvt':
-                return retpvt
+                return retpvt.timeorder()
             else:
-                return retpvt.ephemeris()
+                return retpvt.timeorder().ephemeris()
 
 def timerange(object):
     '''The time difference between the earliest (usually the initial

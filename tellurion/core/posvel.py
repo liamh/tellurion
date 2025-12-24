@@ -638,6 +638,9 @@ class PositionVelocityT(PositionBase, collections.abc.Sequence):
         """Factory method to create a new PositionVelocityT instance."""
         return PositionVelocityT(time=time, cartesian=cartesian, aux=aux)
 
+    def pt(self):
+        return PositionT(cartesian=self.cartesian['position'], time=self.time, aux=self.aux)
+
     def pvt(self):
         return self
 
