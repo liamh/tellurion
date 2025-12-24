@@ -523,11 +523,16 @@ class PositionVelocityT(PositionBase):
         pos = cartesian[pvhelper._eph_pos]  # position 3-vector
         vel = cartesian[pvhelper._eph_vel]  # velocity 3-vector
 
-        # Create CartesianRepresentation with position
-        cart_repr = CartesianRepresentation(x=pos[0], y=pos[1], z=pos[2])
-
-        # Create CartesianDifferential with velocity
-        cart_diff = CartesianDifferential(d_x=vel[0], d_y=vel[1], d_z=vel[2])
+        if self.isscalar:
+            # Create CartesianRepresentation with position
+            cart_repr = CartesianRepresentation(x=pos[0], y=pos[1], z=pos[2])
+            # Create CartesianDifferential with velocity
+            cart_diff = CartesianDifferential(d_x=vel[0], d_y=vel[1], d_z=vel[2])
+        else:
+            # Create CartesianRepresentation with position
+            cart_repr = CartesianRepresentation(x=pos[:, 0], y=pos[:, 1], z=pos[:, 2])
+            # Create CartesianDifferential with velocity
+            cart_diff = CartesianDifferential(d_x=vel[:, 0], d_y=vel[:, 1], d_z=vel[:, 2])
 
         # Add the differential to the representation
         cart_repr = cart_repr.with_differentials(cart_diff)
@@ -544,7 +549,6 @@ class PositionVelocityT(PositionBase):
         # which corresponds to (right ascension, declination, distance)
         sphrepr = [sph_repr.lon, sph_repr.lat, sph_repr.distance]
         sphrate = [sph_diff.d_lon, sph_diff.d_lat, sph_diff.d_distance]
-
         # Use the existing sph() function to create the structured quantity
         return pvhelper.sphericalpv(sphrepr, sphrate, labels=['rtasc', 'decl', 'distance'],
                                     unitlookup=astro.prefunits)

@@ -44,7 +44,7 @@ demoa.prop.gen = tork.prepare(demoa.init.pvt, 1*u.day) # Use generator for any p
 # The example pvt as a CartesianOrbit
 demoa.prop.ephem = tork.propagate(demoa.prop.gen, prop5m1h, True)  # Propagate to each step, and include the initial state
 demoa.prop.pvt = tork.propagate(demoa.prop.gen, prop5m1h, True, output='pvt') # As PVT
-# demoa.prop.pvt.spherical # ra, dec, distance
+demoa.prop.radec = demoa.prop.pvt.spherical # ra, dec, distance
 demoa.prop.pvt12h = tork.propagate(demoa.prop.gen, 12*u.hour) # Propagate to a single time, as a PVT
 demoa.prop.altperapo = tork.tselements(demoa.prop.ephem, ["altper","altapo"]) # Time series of altitudes of perigee and apogee
 demoa.prop.pvapa = tell.hcat(demoa.prop.ephem, demoa.prop.altperapo) # Ephemeris table with additional columns for perigee and apogee altitude
