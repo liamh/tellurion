@@ -7,13 +7,6 @@ import astropy.units as u
 import astropy.time
 from tellurion.core import astro
 
-def ensure_1d(obj):
-    '''Make object with shape `(n,)` where n=1 if obj is a scalar'''
-    if obj.shape==():
-        return obj.reshape(1,)
-    else:
-        return obj
-
 class QuantT(collections.abc.Sequence):
     '''Base class for quantities and time, like position-velocity-time or observations and time.'''
     q: u.Quantity

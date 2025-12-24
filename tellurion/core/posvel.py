@@ -24,7 +24,7 @@ from tellurion.core import pvhelper
 
 @dataclasses.dataclass
 class PositionBase(abc.ABC):
-    """Base class for objects with position information.
+    """Base class for objects with cartesian and/or spherical position information.
 
     Provides lazy conversion between Cartesian and spherical coordinates,
     with the actual conversion logic implemented by subclasses depending
@@ -38,6 +38,45 @@ class PositionBase(abc.ABC):
     '''Internal storage for Cartesian coordinates'''
     _spherical: u.Quantity = dataclasses.field(default=None, init=False, repr=False)
     '''Internal storage for spherical coordinates'''
+
+    def __init__(self, time=None, aux=None, cartesian=None, spherical=None):
+        """Initialize PositionT with either cartesian or spherical coordinates.
+
+        Args:
+            time: astropy.time.Time object (optional)
+            aux: dictionary of auxiliary attributes (optional)
+            cartesian: Cartesian position 3-vector
+            spherical: Spherical position (r, theta, phi)
+        """
+        self.time = time
+        self.isscalar = self.time.isscalar
+        self.aux = aux if aux is not None else {}
+
+        # Ensure only one coordinate system is provided
+        if cartesian is not None and spherical is not None:
+            raise ValueError("Cannot specify both cartesian and spherical coordinates")
+        if cartesian is None and spherical is None:
+            raise ValueError("Must specify either cartesian or spherical coordinates")
+
+        self._cartesian = cartesian
+        self._spherical = spherical
+
+    def __len__(self):
+        if self.isscalar:
+            raise TypeError(f"object of type '{type(self).__name__}' has no len()")
+        else:
+            return len(self.time)
+
+    def __getitem__(self, index):
+        """Get a single time step or slice."""
+        if self.isscalar:
+            raise TypeError(f"'{type(self).__name__}' scalar object is not subscriptable")
+        else:
+            return type(self)( # or equivalently self.__class__
+                time=self.time[index],
+                cartesian=self.cartesian[index],
+                aux={k: v.split(' ')[index] for k, v in self.aux.items()} if self.aux else {}
+            )
 
     @property
     def cartesian(self):
@@ -140,13 +179,6 @@ class PositionBase(abc.ABC):
         """
         pass
 
-    def __len__(self):
-        """Return the number of time steps."""
-        if self.isscalar:
-            return 1
-        else:
-            return len(self.time)
-
     def timeorder(self):
         """Sort in increasing time order.
 
@@ -187,8 +219,8 @@ class PositionBase(abc.ABC):
                 return self
 
         # Concatenate cartesian coordinates
-        self._cartesian = np.concatenate((util.ensure_1d(self.cartesian),
-                                         util.ensure_1d(other.cartesian)))
+        self._cartesian = np.concatenate((self.cartesian.tovector(),
+                                          other.cartesian.tovector()))
         self._spherical = None  # Clear cached spherical coordinates
 
         # Concatenate time
@@ -201,9 +233,8 @@ class PositionBase(abc.ABC):
         else:
             self.time = astro.abstime([self.time, other.time])
 
-        # Merge aux attributes
-        self.aux = funcy.merge_with(' '.join, self.aux, other.aux)
-
+        self.aux = funcy.merge_with(' '.join, self.aux, other.aux) # Merge aux attributes
+        self.isscalar = False
         return self
 
     def merge(self, other):
@@ -338,28 +369,6 @@ class PositionT(PositionBase):
     Can include auxiliary attributes for metadata, flags, etc.
     '''
 
-    def __init__(self, time=None, aux=None, cartesian=None, spherical=None):
-        """Initialize PositionT with either cartesian or spherical coordinates.
-
-        Args:
-            time: astropy.time.Time object (optional)
-            aux: dictionary of auxiliary attributes (optional)
-            cartesian: Cartesian position 3-vector
-            spherical: Spherical position (r, theta, phi)
-        """
-        self.time = time
-        self.isscalar = self.time.isscalar
-        self.aux = aux if aux is not None else {}
-
-        # Ensure only one coordinate system is provided
-        if cartesian is not None and spherical is not None:
-            raise ValueError("Cannot specify both cartesian and spherical coordinates")
-        if cartesian is None and spherical is None:
-            raise ValueError("Must specify either cartesian or spherical coordinates")
-
-        self._cartesian = cartesian
-        self._spherical = spherical
-
     def _cartesian_to_spherical(self, cartesian):
         """Convert Cartesian position to spherical coordinates (position only).
 
@@ -437,29 +446,12 @@ class PositionT(PositionBase):
         """Factory method to create a new PositionT instance."""
         return PositionT(time=time, cartesian=cartesian, aux=aux)
 
-    def __getitem__(self, index):
-        """Get a single time step or slice."""
-        cart1d = util.ensure_1d(self.cartesian)
-        if self.time is None:
-            return PositionT(
-                time=None,
-                cartesian=cart1d[index],
-                aux={k: v.split(' ')[index] for k, v in self.aux.items()} if self.aux else {}
-            )
-        else:
-            t1d = util.ensure_1d(self.time)
-            return PositionT(
-                time=t1d[index],
-                cartesian=cart1d[index],
-                aux={k: v.split(' ')[index] for k, v in self.aux.items()} if self.aux else {}
-            )
-
 ##################################################
 ####   PositionVelocityT: Full state vector   ####
 ##################################################
 
 @dataclasses.dataclass
-class PositionVelocityT(PositionBase, collections.abc.Sequence):
+class PositionVelocityT(PositionBase):
     '''Orbital state vector as position (Cartesian 3-vector), velocity (Cartesian 3-vector),
     time, and a dictionary of discrete attributes; each field can have multiple rows,
     corresponding to an ephemeris.
@@ -554,8 +546,8 @@ class PositionVelocityT(PositionBase, collections.abc.Sequence):
         sphrate = [sph_diff.d_lon, sph_diff.d_lat, sph_diff.d_distance]
 
         # Use the existing sph() function to create the structured quantity
-        return sph(sphrepr, sphrate, labels=['rtasc', 'decl', 'distance'],
-                   unitlookup=astro.prefunits)
+        return pvhelper.sphericalpv(sphrepr, sphrate, labels=['rtasc', 'decl', 'distance'],
+                                    unitlookup=astro.prefunits)
 
     def _spherical_to_cartesian(self, spherical):
         """Convert spherical coordinates to Cartesian state vector.
@@ -608,15 +600,6 @@ class PositionVelocityT(PositionBase, collections.abc.Sequence):
 
         # Create the structured quantity
         return pvhelper.cartesianpv(posvel, unitlookup=astro.prefunits)
-
-    def __getitem__(self, index):
-        cart1d = util.ensure_1d(self.cartesian)
-        t1d = util.ensure_1d(self.time)
-        return PositionVelocityT(
-            time=t1d[index],
-            cartesian=cart1d[index],
-            aux={k: v.split(' ')[index] for k, v in self.aux.items()}
-        )
 
     def copy(self):
         """Create a copy of this PositionVelocityT."""
