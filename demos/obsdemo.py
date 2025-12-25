@@ -8,8 +8,12 @@ from demos.propdemo import *
 eloc = Munch()
 
 eloc.mcd = coord.EarthLocation.of_site('McDonald Observatory')
-#eloc.mcdsv = tork.eci(eloc.mcd, demoa.prop.ephem.time, 'mcdonald sitevec')
-eloc.cmcd = tell.hcat(demoa.prop.ephem, eloc.mcdsv) # Ephemeris table with additional column for McDonald site vector
+eloc.mcdsv = tork.sitevec(eloc.mcd, demoa.prop.ephem.time, "McDonald")
+
+# Name doesn't transfer, too many columns
+eloc.cmcd = tell.hcat(demoa.prop.ephem, eloc.mcdsv.ephemeris()) # Ephemeris table with additional column for McDonald site vector
+
+# Fails after this point
 eloc.mcdsvork = tork.eciobs(eloc.mcd, demoa.prop.ephem.time, 'mcdonald sitevec')
 eloc.cmcdork = tell.hcat(demoa.prop.ephem, eloc.mcdsvork) # Ephemeris table with additional column for McDonald site vector
 

@@ -13,9 +13,10 @@ from org.orekit.bodies import GeodeticPoint
 from org.orekit.frames import TopocentricFrame
 import org.orekit.models.earth as oearth
 
-from ..core import posvel
-from ..core import astro
-from ..core import geog
+from tellurion.core import astro
+from tellurion.core import nquant
+from tellurion.core import posvel
+from tellurion.core import geog
 from . import force
 from . import convert
 
@@ -44,3 +45,17 @@ def geodpt(earthloc):
     lon_rdn = float(geod.lon.radian)
     altitude_m = float(geod.height.si.value)
     return GeodeticPoint(lat_rdn, lon_rdn, altitude_m)
+
+def _topoframe(loc, name="", forceenv=force.deffe):
+    return TopocentricFrame(forceenv['earth'], geodpt(loc), name)
+
+def sitevec(loc, times, name="sitevec", unitlookup=astro.prefunits, forceenv=force.deffe):
+    '''The site vector for an earth location at the specified times.'''
+    if times.isscalar:
+        tf = _topoframe(loc, name, forceenv)
+        tspvc = tf.getPVCoordinates(convert._okad(times), forceenv['celestialframe'])
+        return convert._pvt(tspvc, unitlookup)
+    else:
+        pvts = [sitevec(loc, t, name, unitlookup, forceenv) for t in times]
+        return posvel.PositionVelocityT(time=times, cartesian=\
+                                        nquant.vstack(tuple([pvt.cartesian for pvt in pvts])))
