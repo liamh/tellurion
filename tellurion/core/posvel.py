@@ -39,18 +39,23 @@ class PositionBase(abc.ABC):
     _spherical: u.Quantity = dataclasses.field(default=None, init=False, repr=False)
     '''Internal storage for spherical coordinates'''
 
-    def __init__(self, time=None, aux=None, cartesian=None, spherical=None):
-        """Initialize PositionT with either cartesian or spherical coordinates.
+    def __init__(self, time, aux=None, cartesian=None, spherical=None, pv=None):
+        """Initialize PositionVelocityT with either cartesian or spherical coordinates.
 
         Args:
-            time: astropy.time.Time object (optional)
-            aux: dictionary of auxiliary attributes (optional)
-            cartesian: Cartesian position 3-vector
-            spherical: Spherical position (r, theta, phi)
+            time: astropy.time.Time object
+            aux: dictionary of auxiliary attributes
+            cartesian: Cartesian state vector (position + velocity) or array of state vectors
+            spherical: Spherical state vector (r, theta, phi, vr, vtheta, vphi)
+            pv: Legacy parameter name for cartesian (for backwards compatibility)
         """
         self.time = time
         self.isscalar = self.time.isscalar
         self.aux = aux if aux is not None else {}
+
+        # Handle legacy pv parameter
+        if pv is not None and cartesian is None:
+            cartesian = pv
 
         # Ensure only one coordinate system is provided
         if cartesian is not None and spherical is not None:
@@ -313,6 +318,11 @@ class PositionBase(abc.ABC):
             else:
                 # Position only
                 columnnames = pvhelper._ephemeris_columns_pos_only
+        # Name the columns with the PVT name if available
+        if hasattr(self,'name'):
+            timenm = columnnames[0]
+            columnnames = [self.name + " " + cn for cn in columnnames]
+            columnnames[0]=timenm
 
         # Prepare time array
         if self.time.isscalar:
@@ -369,62 +379,71 @@ class PositionT(PositionBase):
     Can include auxiliary attributes for metadata, flags, etc.
     '''
 
+    def __init__(self, time, aux=None, cartesian=None, spherical=None):
+        super().__init__(time, aux, cartesian, spherical)
+
     def _cartesian_to_spherical(self, cartesian):
-        """Convert Cartesian position to spherical coordinates (position only).
+        """Convert Cartesian state vector to spherical coordinates.
 
         Args:
-            cartesian: Cartesian position 3-vector
+            cartesian: Cartesian state vector with position and velocity components
 
         Returns:
-            spherical: Spherical position using sph() format (no velocity)
+            spherical: Spherical state vector using sph() format
         """
         from astropy.coordinates import CartesianRepresentation, SphericalRepresentation
 
-        # Create CartesianRepresentation with position only
-        cart_repr = CartesianRepresentation(
-            x=cartesian[0],
-            y=cartesian[1],
-            z=cartesian[2]
-        )
+        pos = cartesian
+        if self.isscalar:
+            # Create CartesianRepresentation with position
+            cart_repr = CartesianRepresentation(x=pos[0], y=pos[1], z=pos[2])
+        else:
+            # Create CartesianRepresentation with position
+            cart_repr = CartesianRepresentation(x=pos[:, 0], y=pos[:, 1], z=pos[:, 2])
 
-        # Convert to spherical representation (position only)
+        # Convert to spherical representation
         sph_repr = cart_repr.represent_as(SphericalRepresentation)
 
-        # Convert to the format expected by sph() function (no velocity)
+        # Convert to the format expected by sph() function
+        # SphericalRepresentation uses (lon, lat, distance) format
+        # which corresponds to (right ascension, declination, distance)
         sphrepr = [sph_repr.lon, sph_repr.lat, sph_repr.distance]
-
-        # Use the existing sph() function without velocity
-        return sph(sphrepr, sphrate=None, labels=['rtasc', 'decl', 'distance'],
-                   unitlookup=astro.prefunits)
+        # Use the existing sph() function to create the structured quantity
+        return pvhelper.sphericalpv(sphrepr, None, labels=['rtasc', 'decl', 'distance'],
+                                    unitlookup=astro.prefunits)
 
     def _spherical_to_cartesian(self, spherical):
-        """Convert spherical coordinates to Cartesian position (position only).
+        """Convert spherical coordinates to Cartesian state vector.
 
         Args:
-            spherical: Spherical position in sph() format (no velocity)
+            spherical: Spherical state vector in sph() format
 
         Returns:
-            cartesian: Cartesian position 3-vector
+            cartesian: Cartesian state vector with position and velocity components
         """
         from astropy.coordinates import CartesianRepresentation, SphericalRepresentation
 
-        # Extract spherical position from the structured quantity
-        rtasc = spherical['rtasc']       # right ascension (longitude)
-        decl = spherical['decl']         # declination (latitude)
-        distance = spherical['distance'] # radial distance
+        # Extract spherical position and velocity from the structured quantity
+        rtasc = spherical['rtasc']          # right ascension (longitude)
+        decl = spherical['decl']            # declination (latitude)
+        distance = spherical['distance']    # radial distance
 
-        # Create SphericalRepresentation with position only
+        # Create SphericalRepresentation with position
+        # Note: SphericalRepresentation expects (lon, lat, distance)
         sph_repr = SphericalRepresentation(
             lon=rtasc,
             lat=decl,
             distance=distance
         )
 
-        # Convert to Cartesian representation
+        # Convert to Cartesian representation (this handles both position and velocity)
         cart_repr = sph_repr.represent_as(CartesianRepresentation)
 
-        # Return position as 3-vector
-        return u.Quantity([cart_repr.x, cart_repr.y, cart_repr.z])
+        # Extract position and velocity as 3-vectors
+        posvel = [cart_repr.x, cart_repr.y, cart_repr.z]
+
+        # Create the structured quantity
+        return pvhelper.cartesianpv(posvel, unitlookup=astro.prefunits)
 
     def copy(self):
         """Create a copy of this PositionT."""
@@ -458,39 +477,8 @@ class PositionVelocityT(PositionBase):
 
     Supports lazy conversion between Cartesian and spherical coordinates.
     '''
-
-    def __init__(self, time, aux=None, cartesian=None, spherical=None, pv=None):
-        """Initialize PositionVelocityT with either cartesian or spherical coordinates.
-
-        Args:
-            time: astropy.time.Time object
-            aux: dictionary of auxiliary attributes
-            cartesian: Cartesian state vector (position + velocity) or array of state vectors
-            spherical: Spherical state vector (r, theta, phi, vr, vtheta, vphi)
-            pv: Legacy parameter name for cartesian (for backwards compatibility)
-        """
-        self.time = time
-        self.isscalar = self.time.isscalar
-        self.aux = aux if aux is not None else {}
-
-        # Handle legacy pv parameter
-        if pv is not None and cartesian is None:
-            cartesian = pv
-
-        # Ensure only one coordinate system is provided
-        if cartesian is not None and spherical is not None:
-            raise ValueError("Cannot specify both cartesian and spherical coordinates")
-        if cartesian is None and spherical is None:
-            raise ValueError("Must specify either cartesian or spherical coordinates")
-
-        if cartesian is not None:
-            ok1 = time.isscalar and cartesian.isscalar
-            ok2 = not time.isscalar and not cartesian.isscalar and len(time)==len(cartesian)
-            if not ok1 and not ok2:
-                raise ValueError("Cartesian and time must have same length")
-
-        self._cartesian = cartesian
-        self._spherical = spherical
+    def __init__(self, time, aux=None, cartesian=None, spherical=None):
+        super().__init__(time, aux, cartesian, spherical)
 
     @property
     def pv(self):
@@ -624,9 +612,6 @@ class PositionVelocityT(PositionBase):
     def _make_instance(self, time, cartesian, aux):
         """Factory method to create a new PositionVelocityT instance."""
         return PositionVelocityT(time=time, cartesian=cartesian, aux=aux)
-
-    def pt(self):
-        return PositionT(cartesian=self.cartesian['position'], time=self.time, aux=self.aux)
 
     def pvt(self):
         return self
