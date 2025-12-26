@@ -33,8 +33,8 @@ leo2 = keppvt({"altper": 525.0*u.km, "altapo": 555.0*u.km, \
 # A GEO orbit
 geo1 = keppvt({"memo":1.0*u.rev/u.sday, \
                "ecc":0.0, \
-               "inc":0.0, "argper": 120.0, \
-               "raan": 0.0, "ma": 0.0}, \
+               "inc":0.0*u.deg, "argper": 120.0*u.deg, \
+               "raan": 0.0*u.deg, "ma": 0.0*u.deg}, \
             tell.abstime('2026-01-01 20:30:00'))
 
 # A GEO transfer orbit

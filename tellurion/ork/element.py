@@ -201,7 +201,7 @@ def sma(input, altitude=False, forceenv=force.deffe, unitlookup=astro.prefunits)
     pdim=u.get_physical_type(quant)
     if pdim == 'angular speed':
         s1 = np.cbrt(mu/quant**2)
-        s = s1.decompose().to(unitlookup['length'], equivalencies=u.dimensionless_angles())
+        s = s1.to(unitlookup['length'], equivalencies=u.dimensionless_angles())
         if altitude:
             return s-forceenv['earthrad']
         else:

@@ -250,8 +250,10 @@ def _namedquant_tuple(values, names=string.ascii_letters, units=None, unitlookup
     if any([hasattr(v, 'unit') for v in vals0]):
         if vect:
             vals = [[v*u.dimensionless_unscaled for v in w] for w in vals]
+            vals0 = vals[0]
         else:
             vals = [v*u.dimensionless_unscaled for v in vals]
+            vals0 = vals
         units_in_values = [v.unit.to_string() for v in vals0]
         phtys_in_values = [u.get_physical_type(v.unit)._physical_type_list[0] for v in vals0]
     else:
