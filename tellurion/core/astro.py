@@ -140,8 +140,8 @@ def normalizeangle(angle, wrapat=u.rev/2, exclude=[]):
     if type(angle) is u.Quantity:
         if type(angle.unit) is u.StructuredUnit and exclude != True:
             return nquant.structquant([normalizeangle(kv[1], wrapat, kv[0] in exclude)
-                                  for kv in nquant.namedquant(angle).items()],
-                                 angle.dtype.names)
+                                       for kv in angle.to_dict().items()],
+                                      angle.dtype.names)
         else:
             if u.get_physical_type(angle)=='angle' and exclude != True:
                 return normalizeangle(Angle(angle), wrapat)

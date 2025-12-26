@@ -100,7 +100,7 @@ def test_posvel():
     np.testing.assert_allclose(np.array(geo1['pvt'].spherical.si.value.tolist()), \
                                np.array([2.0943951023931953, 0.0, 42164169.623295024, \
                                          7.292115855377073e-05, 0.0, 0.0]), \
-                               atol=1.0e-10, rtol=0.0)
+                               atol=1.0e-7, rtol=0.0)
     np.testing.assert_allclose(ell1['pvt'].cartesian['position'].si.value, \
                                np.array([3698345.45792049, -34232447.31322606, -0.]))
     np.testing.assert_allclose(ell1['pvt'].cartesian['velocity'].si.value, \

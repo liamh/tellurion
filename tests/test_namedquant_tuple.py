@@ -210,9 +210,10 @@ def test_namedquant_tuple(input_dict, expected_output):
 
     # Unpack expected output
     expected_values, expected_units, expected_names = expected_output
-    result_values, result_units, result_names = result
+    result_values, result_units, result_names, result_vect = result
 
     # Compare values
+    assert not result_vect
     if isinstance(expected_values, tuple):
         assert isinstance(result_values, tuple), "Result values should be a tuple"
         assert len(result_values) == len(expected_values), "Value lengths should match"

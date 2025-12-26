@@ -33,20 +33,28 @@ demoa.prop.obs_carbarn = tork.aereci(demoa.prop.pvt.position, eloc.carbarn)
 
 demod = Munch() # Example with SGP4 propagation
 # tell.mestrt(tell.spacetrack_latest(stclient, 41335)) # So that we can reproduce the results
-demod.sentinel3A = tell.makemest(((7180.806, 0.0001433, 98.6245, 260.8032, 90.6484, 269.4861,
-                                    14.26733945, 6.4e-07, 0.0, 100.93, 801.642, 803.7, 0.0005667336263999999),
-                                   ('sma', 'ecc', 'inc', 'raan', 'argper', 'ma', 'memo', 'memod', 'memodd',
-                                    'period', 'peralt', 'apoalt', 'B'),
-                                   ('km', '', 'deg', 'deg', 'deg', 'deg', 'revolution / d',
-                                    'revolution / d2', 'revolution / d3', 'min', 'km', 'km', 'm2 / kg')),
-                                  '2025-07-12 13:51:37.099',
-                                  ('1 41335U 16011A   25193.57751272  .00000064  00000-0  44479-4 0  9993',
-                                   '2 41335  98.6245 260.8032 0001433  90.6484 269.4861 14.26733945489635'),
-                                  'SGP4',
-                                  {'name': 'SENTINEL 3A',
-                                   'type': 'PAYLOAD',
-                                   'catid': 41335,
-                                   'intldes': '2016-011A'})
+demod.sentinel3A =\
+    tell.makemest({'sma': (np.float64(7180.799), None, 'km'),
+                    'ecc': (np.float64(8.89e-05), None, ''),
+                    'inc': (np.float64(98.6296), None, 'deg'),
+                    'raan': (np.float64(65.5838), None, 'deg'),
+                    'argper': (np.float64(97.7597), None, 'deg'),
+                    'ma': (np.float64(262.3685), None, 'deg'),
+                    'memo': (np.float64(14.26736057), None, 'revolution / d'),
+                    'memod': (np.float64(1.43e-06), None, 'revolution / d2'),
+                    'memodd': (np.float64(0.0), None, 'revolution / d3'),
+                    'period': (np.float64(100.93), None, 'min'),
+                    'peralt': (np.float64(802.025), None, 'km'),
+                    'apoalt': (np.float64(803.302), None, 'km'),
+                    'B': (np.float64(0.0009831673392), None, 'm2 / kg')},
+                   '2025-12-26 18:24:37.422',
+                   ('1 41335U 16011A   25360.76709979  .00000143  00000-0  77162-4 0  9990',
+                    '2 41335  98.6296  65.5838 0000889  97.7597 262.3685 14.26736057513475'),
+                   'SGP4',
+                   {'name': 'SENTINEL 3A',
+                    'type': 'PAYLOAD',
+                    'catid': 41335,
+                    'intldes': '2016-011A'})
 demod.mcd_cb_vis = Munch() # Visibility from McDonald and Carbarn
 demod.mcd_cb_vis.ev = {'altitude': 125.0*u.km, 'eclipse': [], \
                        'visibility': [tell.observer_location(eloc.mcd, "McDonald"), \

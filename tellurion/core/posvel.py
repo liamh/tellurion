@@ -438,12 +438,9 @@ class PositionT(PositionBase):
 
         # Convert to Cartesian representation (this handles both position and velocity)
         cart_repr = sph_repr.represent_as(CartesianRepresentation)
-
-        # Extract position and velocity as 3-vectors
-        posvel = [cart_repr.x, cart_repr.y, cart_repr.z]
-
+        sq = pvhelper.cartesianpv(cart_repr.xyz, unitlookup=astro.prefunits)
         # Create the structured quantity
-        return pvhelper.cartesianpv(posvel, unitlookup=astro.prefunits)
+        return sq
 
     def copy(self):
         """Create a copy of this PositionT."""
@@ -631,8 +628,8 @@ def pvtcart(pv, time=None, specunits=astro.prefunits['posvel']):
        specunits: The units to be assigned to the numbers in `pv`
 
     '''
-    (cart, velp) = pvhelper.cartesianpv(pv, specunits)
-    if velp:
+    cart = pvhelper.cartesianpv(pv, specunits)
+    if cart.dtype.names and pvhelper._eph_vel in cart.dtype.names:
         return PositionVelocityT(time=astro.abstime(time), cartesian=cart)
     else:
         return PositionT(time=astro.abstime(time), cartesian=cart)

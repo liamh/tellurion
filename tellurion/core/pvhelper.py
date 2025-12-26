@@ -36,13 +36,13 @@ def cartesianpv(array, units=['length', 'speed'], unitlookup=astro.prefunits):
     arr = np.array(array)
     if arr.shape[arr.ndim-1] == 6:
         nsu = [(_eph_pos, 3, units[0]), (_eph_vel, 3, units[1])]
-        velp = True
+        return nquant.sq(arr, nsu, unitlookup=unitlookup)
     elif arr.shape[arr.ndim-1] == 3:
         nsu = [(_eph_pos, 3, units[0])]
-        velp = False
+        sq = nquant.sq(arr, nsu, unitlookup=unitlookup)
+        return sq[_eph_pos]
     else:
         raise ValueError(f"Incorrect shape of array to make posvel {arr.shape}")
-    return (nquant.sq(arr, nsu, unitlookup=unitlookup), velp)
 
 def cartesianpv_sep(position, velocity, unitlookup=astro.prefunits):
     '''Make a Cartesian position-velocity from separate position and

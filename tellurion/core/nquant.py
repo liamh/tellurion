@@ -35,7 +35,7 @@ u.Quantity.to_array = lambda self: rfn.structured_to_unstructured(self.value)
 
 # Decompose SQ into an array, dtype, and unit string
 u.Quantity.decompose = lambda self: (self.to_array(), self.dtype.descr, self.unit.to_string()) \
-    if self.dtype.names else (self.value, None, self.unit)
+    if self.dtype.names else (self.value, None, self.unit.to_string())
 
 def compose_sq(values, dtype, unit_string):
     '''Make a structured quantity from an np.array, dtype, and unit string'''
@@ -57,11 +57,11 @@ def vstack(sqs):
 # Make a dictionary by structure components
 u.Quantity.to_dict = lambda self: {nm: self[nm] for nm in self.dtype.names}
 
+def dict_decompose(d):
+    return {k: v.decompose() for k, v in d.items()}
 
-############################################################
-## Make scalar sq from lists, dicts and vice versa
-##  namedquant(), structquant()
-############################################################
+def dict_compose(d):
+    return {k: v[0]*u.Unit(v[2]) for k, v in d.items()}
 
 def scvec(size):
     if size==1:
@@ -69,64 +69,9 @@ def scvec(size):
     else:
         return f"({size},)f8"
 
-def namedquant(values, names=string.ascii_letters, units=None, unitlookup={}):
-    """Make a dictionary of quantities by name from numbers or quantities (including structured quantities).
-
-    If units are provided either in the values or via the units
-    argument, and unitlookup is not None, then the quantities will be
-    converted to the units given in unitlookup. If the values all have
-    units and units or unitlookup are provided, units will be
-    converted.
-
-    Parameters
-    ----------
-    values : A dict, list, or np.array of values; each value may be a number or u.Quantity
-    names : the names for each part
-    units : the units the structure; size must match number of values, optional
-    unitlookup : a dict of physical type strings and preferred units, defaults to `prefunits`, optional
-
-    Returns
-    -------
-    A dictionary with names as keys and `u.Quantity` as values
-
-    Examples
-    --------
-    tell.namedquant([[1,2,3],[4,5,6]], ['pos','vel'], ['length', 'speed'], {'length': 'km', 'speed': 'km/s'})
-    tell.namedquant(np.array([[1,2,3],[4,5,6]]), ['pos','vel'], ['length', 'speed'], {'length': 'km', 'speed': 'km/s'})
-    tell.namedquant([12345.0, 45.0], ['sma','inc'], ['km', 'deg'])
-    tell.namedquant([12345.0*u.km, 45.0*u.deg], ['sma','inc'], ['meter', 'radian'])
-    tell.namedquant({'sma' : 12345.0*u.km, 'inc' : 45.0*u.deg}, units = {'sma': 'meter', 'inc': 'radian'})
-    tell.namedquant([{'sma' : 12345.0*u.km, 'inc' : 45.0*u.deg}, {'sma' : 23456.0*u.km, 'inc' : -45.0*u.deg}], units = {'sma': 'meter', 'inc': 'radian'})
-    """
-    # if units and unitlookup:
-    #     # Make the quantities and then convert
-    #     return namedquant(namedquant(values, units=units, phystype=None, unitlookup=None), \
-    #                       units=None, phystype=phystype, unitlookup=unitlookup)
-    # el
-    if type(values) is u.Quantity and type(values.unit) is u.StructuredUnit:
-        if values.isscalar:
-            return _splitsq(values)
-        else:
-            return [_splitsq(v) for v in values]
-    else:
-        (rvals, runits, rnames, vect) = _namedquant_tuple(values, names, units, unitlookup)
-        if vect:
-            return [{name: value for name, value in zip(rnames, [val*u.Unit(unit) for val, unit in zip(rv, runits)])} \
-                    for rv in rvals]
-        else:
-            vals = zip(rnames, [val*u.Unit(unit) for val, unit in zip(rvals, runits)])
-            return {name: value for name, value in vals}
-
-def _splitsq(stqu, quant=True, readably=False):
-    '''Make a dict of names and quantities, or values, names, and units from the structured quantity. To recreate a structured quantity, set `quant` to False; this results in input for structquant. For example, `structquant(*_splitsq(sq, False))` copies `sq`.'''
-    if quant:
-        vnu = _splitsq(stqu, False)
-        qs = [v*u for (v, u) in zip(vnu[0], vnu[2])]
-        return {un:val for (val, un) in zip(qs, vnu[1])}
-    elif readably:
-        return (stqu.value.tolist(), stqu.dtype.names, tuple(un.to_string() for un in stqu.unit.values()))
-    else:
-        return (stqu.value.tolist(), stqu.dtype.names, stqu.unit.values())
+############################################################
+## Make scalar sq from lists and dicts: structquant()
+############################################################
 
 def structquant(values, names=string.ascii_letters, units=None, unitlookup={}):
     """Make a structured quantity from numbers or quantities
@@ -206,7 +151,7 @@ def _namedquant_tuple(values, names=string.ascii_letters, units=None, unitlookup
       If numbers are given for values, `units` or `unitlookup` must be specified
       If `u.Quantity` are given for values, they are converted using
       `units` or `unitlookup` if either (or both) are specified.
-      >>>> Each value can be scalars or vectors
+      Each value can be scalars or vectors
     names : the names of the fields or keys, required if `values` is a list
     units : the units or physical types; must be a dictionary with the
       same keys or list with the same length as values; optional

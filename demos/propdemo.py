@@ -29,7 +29,7 @@ demoa.init.pvt = tell.pvtcart(demoa.init.pv, newyear)
 # Cartesian or Kepler transformation
 demoa.init.altper = tork.elementval(demoa.init.pvt, 'altper')  # Altitude of perigee for the initial state
 demoa.init.kep = tork.kepler(demoa.init.pvt)  # Convert PVT to Kepler elements
-demoa.init.seekep = tell.namedquant(demoa.init.kep[0])  # Easier to read Kepler elements
+demoa.init.seekep = demoa.init.kep[0].to_dict()  # Easier to read Kepler elements
 demoa.init.cart = tork.pvt(demoa.init.kep)  # Convert back to Cartesian, same as demoa.init.pvt
 
 ################ Propagation two-body
