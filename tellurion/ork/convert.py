@@ -13,7 +13,6 @@ import datetime
 import orekit_jpype.pyhelpers as pyhelp
 import org.orekit.time
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
-from org.orekit.propagation import Propagator, BoundedPropagator
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 
 from tellurion.core import astro

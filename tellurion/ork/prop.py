@@ -103,7 +103,7 @@ def niprep(initstate, proptime, events, forceenv, reftime, occluder, output):
     minstep = 0.001
     maxstep = 1000.0
     initStep = 60.0
-    positionTolerance = 1.0
+    positionTolerance = 1.0e-3
     tolerances = NumericalPropagator.tolerances(positionTolerance, ork0, ork0.getType())
 
     # Initialize the integrator
@@ -116,6 +116,7 @@ def niprep(initstate, proptime, events, forceenv, reftime, occluder, output):
 
     initialState = SpacecraftState(ork0, forceenv['mass'])
     propagator = NumericalPropagator(integrator)
+    propagator.setResetAtEnd(False)
     propagator.setOrbitType(OrbitType.CARTESIAN)
     propagator.setInitialState(initialState)
     ephgen = propagator.getEphemerisGenerator()
@@ -129,7 +130,7 @@ def niprep(initstate, proptime, events, forceenv, reftime, occluder, output):
     generator = _make_generator(ork0, lambda propto: propagator.propagate(generator['epoch'], propto))
     _additional(events, propagator, generator, proptime, forceenv, reftime, output)
     gge = ephgen.getGeneratedEphemeris()
-    generator['propfn'] = lambda propto: gge.propagate(propto) # Redefine the propfn because previous one is inaccurate
+    generator['propfn'] = lambda propto: gge.propagate(propto) # interpolate in the previous integration result
     generator['mindate'] = gge.getMinDate()
     generator['maxdate'] = gge.getMaxDate()
 
