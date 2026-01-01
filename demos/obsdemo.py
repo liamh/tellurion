@@ -8,9 +8,9 @@ from demos.propdemo import *
 eloc = Munch()
 
 eloc.mcd = coord.EarthLocation.of_site('McDonald Observatory')
-eloc.mcdsv = tork.sitevec(eloc.mcd, demoa.prop.ephem.time, "McDonald")
+eloc.mcdsv = tork.sitevec(eloc.mcd, demoa.propn.ephem.time, "McDonald")
 eloc.mcdsvts = eloc.mcdsv.ephemeris(False, None)   # Time series of site vectors for McDonald
-eloc.cmcd = tell.hcat(demoa.prop.ephem, eloc.mcdsvts) # Ephemeris table with additional columns for McDonald site vector
+eloc.cmcd = tell.hcat(demoa.propn.ephem, eloc.mcdsvts) # Ephemeris table with additional columns for McDonald site vector
 
 eloc.kickapoo = tell.earthloc(lon='98°45′49.82″W', lat='33°33′08.50″N')
 # From tork.location('carbarn') - integrate earthloc with location()?
@@ -27,7 +27,7 @@ eobs.obpt = tork.eciaer(eobs.ob)
 eobs.obret = tork.aereci(eobs.obpt, eloc.carbarn) # This is the same as eobs.ob
 
 # Simulated observations from Carbarn of demoa, they are all below the horizon
-demoa.prop.obs_carbarn = tork.aereci(demoa.prop.pvt.position, eloc.carbarn)
+demoa.propn.obs_carbarn = tork.aereci(demoa.propn.pvt.position, eloc.carbarn)
 
 ############### Satellite visibility from ground observers
 
@@ -74,9 +74,9 @@ demod.mcd_ecl.ephem = tork.propagate(demod.mcd_ecl.prep, np.linspace(0.25*u.hour
 
 ############ Upward transitions not present
 
-demoa.prop.vis = Munch() # Example with numerical propagation defined in demoa
-demoa.prop.vis.events = {'altitude': 125.0*u.km, 'eclipse': [], \
+demoa.propn.vis = Munch() # Example with numerical propagation defined in demoa
+demoa.propn.vis.events = {'altitude': 125.0*u.km, 'eclipse': [], \
                          'visibility': [tell.observer_location(eloc.mcd, "McDonald")]}
-demoa.prop.vis.prep = tork.prepare(demoa.init.pvt, 8*u.hour, demoa.prop.vis.events)
-demoa.prop.vis.ephem = tork.propagate(demoa.prop.vis.prep, np.linspace(0.25*u.hour, 8*u.hour, 32))
-demoa.prop.vis.mcdonald = demoa.prop.vis.prep['visibility']['McDonald']
+demoa.propn.vis.prep = tork.prepare(demoa.init.pvt, 8*u.hour, demoa.propn.vis.events)
+demoa.propn.vis.ephem = tork.propagate(demoa.propn.vis.prep, np.linspace(0.25*u.hour, 8*u.hour, 32))
+demoa.propn.vis.mcdonald = demoa.propn.vis.prep['visibility']['McDonald']
