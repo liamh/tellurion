@@ -8,20 +8,14 @@ from demos.propdemo import *
 eloc = Munch()
 
 eloc.mcd = coord.EarthLocation.of_site('McDonald Observatory')
-eloc.mcdsv = tell.eciobs(eloc.mcd, demoa.prop.ephem.time, 'mcdonald sitevec')
-eloc.cmcd = tell.hcat(demoa.prop.ephem, eloc.mcdsv) # Ephemeris table with additional column for McDonald site vector
-eloc.mcdsvork = tork.eciobs(eloc.mcd, demoa.prop.ephem.time, 'mcdonald sitevec')
-eloc.cmcdork = tell.hcat(demoa.prop.ephem, eloc.mcdsvork) # Ephemeris table with additional column for McDonald site vector
-
-# Difference between AstroPy and Orekit
-eloc.mcdsv_apy = tell.makepos(tell.eciobs(eloc.mcd, newyear))
-eloc.mcdsv_ork = tell.makepos(tork.eciobs(eloc.mcd, newyear))
-eloc.mcdsv_apy_ork_dist = np.linalg.norm(eloc.mcdsv_ork - eloc.mcdsv_apy).si
+eloc.mcdsv = tork.sitevec(eloc.mcd, demoa.propn.ephem.time, "McDonald")
+eloc.mcdsvts = eloc.mcdsv.ephemeris(False, None)   # Time series of site vectors for McDonald
+eloc.cmcd = tell.hcat(demoa.propn.ephem, eloc.mcdsvts) # Ephemeris table with additional columns for McDonald site vector
 
 eloc.kickapoo = tell.earthloc(lon='98°45′49.82″W', lat='33°33′08.50″N')
 # From tork.location('carbarn') - integrate earthloc with location()?
 eloc.carbarn = tell.earthloc(lat=38.87206*u.deg, lon=-77.01748*u.deg, elevation=13.0*u.m)
-eloc.carbarn_lst_newyear = tell.siderealtime(newyear, eloc.carbarn)
+eloc.carbarn_lst_newyear = tork.siderealtime(newyear, eloc.carbarn)
 
 ############### Earth observations
 
@@ -29,40 +23,38 @@ eobs = Munch()
 
 # A simulated observation from carbarn
 eobs.ob = tell.azelrange(255*u.deg, 80*u.deg, 1455*u.km, eloc.carbarn, newyear)
-# ECI Cartesian coordinates
-eobs.obeci = eobs.ob.transform_to(coord.GCRS)
-eobs.obeci_cart = eobs.obeci.cartesian
-eobs.obeci_radec = eobs.obeci.spherical
+eobs.obpt = tork.eciaer(eobs.ob)
+eobs.obret = tork.aereci(eobs.obpt, eloc.carbarn) # This is the same as eobs.ob
 
-# An observation from McDonald
-eobs.obmcd = eobs.ob.transform_to(coord.AltAz(location=eloc.mcd, obstime=newyear))
-
-# Angles only
-# obao = coord.SkyCoord(coord.AltAz(az=63*u.deg, alt=80*u.deg, location=carbarn, obstime=newyear))
-# obsloc_carbarn = coord.AltAz(location=carbarn, obstime=newyear)
-
-eobs.ptobork = tork.eciobs(eloc.carbarn, eobs.ob, 'carbarn obs')
-eobs.ptobapy = tell.eciobs(eloc.carbarn, eobs.ob, 'carbarn obs')
-eobs.ob_ork_apy_dist = np.linalg.norm(eobs.ptobork.cartesian.xyz - eobs.ptobapy.cartesian.xyz).si
+# Simulated observations from Carbarn of demoa, they are all below the horizon
+demoa.propn.obs_carbarn = tork.aereci(demoa.propn.pvt.position, eloc.carbarn)
 
 ############### Satellite visibility from ground observers
 
 demod = Munch() # Example with SGP4 propagation
 # tell.mestrt(tell.spacetrack_latest(stclient, 41335)) # So that we can reproduce the results
-demod.sentinel3A = tell.makemest(((7180.806, 0.0001433, 98.6245, 260.8032, 90.6484, 269.4861,
-                                    14.26733945, 6.4e-07, 0.0, 100.93, 801.642, 803.7, 0.0005667336263999999),
-                                   ('sma', 'ecc', 'inc', 'raan', 'argper', 'ma', 'memo', 'memod', 'memodd',
-                                    'period', 'peralt', 'apoalt', 'B'),
-                                   ('km', '', 'deg', 'deg', 'deg', 'deg', 'revolution / d',
-                                    'revolution / d2', 'revolution / d3', 'min', 'km', 'km', 'm2 / kg')),
-                                  '2025-07-12 13:51:37.099',
-                                  ('1 41335U 16011A   25193.57751272  .00000064  00000-0  44479-4 0  9993',
-                                   '2 41335  98.6245 260.8032 0001433  90.6484 269.4861 14.26733945489635'),
-                                  'SGP4',
-                                  {'name': 'SENTINEL 3A',
-                                   'type': 'PAYLOAD',
-                                   'catid': 41335,
-                                   'intldes': '2016-011A'})
+demod.sentinel3A =\
+    tell.makemest({'sma': (np.float64(7180.799), None, 'km'),
+                    'ecc': (np.float64(8.89e-05), None, ''),
+                    'inc': (np.float64(98.6296), None, 'deg'),
+                    'raan': (np.float64(65.5838), None, 'deg'),
+                    'argper': (np.float64(97.7597), None, 'deg'),
+                    'ma': (np.float64(262.3685), None, 'deg'),
+                    'memo': (np.float64(14.26736057), None, 'revolution / d'),
+                    'memod': (np.float64(1.43e-06), None, 'revolution / d2'),
+                    'memodd': (np.float64(0.0), None, 'revolution / d3'),
+                    'period': (np.float64(100.93), None, 'min'),
+                    'peralt': (np.float64(802.025), None, 'km'),
+                    'apoalt': (np.float64(803.302), None, 'km'),
+                    'B': (np.float64(0.0009831673392), None, 'm2 / kg')},
+                   '2025-12-26 18:24:37.422',
+                   ('1 41335U 16011A   25360.76709979  .00000143  00000-0  77162-4 0  9990',
+                    '2 41335  98.6296  65.5838 0000889  97.7597 262.3685 14.26736057513475'),
+                   'SGP4',
+                   {'name': 'SENTINEL 3A',
+                    'type': 'PAYLOAD',
+                    'catid': 41335,
+                    'intldes': '2016-011A'})
 demod.mcd_cb_vis = Munch() # Visibility from McDonald and Carbarn
 demod.mcd_cb_vis.ev = {'altitude': 125.0*u.km, 'eclipse': [], \
                        'visibility': [tell.observer_location(eloc.mcd, "McDonald"), \
@@ -82,9 +74,9 @@ demod.mcd_ecl.ephem = tork.propagate(demod.mcd_ecl.prep, np.linspace(0.25*u.hour
 
 ############ Upward transitions not present
 
-demoa.prop.vis = Munch() # Example with numerical propagation defined in demoa
-demoa.prop.vis.events = {'altitude': 125.0*u.km, 'eclipse': [], \
+demoa.propn.vis = Munch() # Example with numerical propagation defined in demoa
+demoa.propn.vis.events = {'altitude': 125.0*u.km, 'eclipse': [], \
                          'visibility': [tell.observer_location(eloc.mcd, "McDonald")]}
-demoa.prop.vis.prep = tork.prepare(demoa.init.pvt, 8*u.hour, demoa.prop.vis.events)
-demoa.prop.vis.ephem = tork.propagate(demoa.prop.vis.prep, np.linspace(0.25*u.hour, 8*u.hour, 32))
-demoa.prop.vis.mcdonald = demoa.prop.vis.prep['visibility']['McDonald']
+demoa.propn.vis.prep = tork.prepare(demoa.init.pvt, 8*u.hour, demoa.propn.vis.events)
+demoa.propn.vis.ephem = tork.propagate(demoa.propn.vis.prep, np.linspace(0.25*u.hour, 8*u.hour, 32))
+demoa.propn.vis.mcdonald = demoa.propn.vis.prep['visibility']['McDonald']

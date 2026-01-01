@@ -2,8 +2,10 @@ import collections
 import itertools
 import astropy.units as u
 import spacetrack
-from . import astro
-from . import posvel
+from tellurion.core import astro
+from tellurion.core import nquant
+from tellurion.core import posvel
+
 
 # Set stclient using registered space-track.org username and password
 # Place these lines with correct username and password in ~/.ipython/profile_default/startup/50-spacetrack.py
@@ -23,21 +25,18 @@ from . import posvel
 MeanElementSetT = collections.namedtuple('MeanElementSetT', 'els t tle model scdata')
 
 def mestrt(mest):
-    '''Create a readable (only strings, numbers, dict) tuple from the
-    `MeanElementSetT`. To save a mean element set from spacetrack and
-    later recreate it without access to `space-track.org`, use this
-    function to create the readable tuple, save to a Python source
-    file and call `makemest()` on it.
+    '''Create a semi-readable (only strings, numbers, dict) tuple from
+    the `MeanElementSetT` (u.Quantity are not readable). To save a
+    mean element set from spacetrack and later recreate it without
+    access to `space-track.org`, use this function to create the
+    readable tuple, save to a Python source file and call `makemest()`
+    on it.
     '''
-    return(astro.splitsq(astro.makesq(mest.els), False, True), \
-           mest.t.to_string(), \
-           mest.tle, \
-           mest.model, \
-           mest.scdata)
+    return(nquant.dict_decompose(mest.els), mest.t.to_string(), mest.tle, mest.model, mest.scdata)
 
 def makemest(elstuples, timestr, tle, model, scdata):
     '''Create a MeanElementSetT from readable arguments'''
-    return MeanElementSetT(astro.splitsq(astro.makesq(*elstuples)), \
+    return MeanElementSetT(nquant.dict_compose(elstuples), \
                            astro.abstime(timestr), tle, model, scdata)
 
 def satdata(stdict):

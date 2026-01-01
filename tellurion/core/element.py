@@ -4,8 +4,10 @@ import astropy.units as u
 import astropy.constants # astropy.constants.R_earth
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
-from . import astro
-from . import posvel
+from tellurion.core import astro
+from tellurion.core import nquant
+from tellurion.core import pvhelper
+from tellurion.core import posvel
 
 ###############################
 #### State function values ####
@@ -66,7 +68,7 @@ def kepler(oes, dttm=None, units=(astro.prefunits['length'], astro.prefunits['an
 
     keppt = {"inc":'angle', "argper":'angle', "raan":'angle'} | plane | timeelt
     ordoes = {k:oes[k] for k in keppt.keys()}
-    kepsq = astro.makesq(ordoes, phystype=keppt)
+    kepsq = nquant.structquant(ordoes, units=keppt, unitlookup=astro.prefunits)
     if not astro.isupperhalfplane(kepsq['inc']):
         raise ValueError('Inclination must be between 0 and 180 degrees, inclusive')
     kepsqn = astro.normalizeangle(kepsq, u.rev/2, timeelements)
@@ -80,7 +82,7 @@ def iskepels(obj, est=True):
     `est` is `True`, then it is a properly constructed `ElementSetT`,
     and if `False`, it is element values only, without an epoch time.'''
     if type(obj) is ElementSetT and est:
-        return iskepels(obj.els, False) and posvel.isdttm(obj.t)
+        return iskepels(obj.els, False) and pvhelper.isdttm(obj.t)
     else:
         return type(obj) is u.Quantity \
             and (not(set(kepeltma_names) - set(obj.dtype.names)) \

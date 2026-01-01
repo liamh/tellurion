@@ -1,3 +1,6 @@
+import numpy as np
+np.set_printoptions(suppress=True, precision=4, linewidth=np.inf)
+
 # from . import (
 #     core,
 #     ork,

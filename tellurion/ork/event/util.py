@@ -51,7 +51,7 @@ def _event_transition_table(loggers, column_label, state_labels, reftime='epoch'
             pvt.aux = {column_label:trlabel}
             return pvt
         if loggedevents:
-            return posvel.pvt([pvet(ev) for ev in loggedevents])
+            return pvet(loggedevents[0]).merge([pvet(ev) for ev in loggedevents[1:]])
 
     if loggers:
         trprs = transition_pairs(state_labels)
@@ -62,8 +62,7 @@ def _event_transition_table(loggers, column_label, state_labels, reftime='epoch'
                 if pvtl is not None:
                     pvtlist.append(pvtl)
         if pvtlist:
-            pvtcat = posvel.pvt(pvtlist)
-            return pvtcat.timeorder()
+            return pvtlist[0].merge(pvtlist[1:])
 
 def _label_positive_count(detectors, labels):
     '''Determine the appropriate event label by the number of positive counts among the detectors.'''

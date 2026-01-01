@@ -13,11 +13,12 @@ import numpy as np
 import astropy.units as u
 import astropy.time
 import astropy.table
-from org.orekit.orbits import CartesianOrbit, OrbitType, Orbit, KeplerianOrbit
+from org.orekit.orbits import CartesianOrbit, OrbitType, KeplerianOrbit
 from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState, EphemerisGenerator
 from org.orekit.propagation.analytical.tle import TLE, TLEPropagator
+from org.orekit.propagation.analytical import KeplerianPropagator
 from org.orekit.utils import AbsolutePVCoordinates, TimeStampedPVCoordinates, PVCoordinatesProvider
 import org.orekit.forces.gravity as okgrav
 
@@ -29,9 +30,10 @@ from ..core.spacetrack import MeanElementSetT
 from . import force
 from . import element as oelement
 from . import convert
+from . import jacobian
 from .event import prop as event
 
-defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
+defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': [], 'stm': False}
 
 # import astropy.units as u
 # isssent = tell.spacetrack_latest(stclient, [25544, 41335])
@@ -43,7 +45,10 @@ def prepare(initstate, proptime, events=defev, forceenv=force.deffe, \
     if type(initstate)==MeanElementSetT:
         return SGP4prep(initstate, proptime, events, forceenv, reftime, occluder, output)
     elif type(initstate)==PVT:
-        return niprep(initstate, proptime, events, forceenv, reftime, occluder, output)
+        if forceenv.get('gravity-degree-order'):
+            return niprep(initstate, proptime, events, forceenv, reftime, occluder, output)
+        else:
+            return kaprep(initstate, proptime, events, forceenv, reftime, occluder, output)
 
 def SGP4prep(meanels, proptime, events, forceenv, reftime, occluder, output):
     '''Propagate mean elements using SGP4'''
@@ -57,6 +62,14 @@ def SGP4prep(meanels, proptime, events, forceenv, reftime, occluder, output):
         return generator
     else:
         raise ValueError("Can only propagate SGP4 mean elements with SGP4")
+
+def kaprep(initstate, proptime, events, forceenv, reftime, occluder, output):
+    '''Prepare the Keplerian (two-body) analytic propagator'''
+    ork0 = CartesianOrbit(convert._tspvc(initstate), \
+                          forceenv['celestialframe'], forceenv['earthmu'].si.value)
+    propagator = KeplerianPropagator(ork0, forceenv['earthmu'].si.value)
+    generator = _make_generator(ork0, lambda propto: propagator.propagate(propto))
+    return generator
 
 def _additional(events, propagator, generator, proptime, forceenv, reftime, output):
     '''Additional calculations when propagating initially'''
@@ -103,7 +116,7 @@ def niprep(initstate, proptime, events, forceenv, reftime, occluder, output):
     minstep = 0.001
     maxstep = 1000.0
     initStep = 60.0
-    positionTolerance = 1.0
+    positionTolerance = 1.0e-3
     tolerances = NumericalPropagator.tolerances(positionTolerance, ork0, ork0.getType())
 
     # Initialize the integrator
@@ -116,6 +129,7 @@ def niprep(initstate, proptime, events, forceenv, reftime, occluder, output):
 
     initialState = SpacecraftState(ork0, forceenv['mass'])
     propagator = NumericalPropagator(integrator)
+    propagator.setResetAtEnd(False)
     propagator.setOrbitType(OrbitType.CARTESIAN)
     propagator.setInitialState(initialState)
     ephgen = propagator.getEphemerisGenerator()
@@ -129,6 +143,7 @@ def niprep(initstate, proptime, events, forceenv, reftime, occluder, output):
     generator = _make_generator(ork0, lambda propto: propagator.propagate(generator['epoch'], propto))
     _additional(events, propagator, generator, proptime, forceenv, reftime, output)
     gge = ephgen.getGeneratedEphemeris()
+    generator['propfn'] = lambda propto: gge.propagate(propto) # interpolate in the previous integration result
     generator['mindate'] = gge.getMinDate()
     generator['maxdate'] = gge.getMaxDate()
 
@@ -142,14 +157,25 @@ def _make_generator(getdatefrom, propfn):
     return generator
 
 def _additional(events, propagator, generator, proptime, forceenv, reftime, output):
-    '''Additional calculations when propagating initially; returns the propagated SpacecraftState'''
-    # 1) Add pre-propagation actions (events)
+    '''Additional calculations when propagating initially'''
+
+    # 1) Add pre-propagation actions
+    detlogs = event._add_pre(events, propagator, forceenv) # Events
+    compute_pjac = force.compute_drag_pjac(forceenv)
+    if events.get('stm') or compute_pjac:
+        harvester = jacobian._add_stm(propagator)  # State-transition matrix
+
     # 2) Propagate, saving output (SpacecraftState)
+    ss = generator['propfn'](generator['epoch'].shiftedBy(astro.timesec(proptime)))
+    generator['final'] = {'state': ss, 'pvt': convert._pvt(ss)}
+
     # 3) Add post-propagation actions and save results to `generator`
-    detlogs = event._add_pre(events, propagator, forceenv)
-    finalss = generator['propfn'](generator['epoch'].shiftedBy(astro.timesec(proptime)))
     event._add_post(detlogs, events, generator, reftime, output)
-    return finalss
+    if events.get('stm'):
+        generator['final']['stm'] = jacobian.stm(harvester, generator['final']['state'])
+    if compute_pjac:
+        generator['final']['parameters jacobian'] \
+            = jacobian.pjac(harvester, generator['final']['state'])
 
 def propagate(generator, reltimes, include_init=True, reftime='epoch', output='et'):
     '''From an existing ephemeris generator, propagate to the time(s)
@@ -198,9 +224,9 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', output='e
             for rt in reltimes[1:]:
                 retpvt.concatenate(propagate(generator, rt, False, reftime, 'pvt'))
             if output=='pvt':
-                return retpvt
+                return retpvt.timeorder()
             else:
-                return retpvt.ephemeris()
+                return retpvt.timeorder().ephemeris()
 
 def timerange(object):
     '''The time difference between the earliest (usually the initial

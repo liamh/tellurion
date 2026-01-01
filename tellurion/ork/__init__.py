@@ -8,7 +8,8 @@ from . import (
     element,
     prop,
     relative,
-    geog
+    geog,
+    obs
 )
 
 from tellurion.ork.force import *
@@ -16,6 +17,7 @@ from tellurion.ork.element import *
 from tellurion.ork.prop import *
 from tellurion.ork.relative import *
 from tellurion.ork.geog import *
+from tellurion.ork.obs import *
 
 # Define the __all__ variable
-__all__ = ["force", "element", "prop", "relative", "geog"]
+__all__ = ["force", "element", "prop", "relative", "geog", "obs"]

@@ -16,20 +16,20 @@ from org.orekit.bodies import OneAxisEllipsoid, CelestialBodyFactory
 
 OneAxisEllipsoid.__repr__ =    lambda self: f"<Near-spherical body equatorial radius {self.getEquatorialRadius()}m, polar radius difference {-self.getEquatorialRadius()*self.getFlattening()}m >"
 
+def celestial():
+    return {'earthframe': FramesFactory.getITRF(IERSConventions.IERS_2010, True), \
+            'celestialframe': FramesFactory.getGCRF(), \
+            'earthangspd': Constants.IERS2010_EARTH_ANGULAR_VELOCITY, \
+            'earthflat': Constants.IERS2010_EARTH_FLATTENING, \
+            'sun': CelestialBodyFactory.getSun(), \
+            'sunrad': Constants.SUN_RADIUS*u.m, \
+            'gmst': IERSConventions.IERS_2010.getGMSTFunction(TimeScalesFactory.getUT1(IERSConventions.IERS_2010, True))}
+
 def setgravity(degree, order, mass = 100.0):
     """Set the environmental constants such as reference frame and
     planetary properties.  Arguments are the degree and order of the
     gravitational model to use, and the mass of the spacecraft.
     """
-    celestdflt = {
-        'earthframe': FramesFactory.getITRF(IERSConventions.IERS_2010, True),
-        'celestialframe': FramesFactory.getGCRF(),
-        'earthangspd': Constants.IERS2010_EARTH_ANGULAR_VELOCITY,
-        'earthflat': Constants.IERS2010_EARTH_FLATTENING,
-        'sun': CelestialBodyFactory.getSun(),
-        'sunrad': Constants.SUN_RADIUS*u.m,
-        'gmst': IERSConventions.IERS_2010.getGMSTFunction(TimeScalesFactory.getUT1(IERSConventions.IERS_2010, True))
-    }
     eg = GravityFieldFactory.getNormalizedProvider(degree, order)
     force = {'gravity': eg,
              'gravity-degree-order': [eg.getMaxDegree(), eg.getMaxOrder()],
@@ -37,12 +37,19 @@ def setgravity(degree, order, mass = 100.0):
              'earthmu': eg.getMu()*u.m**3/u.s**2,
              'mass': mass} # Needed by several forces but not gravity
     # Define spherical altitude for convience, not specifically force related, but uses the definitions
-    return celestdflt | force | \
+    celestdflt = celestial()
+    return  celestdflt | force | \
         {'earth': OneAxisEllipsoid(force['earthrad'].si.value,
                                    celestdflt['earthflat'],  celestdflt['earthframe']),
          'sphalt': OneAxisEllipsoid(force['earthrad'].si.value, 0.0, celestdflt['earthframe']),
          'moon': OneAxisEllipsoid(Constants.MOON_EQUATORIAL_RADIUS, 0.0012, \
                                   CelestialBodyFactory.getMoon().getBodyOrientedFrame())}
+
+def kepleranalytic():
+    eg = GravityFieldFactory.getNormalizedProvider(0,0)
+    force = {'earthrad': eg.getAe()*u.m,
+             'earthmu': eg.getMu()*u.m**3/u.s**2}
+    return  celestial() | force
 
 # Default force & environment
 deffe = setgravity(0,0)
@@ -92,7 +99,14 @@ def dragforce(force, atmdensname = default_atmdens, dragcoef = 1.0, dragarea = 1
     """Add atmospheric drag force to the force model. Default
     spacecraft parameters gives B = C_D A/m = 0.01 m^2/kg
     `atmdens` is one of `'hp'` for Harris-Priester (default), `'dtm'` for DTM2000, or `'msis'` for NRLMSIS.
+
+    The parameters `dragcoef` and `drarea` should be either a
+    numerical value, or a list of numerical value and a boolean. The
+    boolean specifies whether the Jacobian matrix should be computed;
+    if only a number is given, then the Jacobian will not be computed
+    for that parameter.
     """
+    ### There are no units given for dragarea; they should be SI
     match atmdensname:
         case 'hp': # Harris-Priester atmospheric density model
             atmdens = HarrisPriester(force['sun'], force['earth'])
@@ -101,12 +115,36 @@ def dragforce(force, atmdensname = default_atmdens, dragcoef = 1.0, dragarea = 1
         case 'msis':
             atmdens = NRLMSISE00(_swdata, force['sun'], force['earth'])
     mass = force['mass']  # The models need a spacecraft mass, unit kg.
-    drforce = {'dragarea': dragarea, # Cross-sectional area perpendicular to atmosphere direction, m^2
-               'dragcoef': dragcoef, # Coefficient of drag
-               'B': dragarea*dragcoef/mass,
+    if type(dragarea) is list:
+        da = dragarea[0]
+        dajac = dragarea[1]
+    else:
+        da = dragarea
+        dajac = False
+    if type(dragcoef) is list:
+        dc = dragcoef[0]
+        dcjac = dragcoef[1]
+    else:
+        dc = dragcoef
+        dcjac = False
+    df = DragForce(atmdens, IsotropicDrag(da, dc))
+    df.getParametersDrivers()[0].setSelected(dajac)
+    df.getParametersDrivers()[1].setSelected(dcjac)
+    drforce = {'dragarea': da, # Cross-sectional area perpendicular to atmosphere direction, m^2
+               'dragcoef': dc, # Coefficient of drag
+               'B': da*dc/mass,
                'atmdens': atmdens,
-               'dragforce': DragForce(atmdens, IsotropicDrag(dragarea, dragcoef))}
+               'dragforce': df}
     return force | drforce
+
+def compute_drag_pjac(forceenv):
+    """Boolean indicating whether the atmospheric drag parameters Jacobian should be calculated."""
+    return forceenv.get('dragforce') \
+        and (forceenv['dragforce'].getParametersDrivers()[0].isSelected() or
+             forceenv['dragforce'].getParametersDrivers()[1].isSelected())
+
+
+
 
 # def atmdens(location, time, model = 'hp'):
 #     return(envct[model].getDensity(time, location, envct['celestialframe']))

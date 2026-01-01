@@ -9,14 +9,15 @@ from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType, CircularOrbit, K
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 
 from ..core import astro
+from ..core import nquant
 from ..core import posvel
 from ..core import element
 from . import force
 from . import convert
 
-########################################
-####    Element values              ####
-########################################
+###########################################
+#### Element values from orbital state ####
+###########################################
 
 _eldict = element.sfdict([["sma", "semimajor axis", "length", u.meter, KeplerianOrbit.getA],
                           ["ecc", "eccentricity", "dimensionless", u.dimensionless_unscaled, KeplerianOrbit.getE],
@@ -37,6 +38,8 @@ _eldict = element.sfdict([["sma", "semimajor axis", "length", u.meter, Keplerian
                           ["memo", "mean motion", "angular speed", u.radian/u.second, KeplerianOrbit.getKeplerianMeanMotion],
                           ["period", "orbital period", "time", u.second, KeplerianOrbit.getKeplerianPeriod]])
 
+_elphystype = {key: value['phystype'] for key, value in _eldict.items()}
+
 def elementval (orbstate, elt, earthrad=force.deffe["earthrad"].si.value):
     """
     Compute the orbital element from the orbital state
@@ -51,7 +54,7 @@ def tselements(ephem, elements):
     '''Make a time series of selected orbital elements'''
     return TimeSeries(time=ephem.time,
                       data=[dict(zip(elements, elementval(ephrow, elements)))
-                            for ephrow in ephem])
+                            for ephrow in ephem.pvt()])
 
 ########################################
 ####    Make Kepler element set     ####
@@ -64,19 +67,18 @@ def _keplerianorbit(oes, units=(astro.prefunits['length'], astro.prefunits['angl
         return _keporb_from_components(oes.els, oes.t, units, forceenv)
     elif type(oes) is KeplerianOrbit:
         return oes
-    elif posvel.ispvter(oes):
+    elif posvel.ispvtcart(oes):
         co = CartesianOrbit(convert._tspvc(oes),
                             forceenv['celestialframe'], forceenv['earthmu'].si.value)
+        return OrbitType.KEPLERIAN.convertType(co)
+    elif hasattr(oes,'pvt'):
+        _keplerianorbit(oes.pvt(), units=units, forceenv=forceenv)
     else:
         raise ValueError('Cannot transform to Keplerian elements')
-    return OrbitType.KEPLERIAN.convertType(co)
 
 def _keporb_from_components(oes, epoch, units=(astro.prefunits['length'], astro.prefunits['angle']), fe=force.deffe):
     '''Make a org.orekit.orbits.KeplerianOrbit from orbital elements as a u.Quantity or Dict'''
     oessi = oes.si.value
-    # Future: convert zp/za to a/e
-    #    oessidict = astro.splitsq(oessi)
-
     if 'ma' in oessi.dtype.names:
         return KeplerianOrbit(float(oessi['sma']), float(oessi['ecc']), float(oessi['inc']), \
                               float(oessi['argper']), float(oessi['raan']), \
@@ -116,7 +118,7 @@ def kepler(object, forceenv=force.deffe, mean_time_element=True): # Add prefunit
     kepels = dict(zip(elnames, elementval(ko, elnames)))
     return element.kepler(kepels, dttm)
 
-def cartesian(object, dttm=None):
+def pvt(object, dttm=None):
     '''Make a Cartesian PVT from the object, or an ephemeris
     generator, which has an initial state. If the object is an
     elements set without a datetime, it must be supplied in `dttm`.'''
@@ -127,7 +129,7 @@ def cartesian(object, dttm=None):
     else:
         raise ValueError('Can only transform Kepler element sets')
 
-def allplane(oesdict, forceenv=force.deffe, units=astro.prefunits):
+def allplane(oesdict, forceenv=force.deffe, unitlookup=astro.prefunits):
     '''Generate all plane pairs (sma, ecc), (radper, radapo), (altper, altapo) from the first or last pairs; additionally, the mean motion can be substituted for semimajor axis in the first pair.
 
     Example 1, convert from altitudes of perigee and apogee to semimajor axis and eccentricity
@@ -158,7 +160,7 @@ def allplane(oesdict, forceenv=force.deffe, units=astro.prefunits):
     names = oesdict.keys()
     if ('sma' in names or 'memo' in names) and 'ecc' in names:  # OR PERIOD IN NAMES
         if 'memo' in names:
-            smav = sma(oesdict['memo'], False, forceenv, units)
+            smav = sma(oesdict['memo'], False, forceenv, unitlookup)
             new = {'sma': smav, 'radper': smav*(1-oesdict['ecc']), 'radapo': smav*(1+oesdict['ecc'])}
         else:
             smav = oesdict['sma']
@@ -175,7 +177,7 @@ def allplane(oesdict, forceenv=force.deffe, units=astro.prefunits):
         raise ValueError('Plane must be defined by either (sma, ecc) or (altper, altapo)')
     return oesdict | new
 
-def sma(input, altitude=False, forceenv=force.deffe, units=astro.prefunits):
+def sma(input, altitude=False, forceenv=force.deffe, unitlookup=astro.prefunits):
     '''Find the semimajor axis from the mean motion, orbital perioid,
     altitude, or specific energy; if `input` is a number, it is
     assumed to be a mean motion in revolutions/sidereal day.
@@ -198,15 +200,15 @@ def sma(input, altitude=False, forceenv=force.deffe, units=astro.prefunits):
     pdim=u.get_physical_type(quant)
     if pdim == 'angular speed':
         s1 = np.cbrt(mu/quant**2)
-        s = s1.decompose().to(units['length'], equivalencies=u.dimensionless_angles())
+        s = s1.to(unitlookup['length'], equivalencies=u.dimensionless_angles())
         if altitude:
             return s-forceenv['earthrad']
         else:
             return s
     elif pdim == 'time':
-        return sma(u.rev/quant, altitude, forceenv, units)
+        return sma(u.rev/quant, altitude, forceenv, unitlookup)
     elif pdim == 'specific energy':
-        return (-mu/(2*quant)).to(units['length'])
+        return (-mu/(2*quant)).to(unitlookup['length'])
     elif pdim == 'length':
         return quant + forceenv['earthrad']
     else:
