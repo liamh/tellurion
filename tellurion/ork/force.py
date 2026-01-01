@@ -99,7 +99,14 @@ def dragforce(force, atmdensname = default_atmdens, dragcoef = 1.0, dragarea = 1
     """Add atmospheric drag force to the force model. Default
     spacecraft parameters gives B = C_D A/m = 0.01 m^2/kg
     `atmdens` is one of `'hp'` for Harris-Priester (default), `'dtm'` for DTM2000, or `'msis'` for NRLMSIS.
+
+    The parameters `dragcoef` and `drarea` should be either a
+    numerical value, or a list of numerical value and a boolean. The
+    boolean specifies whether the Jacobian matrix should be computed;
+    if only a number is given, then the Jacobian will not be computed
+    for that parameter.
     """
+    ### There are no units given for dragarea; they should be SI
     match atmdensname:
         case 'hp': # Harris-Priester atmospheric density model
             atmdens = HarrisPriester(force['sun'], force['earth'])
@@ -108,12 +115,36 @@ def dragforce(force, atmdensname = default_atmdens, dragcoef = 1.0, dragarea = 1
         case 'msis':
             atmdens = NRLMSISE00(_swdata, force['sun'], force['earth'])
     mass = force['mass']  # The models need a spacecraft mass, unit kg.
-    drforce = {'dragarea': dragarea, # Cross-sectional area perpendicular to atmosphere direction, m^2
-               'dragcoef': dragcoef, # Coefficient of drag
-               'B': dragarea*dragcoef/mass,
+    if type(dragarea) is list:
+        da = dragarea[0]
+        dajac = dragarea[1]
+    else:
+        da = dragarea
+        dajac = False
+    if type(dragcoef) is list:
+        dc = dragcoef[0]
+        dcjac = dragcoef[1]
+    else:
+        dc = dragcoef
+        dcjac = False
+    df = DragForce(atmdens, IsotropicDrag(da, dc))
+    df.getParametersDrivers()[0].setSelected(dajac)
+    df.getParametersDrivers()[1].setSelected(dcjac)
+    drforce = {'dragarea': da, # Cross-sectional area perpendicular to atmosphere direction, m^2
+               'dragcoef': dc, # Coefficient of drag
+               'B': da*dc/mass,
                'atmdens': atmdens,
-               'dragforce': DragForce(atmdens, IsotropicDrag(dragarea, dragcoef))}
+               'dragforce': df}
     return force | drforce
+
+def compute_drag_pjac(forceenv):
+    """Boolean indicating whether the atmospheric drag parameters Jacobian should be calculated."""
+    return forceenv.get('dragforce') \
+        and (forceenv['dragforce'].getParametersDrivers()[0].isSelected() or
+             forceenv['dragforce'].getParametersDrivers()[1].isSelected())
+
+
+
 
 # def atmdens(location, time, model = 'hp'):
 #     return(envct[model].getDensity(time, location, envct['celestialframe']))

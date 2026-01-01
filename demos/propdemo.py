@@ -48,6 +48,12 @@ demoa.propn.pvt12h = tork.propagate(demoa.propn.gen, 12*u.hour) # Propagate to a
 demoa.propn.altperapo = tork.tselements(demoa.propn.ephem, ["altper","altapo"]) # Time series of altitudes of perigee and apogee
 demoa.propn.pvapa = tell.hcat(demoa.propn.ephem, demoa.propn.altperapo) # Ephemeris table with additional columns for perigee and apogee altitude
 
+# STM calculation
+demoa.props = Munch()
+demoa.props.wstm = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': [], 'stm': True}
+demoa.props.gen = tork.prepare(demoa.init.pvt, 1*u.day, demoa.props.wstm) # Use generator for any propagation up to 1 day
+demoa.props.finstm = demoa.props.gen['final']['stm'] # STM of final state wrt initial state
+
 # Eclipsing
 demoa.propn.eclipse = Munch()
 demoa.propn.eclipse.events = {'altitude': 125.0*u.km, 'eclipse': [True, True], 'visibility': []}
@@ -107,6 +113,12 @@ demoa.propp.fe4x4hpB01 = tork.dragforce(demoa.propp.fe4x4, 'hp')
 demoa.propp.gen4x4hpB01 = tork.prepare(demoa.init.pvt, 1*u.day, forceenv=demoa.propp.fe4x4hpB01)
 demoa.propp.ephem4x4hpB01 = tork.propagate(demoa.propp.gen4x4hpB01, prop5m1h, True)
 demoa.propp.ephem4x4hpB01_posdiff = tell.magdiff(demoa.propp.ephem4x4hpB01['position'], demoa.propn.ephem['position'])
+
+# Atmospheric drag with Jacobian calculation
+demoa.props.fe4x4hpB01 = tork.dragforce(demoa.propp.fe4x4, 'hp', [1.0, True], [1.0, True])
+demoa.props.gen4x4hpB01 = tork.prepare(demoa.init.pvt, 1*u.day, demoa.props.wstm, forceenv=demoa.props.fe4x4hpB01)
+demoa.props.finstm4x4hpB01 = demoa.props.gen4x4hpB01['final']['stm'] # STM of final state wrt initial state
+# Compare demoa.props.finstm with demoa.props.finstm4x4hpB01, they are very different
 
 # Effects of atmospheric drag in NTW and RSW (LVLH) relative coordinates
 demoa.propp.ss4x4hpB01 = tork.propagate(demoa.propp.gen4x4hpB01, prop5m1h, True, output='ss')

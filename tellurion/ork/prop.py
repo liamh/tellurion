@@ -30,9 +30,10 @@ from ..core.spacetrack import MeanElementSetT
 from . import force
 from . import element as oelement
 from . import convert
+from . import jacobian
 from .event import prop as event
 
-defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': []}
+defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': [], 'stm': False}
 
 # import astropy.units as u
 # isssent = tell.spacetrack_latest(stclient, [25544, 41335])
@@ -156,14 +157,25 @@ def _make_generator(getdatefrom, propfn):
     return generator
 
 def _additional(events, propagator, generator, proptime, forceenv, reftime, output):
-    '''Additional calculations when propagating initially; returns the propagated SpacecraftState'''
-    # 1) Add pre-propagation actions (events)
+    '''Additional calculations when propagating initially'''
+
+    # 1) Add pre-propagation actions
+    detlogs = event._add_pre(events, propagator, forceenv) # Events
+    compute_pjac = force.compute_drag_pjac(forceenv)
+    if events.get('stm') or compute_pjac:
+        harvester = jacobian._add_stm(propagator)  # State-transition matrix
+
     # 2) Propagate, saving output (SpacecraftState)
+    ss = generator['propfn'](generator['epoch'].shiftedBy(astro.timesec(proptime)))
+    generator['final'] = {'state': ss, 'pvt': convert._pvt(ss)}
+
     # 3) Add post-propagation actions and save results to `generator`
-    detlogs = event._add_pre(events, propagator, forceenv)
-    finalss = generator['propfn'](generator['epoch'].shiftedBy(astro.timesec(proptime)))
     event._add_post(detlogs, events, generator, reftime, output)
-    return finalss
+    if events.get('stm'):
+        generator['final']['stm'] = jacobian.stm(harvester, generator['final']['state'])
+    if compute_pjac:
+        generator['final']['parameters jacobian'] \
+            = jacobian.pjac(harvester, generator['final']['state'])
 
 def propagate(generator, reltimes, include_init=True, reftime='epoch', output='et'):
     '''From an existing ephemeris generator, propagate to the time(s)
