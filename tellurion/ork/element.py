@@ -164,7 +164,8 @@ def allplane(oesdict, forceenv=force.deffe, unitlookup=astro.prefunits):
             new = {'sma': smav, 'radper': smav*(1-oesdict['ecc']), 'radapo': smav*(1+oesdict['ecc'])}
         else:
             smav = oesdict['sma']
-            memo = np.sqrt((forceenv['earthmu'])/smav**3)
+            memo = np.sqrt(forceenv['earthmu'].to(unitlookup['gravconst'])/smav**3)\
+                     .to(unitlookup['angular speed'], equivalencies=u.dimensionless_angles())
             new = {'memo': memo, 'radper': smav*(1-oesdict['ecc']), 'radapo': smav*(1+oesdict['ecc'])}
         new['altper'] = new['radper'] - forceenv['earthrad']
         new['altapo'] = new['radapo'] - forceenv['earthrad']

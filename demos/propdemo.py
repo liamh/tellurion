@@ -29,7 +29,7 @@ demoa.init.pvt = tell.pvtcart(demoa.init.pv, newyear)
 # Cartesian or Kepler transformation
 demoa.init.altper = tork.elementval(demoa.init.pvt, 'altper')  # Altitude of perigee for the initial state
 demoa.init.kep = tork.kepler(demoa.init.pvt)  # Convert PVT to Kepler elements
-demoa.init.seekep = demoa.init.kep[0].to_dict()  # Easier to read Kepler elements
+demoa.init.seekep = demoa.init.kep.els.to_dict()  # Easier to read Kepler elements
 demoa.init.cart = tork.pvt(demoa.init.kep)  # Convert back to Cartesian, same as demoa.init.pvt
 
 ################ Propagation two-body
@@ -69,7 +69,7 @@ demoa.propn.eclipse.um4h15m = tork.propagate(demoa.propn.eclipse.genevpvt, tell.
 ### Analytical
 demoa.propa = Munch()
 demoa.propa.gen = tork.prepare(demoa.init.pvt, 1*u.day, forceenv=tork.kepleranalytic())
-demoa.propa.ephem = tork.propagate(demoa.propa.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
+demoa.propa.ephem = tork.propagate(demoa.propa.gen, prop5m1h, include_init=True)  # Propagate to each step, and include the initial state in the ephemeris table
 # Difference between analytical and numerical
 demoa.propa.andiff = tell.magdiff(demoa.propa.ephem['position'], demoa.propn.ephem['position'])
 

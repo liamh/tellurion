@@ -25,6 +25,8 @@ prefunits = {"time": u.second, "length": u.km, "speed": u.km/u.second,
              "angle": u.degree, "angular speed": u.radian/u.second,
              "dimensionless": u.dimensionless_unscaled}
 prefunits["posvel"] = (prefunits["length"], prefunits["speed"])
+prefunits["gravconst"] = \
+    prefunits['length']*prefunits['length']*prefunits['length']/(prefunits['time']*prefunits['time'])
 #: Unit for posvel (m, m/s)
 posvelsiu = u.StructuredUnit((u.meter, u.meter/u.second))
 #: Units used by Orekit
