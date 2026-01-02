@@ -10,6 +10,7 @@ import astropy.units as u
 from astropy.coordinates import Angle
 import astropy.table
 import astropy.time
+import astropy.timeseries
 import collections.abc
 
 ################################################################################
@@ -213,3 +214,26 @@ def fromtime(ts, reftime='now', label = 'from now', copy = True):
         newts.remove_column(label)
     newts.add_column(newcol, index=1)
     return newts
+
+
+# Include only the end part of the table; if `reltime > 0`, start at
+# that time past the start time of the table, otherwise, start at
+# |reltime| before the end time of the table.
+#   simorb.ephemeris().fromtime(1*u.day)
+#   simorb.ephemeris().fromtime(-1*u.h)
+astropy.timeseries.TimeSeries.fromtime = \
+    lambda self, reltime: fromtime(self, abstime(reltime, self.time[0]), 'from start+'+reltime.to_string()) if reltime > 0 \
+    else                  fromtime(self, abstime(reltime, self.time[-1]), 'from end'+reltime.to_string())
+
+def vector_components(ts, column, remove=True):
+    '''Replace 3-vector columns with three scalar columns, so that all may be seen'''
+    # Split the 3-vector into three separate columns
+    ts[column[0:3]+' x'] = ts[column][:, 0]
+    ts[column[0:3]+' y'] = ts[column][:, 1]
+    ts[column[0:3]+' z'] = ts[column][:, 2]
+    # Optionally remove the original column
+    if remove:
+        ts.remove_column(column)
+
+# lasthour = simorb.ephemeris().fromtime(-1*u.h); lasthour.components('position'); lasthour.components('velocity')
+astropy.timeseries.TimeSeries.components = lambda self, column, remove=True: vector_components(self, column, remove)
