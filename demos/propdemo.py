@@ -73,6 +73,19 @@ demoa.propa.ephem = tork.propagate(demoa.propa.gen, prop5m1h, include_init=True)
 # Difference between analytical and numerical
 demoa.propa.andiff = tell.magdiff(demoa.propa.ephem['position'], demoa.propn.ephem['position'])
 
+# Eclipsing
+demoa.propa.eclipse = Munch()
+demoa.propa.eclipse.events = {'altitude': 125.0*u.km, 'eclipse': [True, True], 'visibility': []}
+demoa.propa.gen = tork.prepare(demoa.init.pvt, 1*u.day, )
+demoa.propa.eclipse.genevpvt = tork.prepare(demoa.init.pvt, 8*u.hour, demoa.propa.eclipse.events,forceenv=tork.kepleranalytic(), output='pvt')
+demoa.propa.eclipse.suntrans = demoa.propa.eclipse.genevpvt['sun transition'].ephemeris()
+demoa.propa.eclipse.ephempvt = tork.propagate(demoa.propa.eclipse.genevpvt, np.linspace(0.25*u.hour, 8*u.hour, 32), output='pvt')
+demoa.propa.eclipse.ephem = demoa.propa.eclipse.ephempvt.ephemeris()
+demoa.propa.eclipse.merged = \
+    demoa.propa.eclipse.genevpvt['sun transition'].merge(demoa.propa.eclipse.ephempvt).ephemeris()
+demoa.propa.eclipse.um4h = tork.propagate(demoa.propa.eclipse.genevpvt, 4*u.hour)
+demoa.propa.eclipse.um4h15m = tork.propagate(demoa.propa.eclipse.genevpvt, tell.tq('4hr 15min'))
+
 ################ Propagation Kepler element
 
 demob = Munch()
