@@ -1,19 +1,36 @@
 """Propagate a state in two steps: `prepare()` and `propagate()`
 
-Events (e.g. eclipse, visibility) should supply three functions
-`_mkdetlog()` to add the event detector(s)/logger(s), `_gentrans` to
-generate the event transitions, and `_statechar()` to generate a
-character indicating each state.
+There are three propagators possible
+ 1) Kepler analytic, specified with kepleranalytic()
+    when initial state is a PositionVelocityT
+ 2) Numerical integration, specified by setgravity(),
+    with optional addition of atmospheric drag using dragforce(),
+    when initial state is a PositionVelocityT
+ 3) SGP4 mean element (analytic) propagation, this is automatically
+    used if the initial state is a MeanElementSetT
+
+There are three events possible to specify.
+ 1) Terminate the propagation when the altitude drops below a specified altitude
+ 2) Eclipsing
+ 3) Visibility from one or more earth locations
+These are specified in the `events` dictionary, with keys
+`'altitude'`, `'eclipse'`, and `'visibility'` respectively.  In
+addition, the final state transition matrix, the Jacobian matrix of
+final state with respect to initial state, may be obtained by setting
+`'stm'` to be `True`; if so set, the STM will be in
+`gen['final']['stm']` where `gen` is the output of `prepare()`.
+
+Orekit has many more kinds of events; to add new kinds of events other
+than these three requires some alteration of the code. Each new kind
+of event should supply three functions `_mkdetlog()` to add the event
+detector(s)/logger(s), `_gentrans` to generate the event transitions,
+and `_statechar()` to generate a character indicating each state.
 
 """
 
-import collections
-import collections.abc
 import numpy as np
 import astropy.units as u
-import astropy.time
-import astropy.table
-from org.orekit.orbits import CartesianOrbit, OrbitType, KeplerianOrbit
+from org.orekit.orbits import CartesianOrbit, OrbitType
 from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState, EphemerisGenerator
@@ -69,6 +86,8 @@ def kaprep(initstate, proptime, events, forceenv, reftime, occluder, output):
                           forceenv['celestialframe'], forceenv['earthmu'].si.value)
     propagator = KeplerianPropagator(ork0, forceenv['earthmu'].si.value)
     generator = _make_generator(ork0, lambda propto: propagator.propagate(propto))
+    generator['pvt0'] = convert._pvt(generator['propfn'](generator['epoch']))
+    _additional(events, propagator, generator, proptime, forceenv, reftime, output)
     return generator
 
 def _additional(events, propagator, generator, proptime, forceenv, reftime, output):
