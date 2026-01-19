@@ -1,13 +1,22 @@
 import numpy as np
 np.set_printoptions(suppress=True, precision=4, linewidth=np.inf)
 
-# from . import (
-#     core,
-#     ork,
-# )
+# Import everything from core (always available)
+from tellurion.core import *
 
-# import tellurion.core as tell
-# import tellurion.ork as tork
+# Try to import ork modules if Java/jpype is available
+try:
+    from tellurion.ork import *
+    _ORK_AVAILABLE = True
+except (ImportError, OSError) as e:
+    # OSError catches jpype-specific errors when JVM fails to start
+    _ORK_AVAILABLE = False
+    import warnings
+    warnings.warn(
+        f"tellurion.ork modules are not available: {e}.  "
+        "Only core functionality will be loaded.",
+        ImportWarning
+    )
 
-# # Define the __all__ variable
-# __all__ = ["core", "ork"]
+# Optionally expose availability status
+__all__ = ['_ORK_AVAILABLE']

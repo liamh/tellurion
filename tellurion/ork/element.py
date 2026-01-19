@@ -102,7 +102,7 @@ def _keporb_from_components(oes, epoch, units=(astro.prefunits['length'], astro.
 
 # Transformations between Cartesian state vector and Kepler elements
 
-def kepler(object, forceenv=force.deffe, mean_time_element=True): # Add prefunits
+def _kepler(object, forceenv=force.deffe, mean_time_element=True): # Add prefunits
     '''The Kepler element set from the Cartesian PVT or equivalent'''
     co = CartesianOrbit(convert._tspvc(object),
                         forceenv['celestialframe'], forceenv['earthmu'].si.value)
@@ -117,6 +117,8 @@ def kepler(object, forceenv=force.deffe, mean_time_element=True): # Add prefunit
         dttm = object.time
     kepels = dict(zip(elnames, elementval(ko, elnames)))
     return element.kepler(kepels, dttm)
+
+posvel.PositionVelocityT.kepler = _kepler
 
 def pvt(object, dttm=None):
     '''Make a Cartesian PVT from the object, or an ephemeris

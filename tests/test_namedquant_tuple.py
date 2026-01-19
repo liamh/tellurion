@@ -1,8 +1,7 @@
 import pytest
 import numpy as np
 import astropy.units as u
-import tellurion.core as tell
-import tellurion.ork as tork
+import tellurion as tell
 from tellurion.core.nquant import _namedquant_tuple
 
 @pytest.mark.parametrize(

@@ -1,9 +1,7 @@
+from munch import Munch
 import numpy as np
 import astropy.units as u
-from munch import Munch
-
-import tellurion.core as tell
-import tellurion.ork as tork
+import tellurion as tell
 
 ################################
 ####  Comparison of states  ####
@@ -28,14 +26,14 @@ demoa.init.check = Munch()
 demoa.init.pv = [5740.13268349, 3314.06715, 0., -2.75082684, 4.76457184, 5.50165367]
 demoa.init.pvt = tell.pvtcart(demoa.init.pv, newyear)
 # Cartesian or Kepler transformation
-demoa.init.kep = tork.kepler(demoa.init.pvt)  # Convert PVT to Kepler elements
-demoa.init.cart = tork.pvt(demoa.init.kep)  # Convert back to Cartesian, same as demoa.init.pvt
+demoa.init.kep = demoa.init.pvt.kepler()  # Convert PVT to Kepler elements
+demoa.init.cart = tell.pvt(demoa.init.kep)  # Convert back to Cartesian, same as demoa.init.pvt
 
 demob = Munch()
 demob.kep = tell.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25},
                            tell.abstime('2023-09-14T08:30:00'))
-demob.pvt = tork.pvt(demob.kep) # Convert Kepler elements to PVT
-demob.rekep = tork.kepler(demob.pvt)
+demob.pvt = tell.pvt(demob.kep) # Convert Kepler elements to PVT
+demob.rekep = demob.pvt.kepler()
 
 #############################
 ####  SGP4 mean elements ####
@@ -67,7 +65,7 @@ sent3a.mest = \
                     'type': 'PAYLOAD',
                     'catid': 41335,
                     'intldes': '2016-011A'})
-sent3a.gen = tork.prepare(sent3a.mest, 1*u.day, {'altitude': 125.0*u.km, 'eclipse': [True, True], 'visibility': []})
+sent3a.gen = tell.prepare(sent3a.mest, 1*u.day, {'altitude': 125.0*u.km, 'eclipse': [True, True], 'visibility': []})
 
 ##########################
 ####      Tests       ####

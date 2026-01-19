@@ -5,16 +5,15 @@
 
 import numpy as np
 import astropy.units as u
-import tellurion.core as tell
-import tellurion.ork as tork
+import tellurion as tell
 
 def keppvt(dictels, time):
     """From the dictionary of element values, compute the Kepler
     elements (sma, ecc, inc, argper, raan, and ma or ta), the PVT
     transformation of those elements, and the spherical coordinates."""
     d = {'els': dictels}
-    d['kep'] = tell.kepler(tork.allplane(d['els']), time)
-    d['pvt'] = tork.pvt(d['kep'])
+    d['kep'] = tell.kepler(tell.allplane(d['els']), time)
+    d['pvt'] = tell.pvt(d['kep'])
     d['pvt'].spherical
     return d
 
@@ -38,7 +37,7 @@ geo1 = keppvt({"memo":1.0*u.rev/u.sday, \
             tell.abstime('2026-01-01 20:30:00'))
 
 # A GEO transfer orbit
-ell1 = keppvt({"altper": 350*u.km, "altapo": tork.sma(1.0,True), \
+ell1 = keppvt({"altper": 350*u.km, "altapo": tell.sma(1.0,True), \
                   "inc":0.0*u.deg, "argper": 120.0*u.deg, \
                   "raan": 0.0*u.deg, "ma": 90.0*u.deg},
                  tell.abstime('2026-01-01 05:55:00'))
@@ -55,15 +54,15 @@ vang1 = keppvt({"altper": 600.0*u.km, "altapo": 12000.0*u.km,
                tell.abstime('2026-01-01 14:45:00'))
 
 # A semisynchronous orbit like GPS
-gps1 = keppvt({"sma": tork.sma(2.0), "ecc": 0.0*u.dimensionless_unscaled,
+gps1 = keppvt({"sma": tell.sma(2.0), "ecc": 0.0*u.dimensionless_unscaled,
                 "inc":55.0*u.deg, "argper": 0.0*u.deg, \
                 "raan": 120.0*u.deg, "ma": 77.0*u.deg},
                tell.abstime('2026-01-01 12:20:00'))
 
 def test_allplane():
-    smaecc = tork.allplane({"altper":160*u.km, "altapo":20250*u.km, \
+    smaecc = tell.allplane({"altper":160*u.km, "altapo":20250*u.km, \
               "inc":28.5*u.deg, "argper": 0.0*u.deg, "raan": 0.0*u.deg, "ma": 0.0*u.deg})
-    alts = tork.allplane({"sma":8000*u.km, "ecc":0.1*u.dimensionless_unscaled, \
+    alts = tell.allplane({"sma":8000*u.km, "ecc":0.1*u.dimensionless_unscaled, \
                           "inc":45*u.deg, "argper": 120.0*u.deg, "raan": 80.0*u.deg, \
                           "ma": 0.0*u.deg})
 
@@ -74,8 +73,8 @@ def test_allplane():
     np.testing.assert_allclose(alts['altapo'], 2421.86354*u.km)
     np.testing.assert_allclose(geo1['kep'].els['sma'], 42164.1696233*u.km)
     # Test conversion to semimajor axis
-    np.testing.assert_allclose(tork.sma(1e4*u.s), 10032.11910363*u.km)
-    np.testing.assert_allclose(tork.sma(-20*(u.km/u.s)**2), 9965.0110375*u.km)
+    np.testing.assert_allclose(tell.sma(1e4*u.s), 10032.11910363*u.km)
+    np.testing.assert_allclose(tell.sma(-20*(u.km/u.s)**2), 9965.0110375*u.km)
     np.testing.assert_allclose(ell1['kep'].els['sma'], 24446.15304165*u.km)
 
 def test_posvel():

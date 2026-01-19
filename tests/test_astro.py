@@ -5,7 +5,7 @@ import numpy as np
 import astropy.units as u
 from munch import Munch
 
-import tellurion.core as tell
+import tellurion as tell
 
 def test_angnorm():
     np.testing.assert_allclose(tell.normalizeangle(225*u.deg, u.rev/2), -135*u.deg)
