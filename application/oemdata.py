@@ -1,7 +1,7 @@
 import numpy as np
 import astropy.units as u
 from oem import OrbitEphemerisMessage
-import tellurion.core as tell
+import tellurion as tell
 
 oemunits = {"time": u.second, "length": u.km, "speed": u.km/u.second,
             "angle": u.degree, "angular speed": u.radian/u.second,
