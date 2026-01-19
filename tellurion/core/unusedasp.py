@@ -55,7 +55,7 @@ def siderealtime(time = None, location = nullisland):
 ####   Make posvel and related types          ####
 ##################################################
 
-def makepos(pos, unit=astro.prefunits['length']):
+def makepos(pos, unit=units.prefunits['length']):
     '''Create a position vector or convert units'''
     if type(pos) is coord.representation.cartesian.CartesianRepresentation:
         return makepos(pos.xyz, unit)

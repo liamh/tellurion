@@ -6,3 +6,13 @@ description = "Astrodynamics"
 [build-system]
 build-backend = "flit_core.buildapi"
 requires = ["flit_core >=3.2,<4"]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx>=8.2.0",
+    "sphinx-astropy[confv2]>=1.9.1",
+    "sphinx-changelog>=1.2.0",
+    "sphinx_design>=0.6.1",
+    "matplotlib>=3.9.1",
+    "sphinxcontrib-globalsubs>=0.1.1",
+]

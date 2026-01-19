@@ -6,6 +6,8 @@ import numpy as np
 import astropy.units as u
 import astropy.coordinates as coord
 import astropy.time
+
+from tellurion.core import units
 from tellurion.core import astro
 from tellurion.core import nquant
 #from tellurion.core import element
@@ -14,7 +16,7 @@ obsdict1 = {'azim': 'angle', 'elev': 'angle', 'range': 'length', 'rangerate': 's
 
 EarthObservationT = collections.namedtuple('EarthObservationT', 'loc obs time')
 
-def azelrange(azim, elev, range, obsloc, obstime, unitlookup=astro.prefunits):
+def azelrange(azim, elev, range, obsloc, obstime, unitlookup=units.prefunits):
     '''Create an azimuth, elevation, and range observation'''
     def sqaer(azim, elev, range, obstime):
         if obstime.isscalar and azim.isscalar and elev.isscalar:
@@ -30,4 +32,4 @@ def azelrange(azim, elev, range, obsloc, obstime, unitlookup=astro.prefunits):
                 sq = nquant.vstack(tuple([sqaer(a, e, r, t) \
                                           for a, e, r, t in zip(azim,elev,range,obstime)]))
         return sq
-    return EarthObservationT(obsloc, astro.changeunits(sqaer(azim, elev, range, obstime)), obstime)
+    return EarthObservationT(obsloc, units.changeunits(sqaer(azim, elev, range, obstime)), obstime)

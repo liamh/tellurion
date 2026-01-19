@@ -12,6 +12,8 @@ A Python package for astrodynamics using Orekit and AstroPy.
 
    installation
    examples
+   api
+   astropy_extensions
 
 See the :doc:`installation` page to get started.
 

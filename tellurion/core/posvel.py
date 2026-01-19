@@ -13,7 +13,7 @@ import astropy.time
 from astropy.timeseries import TimeSeries
 import astropy.table.row
 import astropy.coordinates as coord
-from tellurion.core import util
+from tellurion.core import units
 from tellurion.core import astro
 from tellurion.core import nquant
 from tellurion.core import pvhelper
@@ -31,13 +31,13 @@ class PositionBase(abc.ABC):
     on whether velocity information is present.
     """
     time: astropy.time.Time = None
-    '''The date and time of the position (optional)'''
+    """The date and time of the position (optional)"""
     aux: dict = dataclasses.field(default_factory=dict)
-    '''Discrete attributes (labels, flags, metadata, etc.)'''
+    """Discrete attributes (labels, flags, metadata, etc.)"""
     _cartesian: u.Quantity = dataclasses.field(default=None, init=False, repr=False)
-    '''Internal storage for Cartesian coordinates'''
+    """Internal storage for Cartesian coordinates"""
     _spherical: u.Quantity = dataclasses.field(default=None, init=False, repr=False)
-    '''Internal storage for spherical coordinates'''
+    """Internal storage for spherical coordinates"""
 
     def __init__(self, time, aux=None, cartesian=None, spherical=None, pv=None):
         """Initialize PositionVelocityT with either cartesian or spherical coordinates.
@@ -373,11 +373,11 @@ class PositionBase(abc.ABC):
 
 @dataclasses.dataclass
 class PositionT(PositionBase):
-    '''Position in space with optional time (no velocity information).
+    """Position in space with optional time (no velocity information).
 
     Supports lazy conversion between Cartesian and spherical coordinates.
     Can include auxiliary attributes for metadata, flags, etc.
-    '''
+    """
 
     def __init__(self, time, aux=None, cartesian=None, spherical=None):
         super().__init__(time, aux, cartesian, spherical)
@@ -410,7 +410,7 @@ class PositionT(PositionBase):
         sphrepr = [sph_repr.lon, sph_repr.lat, sph_repr.distance]
         # Use the existing sph() function to create the structured quantity
         return pvhelper.sphericalpv(sphrepr, None, labels=['rtasc', 'decl', 'distance'],
-                                    unitlookup=astro.prefunits)
+                                    unitlookup=units.prefunits)
 
     def _spherical_to_cartesian(self, spherical):
         """Convert spherical coordinates to Cartesian state vector.
@@ -438,7 +438,7 @@ class PositionT(PositionBase):
 
         # Convert to Cartesian representation (this handles both position and velocity)
         cart_repr = sph_repr.represent_as(CartesianRepresentation)
-        sq = pvhelper.cartesianpv(cart_repr.xyz, unitlookup=astro.prefunits)
+        sq = pvhelper.cartesianpv(cart_repr.xyz, unitlookup=units.prefunits)
         # Create the structured quantity
         return sq
 
@@ -468,12 +468,12 @@ class PositionT(PositionBase):
 
 @dataclasses.dataclass
 class PositionVelocityT(PositionBase):
-    '''Orbital state vector as position (Cartesian 3-vector), velocity (Cartesian 3-vector),
+    """Orbital state vector as position (Cartesian 3-vector), velocity (Cartesian 3-vector),
     time, and a dictionary of discrete attributes; each field can have multiple rows,
     corresponding to an ephemeris.
 
     Supports lazy conversion between Cartesian and spherical coordinates.
-    '''
+    """
     def __init__(self, time, aux=None, cartesian=None, spherical=None):
         super().__init__(time, aux, cartesian, spherical)
 
@@ -536,7 +536,7 @@ class PositionVelocityT(PositionBase):
         sphrate = [sph_diff.d_lon, sph_diff.d_lat, sph_diff.d_distance]
         # Use the existing sph() function to create the structured quantity
         return pvhelper.sphericalpv(sphrepr, sphrate, labels=['rtasc', 'decl', 'distance'],
-                                    unitlookup=astro.prefunits)
+                                    unitlookup=units.prefunits)
 
     def _spherical_to_cartesian(self, spherical):
         """Convert spherical coordinates to Cartesian state vector.
@@ -588,7 +588,7 @@ class PositionVelocityT(PositionBase):
                   cart_diff.d_x, cart_diff.d_y, cart_diff.d_z]
 
         # Create the structured quantity
-        return pvhelper.cartesianpv(posvel, unitlookup=astro.prefunits)
+        return pvhelper.cartesianpv(posvel, unitlookup=units.prefunits)
 
     def copy(self):
         """Create a copy of this PositionVelocityT."""
@@ -619,15 +619,15 @@ class PositionVelocityT(PositionBase):
 ####    Make PositionT,  PositionVelocityT    ####
 ##################################################
 
-def pvtcart(pv, time=None, specunits=astro.prefunits['posvel']):
-    '''Define a PositionVelocityT or PositionT by its Cartesian
+def pvtcart(pv, time=None, specunits=units.prefunits):
+    """Define a PositionVelocityT or PositionT by its Cartesian
        component
 
        pv: An array or list convertible to an array with  numerical values
        time: Any time representation that serve as input to astro.abstime
        specunits: The units to be assigned to the numbers in `pv`
 
-    '''
+    """
     cart = pvhelper.cartesianpv(pv, specunits)
     if cart.dtype.names and pvhelper._eph_vel in cart.dtype.names:
         return PositionVelocityT(time=astro.abstime(time), cartesian=cart)
@@ -642,7 +642,7 @@ def ispvtcart(obj):
 hasthing = lambda object, thing: hasattr(object,thing) or (hasattr(object,'colnames') and thing in object.colnames)
 
 def pvtattr(object):
-    '''Create PositionVelocityT or PositionT from any object (e.g., ephemeris) that has the time, position, and optionally velocity, properties.'''
+    """Create PositionVelocityT or PositionT from any object (e.g., ephemeris) that has the time, position, and optionally velocity, properties."""
     if hasthing(object,pvhelper._eph_time) and hasthing(object,pvhelper._eph_pos):
         if hasthing(object,pvhelper._eph_vel):
             cart = pvhelper.cartesianpv_sep(object[pvhelper._eph_pos], \

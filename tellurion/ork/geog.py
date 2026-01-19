@@ -13,12 +13,13 @@ from org.orekit.bodies import GeodeticPoint
 from org.orekit.frames import TopocentricFrame
 import org.orekit.models.earth as oearth
 
+from tellurion.core import units
 from tellurion.core import astro
 from tellurion.core import nquant
 from tellurion.core import posvel
 from tellurion.core import geog
 from tellurion.core import obs
-from . import force
+from tellurion.ork import force
 from tellurion.ork import convert
 
 def siderealtime(time = None, location = None, forceenv=force.deffe):
@@ -50,7 +51,7 @@ def geodpt(earthloc):
 def _topoframe(loc, name="", forceenv=force.deffe):
     return TopocentricFrame(forceenv['earth'], geodpt(loc), name)
 
-def sitevec(loc, times, name="sitevec", unitlookup=astro.prefunits, forceenv=force.deffe):
+def sitevec(loc, times, name="sitevec", unitlookup=units.prefunits, forceenv=force.deffe):
     '''The site vector for an earth location at the specified times.'''
     if times.isscalar:
         tf = _topoframe(loc, name, forceenv)
@@ -64,13 +65,13 @@ def sitevec(loc, times, name="sitevec", unitlookup=astro.prefunits, forceenv=for
         ret.name = name
     return ret
 
-def eciaer(observation, name="", unitlookup=astro.prefunits, forceenv=force.deffe):
+def eciaer(observation, name="", unitlookup=units.prefunits, forceenv=force.deffe):
     '''Find the ECI position and time of the az-el-range observations
     made from the location. If observation is a Time or multiple
     times, find the site vector(s). Uses Orekit.
     '''
     tf = _topoframe(observation.loc, name, forceenv)
-    aerork = astro.changeunits(observation.obs, astro.orkunits)
+    aerork = units.changeunits(observation.obs, units.orkunits)
     tf = TopocentricFrame(forceenv['earth'], \
                           tf.pointAtDistance(
                               float(aerork['azim'].value), \

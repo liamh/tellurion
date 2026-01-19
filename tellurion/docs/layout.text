@@ -1,0 +1,11 @@
+docs/
+├── conf.py                    # Sphinx configuration
+├── index.rst                  # Main documentation entry point
+├── _static/                   # Static files (images, CSS)
+├── _templates/                # Custom Sphinx templates
+├── [package_name]/           # One directory per package/module
+│   ├── index.rst
+│   ├── examples/             # Python example scripts
+│   └── *.rst                 # Documentation pages
+├── development/              # Developer documentation
+└── changes/                  # Changelog entries

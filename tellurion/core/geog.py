@@ -7,9 +7,11 @@ and angles & range observation eciobs()
 import numpy as np
 import astropy.units as u
 import astropy.coordinates as coord
-from . import astro
-from . import posvel
-from . import geonames
+
+from tellurion.core import units
+from tellurion.core import astro
+from tellurion.core import posvel
+from tellurion.core import geonames
 
 def observer_location(location, name="Unnamed", minimum_elevation=coord.Angle(10.0, u.deg)):
     '''Define an observer's location; location is an
@@ -21,7 +23,7 @@ def observer_location(location, name="Unnamed", minimum_elevation=coord.Angle(10
     if type(minimum_elevation) is coord.Angle:
         me = minimum_elevation
     else:
-        me = coord.Angle(minimum_elevation, astro.prefunits['angle'])
+        me = coord.Angle(minimum_elevation, units.prefunits['angle'])
     return {'location': location, 'name': name, 'minelev': me}
 
 # List of sites: astropy.coordinates.EarthLocation.get_site_names()

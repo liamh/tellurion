@@ -1,5 +1,6 @@
 import numpy as np
 from org.orekit.frames import TopocentricFrame
+from tellurion.core import units
 from tellurion.core import astro
 from tellurion.core import posvel
 from tellurion.core import obs
@@ -26,9 +27,9 @@ def aer(pvt, location, name="topo loc", forceenv=force.deffe):
     okpos = tspvc.getPosition()
     tf = _topoframe(location, name, forceenv)
     cf = forceenv['celestialframe']
-    azm = tf.getAzimuth(okpos, cf, oktime)*astro.orkunits["angle"]
-    elv = tf.getElevation(okpos, cf, oktime)*astro.orkunits["angle"]
-    rng = tf.getRange(okpos, cf, oktime)*astro.orkunits["length"]
+    azm = tf.getAzimuth(okpos, cf, oktime)*units.orkunits["angle"]
+    elv = tf.getElevation(okpos, cf, oktime)*units.orkunits["angle"]
+    rng = tf.getRange(okpos, cf, oktime)*units.orkunits["length"]
     return obs.azelrange(azm, elv, rng, location, pvt.time)
 
 # Handle sequence of PVTs
@@ -44,7 +45,7 @@ def eci(observation, name="topo loc", forceenv=force.deffe):
     vector(s). Uses Orekit.'''
     if type(observation) is obs.EarthObservationT:
         tf = _topoframe(observation.loc, name, forceenv)
-        obork = astro.changeunits(observation.obs, astro.orkunits)
+        obork = units.changeunits(observation.obs, units.orkunits)
         tf = TopocentricFrame(forceenv['earth'], \
                               tf.pointAtDistance(
                                   float(obork['azim'].value), \

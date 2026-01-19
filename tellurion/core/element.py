@@ -4,6 +4,8 @@ import astropy.units as u
 import astropy.constants # astropy.constants.R_earth
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
+
+from tellurion.core import units as tunits
 from tellurion.core import astro
 from tellurion.core import nquant
 from tellurion.core import pvhelper
@@ -31,7 +33,7 @@ def statefnval (orbstate, quantname, sfdict, constants=None):
         else:
             orkval = getter(orbstate)
         orkunit = lookup["orkunit"]
-        return u.Quantity(orkval, orkunit).to(astro.prefunits[lookup["phystype"]])
+        return u.Quantity(orkval, orkunit).to(tunits.prefunits[lookup["phystype"]])
 
 def sfdict(sfvbl):
     '''Make a state function dictionary of the state function variables'''
@@ -50,7 +52,7 @@ timeelements=['ta', 'ma']
 
 # kep1 = kepler({"ecc":0.1, "sma":8000.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25})
 # kep2 = kepler({"zper":250.0, "zapo":350.0, "inc":22.0, "argper":66.0, "raan":68.0, "ma":7.25})
-def kepler(oes, dttm=None, units=(astro.prefunits['length'], astro.prefunits['angle'])):
+def kepler(oes, dttm=None, units=(tunits.prefunits['length'], tunits.prefunits['angle'])):
     '''Make a Kepler orbital element set with either mean or true anomaly as the time element.'''
     if 'ma' in oes:
         timeelt = {"ma":'angle'}
@@ -68,10 +70,10 @@ def kepler(oes, dttm=None, units=(astro.prefunits['length'], astro.prefunits['an
 
     keppt = {"inc":'angle', "argper":'angle', "raan":'angle'} | plane | timeelt
     ordoes = {k:oes[k] for k in keppt.keys()}
-    kepsq = nquant.structquant(ordoes, units=keppt, unitlookup=astro.prefunits)
-    if not astro.isupperhalfplane(kepsq['inc']):
+    kepsq = nquant.structquant(ordoes, units=keppt, unitlookup=tunits.prefunits)
+    if not tunits.isupperhalfplane(kepsq['inc']):
         raise ValueError('Inclination must be between 0 and 180 degrees, inclusive')
-    kepsqn = astro.normalizeangle(kepsq, u.rev/2, timeelements)
+    kepsqn = tunits.normalizeangle(kepsq, u.rev/2, timeelements)
     if dttm==None:
         return kepsqn
     else:

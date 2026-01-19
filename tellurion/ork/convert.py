@@ -15,12 +15,15 @@ import org.orekit.time
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 
+from tellurion.core import units as tunits
 from tellurion.core import astro
 from tellurion.core import element
 from tellurion.core import posvel
 from tellurion.core import pvhelper
-from . import force
-from . import element as oelement
+from tellurion.ork import force
+from tellurion.ork import element as oelement
+
+posvelsiu = u.StructuredUnit((u.meter, u.meter/u.second))
 
 ###############################
 ####  Cartesian posvel     ####
@@ -33,18 +36,17 @@ from . import element as oelement
 # _pvt(): Convert from orekit objects to PV or PVT
 # _tspvc(): Convert from PV/PVT to org.orekit.utils.PVCoordinates or TimeStampedPVCoordinates
 
-
-def _pvt(object, unitlookup=astro.prefunits, additional=None):
-    '''Make the postion, velocity (), and time tuple
+def _pvt(object, unitlookup=tunits.prefunits, additional=None):
+    """Make the postion, velocity (), and time tuple
     (astropy.time.Time) or position and velocity from the Orekit
     object that has them defined; there is no transformation (e.g.,
     from Kepler elements).
 
-    '''
+    """
     if hasattr(object, 'getPosition') and hasattr(object, 'getVelocity'):
-        pos = _v3d(object.getPosition(), astro.posvelsiu[0])
-        vel = _v3d(object.getVelocity(), astro.posvelsiu[1])
-        pv = astro.changeunits(pvhelper.cartesianpv_sep(pos, vel, astro.orkunits), unitlookup)
+        pos = _v3d(object.getPosition(), posvelsiu[0])
+        vel = _v3d(object.getVelocity(), posvelsiu[1])
+        pv = tunits.changeunits(pvhelper.cartesianpv_sep(pos, vel, tunits.orkunits), unitlookup)
         if hasattr(object, 'getDate'):
             tm=_okad(object.getDate())
         elif type(additional) is astropy.time.Time:
@@ -58,7 +60,7 @@ def _pvt(object, unitlookup=astro.prefunits, additional=None):
         raise ValueError("Cannot convert value to position, value, and time (PVT)")
 
 def _tspvc(obj, time=None):
-    '''Convert tuple (posvel.pv(), astropy.time.Time) or ephemeris row to Orekit TimeStampedPVCoordinates or posvel.pv() to PVCoordinates'''
+    """Convert tuple (posvel.pv(), astropy.time.Time) or ephemeris row to Orekit TimeStampedPVCoordinates or posvel.pv() to PVCoordinates"""
     if pvhelper.isephrow(obj):
         opvt = posvel.pvt(obj) # pvhelper.cartesianpv_sep(obj['position'], obj['velocity'])
         if time==None:
@@ -70,7 +72,7 @@ def _tspvc(obj, time=None):
     elif posvel.ispvtcart(obj):
         return _tspvc(obj.pv, obj.time)
     elif pvhelper.ispv(obj):
-        conv = obj.to(astro.posvelsiu)
+        conv = obj.to(posvelsiu)
         vecp = _v3d(conv[pvhelper._eph_pos].value)
         vecv = _v3d(conv[pvhelper._eph_vel].value)
         if time==None:
@@ -101,13 +103,13 @@ def _okad(t):
         raise ValueError("Cannot convert value to or from Orekit AbsoluteDate")
 
 def _v3d(arg, unit=u.dimensionless_unscaled):
-    '''Make a Vector3D from the argument; if the argument is a Vector3D, return the components as a u.Quantity'''
+    """Make a Vector3D from the argument; if the argument is a Vector3D, return the components as a u.Quantity"""
     # match/case will not work because `case list` causes an error
     argtype = type(arg)
     if argtype == list:
         return Vector3D(arg)
     elif argtype == u.Quantity:
-        return _v3d(arg.to(astro.orkunits["length"]).value)
+        return _v3d(arg.to(tunits.orkunits["length"]).value)
     elif argtype == np.ndarray:
         return Vector3D(arg.tolist())
     elif argtype == Vector3D:

@@ -4,12 +4,11 @@ from org.orekit.attitudes import LofOffset
 from org.orekit.frames import LOFType
 from org.orekit.propagation import SpacecraftState
 
-from ..core import astro
-from ..core import posvel
-from . import convert
+from tellurion.core import units
+from tellurion.core import astro
+from tellurion.ork import convert
 
-
-def ntw(relsc, refsc, unitlookup=astro.prefunits):
+def ntw(relsc, refsc, unitlookup=units.prefunits):
     '''Find the NTW (normal, in-track, cross-track) relative
     coordinates of relsc with respect to refsc; each is a
     org.orekit.propagation.SpacecraftState (set the `spacecraftstate`
@@ -18,7 +17,7 @@ def ntw(relsc, refsc, unitlookup=astro.prefunits):
     rf = _relframe(LOFType.NTW, relsc, refsc, unitlookup)
     return rf.ephemeris(['time', 'NTW position', 'NTW velocity'])
 
-def lvlh(relsc, refsc, unitlookup=astro.prefunits):
+def lvlh(relsc, refsc, unitlookup=units.prefunits):
     '''Find the LVLH or RSW (radial, along-track, cross-track) relative
     coordinates of relsc with respect to refsc; each is a
     org.orekit.propagation.SpacecraftState (set the `spacecraftstate`
@@ -27,7 +26,7 @@ def lvlh(relsc, refsc, unitlookup=astro.prefunits):
     rf = _relframe(LOFType.LVLH, relsc, refsc, unitlookup)
     return rf.ephemeris(['time', 'LVLH position', 'LVLH velocity'])
 
-def _relframe(frame, relsc, refsc, unitlookup=astro.prefunits):
+def _relframe(frame, relsc, refsc, unitlookup=units.prefunits):
     if isinstance(refsc, collections.abc.Iterable):
         rf = [_relframe(frame, rel, ref, unitlookup) for (rel, ref) in zip(relsc, refsc)]
         return rf[0].merge(rf[1:])

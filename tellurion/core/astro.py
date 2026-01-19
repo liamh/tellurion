@@ -2,59 +2,58 @@
 AstroPy definitions
 """
 
+from typing import Final
 import warnings
 import datetime
 import bisect
 import numpy as np
 import astropy.units as u
-from astropy.coordinates import Angle
 import astropy.table
 import astropy.time
 import astropy.timeseries
 import collections.abc
 
 ################################################################################
-## Units
+## Time
 ################################################################################
 
-#: A revolution (full circle), useful for two-line elements (mean motion in rev/day)
-u.rev = u.revolution = u.def_unit('revolution', 2*np.pi*u.radian)
-u.add_enabled_units(u.rev)
-
-#: User's preferred units
-prefunits = {"time": u.second, "length": u.km, "speed": u.km/u.second,
-             "angle": u.degree, "angular speed": u.radian/u.second,
-             "dimensionless": u.dimensionless_unscaled}
-prefunits["posvel"] = (prefunits["length"], prefunits["speed"])
-prefunits["gravconst"] = \
-    prefunits['length']*prefunits['length']*prefunits['length']/(prefunits['time']*prefunits['time'])
-#: Unit for posvel (m, m/s)
-posvelsiu = u.StructuredUnit((u.meter, u.meter/u.second))
-#: Units used by Orekit
-siunits = {"time": u.second, "length": u.m, "speed": u.m/u.second,
-           "angle": u.radian, "angular speed": u.radian/u.second,
-           "dimensionless": u.dimensionless_unscaled}
-orkunits = siunits
-
 def abstime(ratimes, reftime='now'):
-    '''Convert `ratimes`, which is a relative time (also known as
+    """Convert `ratimes`, which is a relative time (also known as
     "time delta" or "time interval"), or an absolute time, or an
     iterable of those things, into an absolute time
     (astropy.time.Time) or a list of absolute times. If `reftime` is
     not provided, it defaults to the current time.
 
-    Examples
-    newyear = tell.abstime('2025-01-01T00:00:00')
-    prop5m1h = np.linspace(5.0*u.minute, 60.0*u.minute, 12) # Step every 5 minutes for an hour
-    tell.abstime(['2025-01-01T00:00:00', '2025-01-02T00:00:00', '2025-01-03T00:00:00']
-    tell.abstime(prop5m1h, newyear)
-    tell.abstime(5*u.hour, newyear)
-    tell.abstime('12d 17hr 23min 33.1s', newyear)
-    tell.abstime([5*u.hour, '12d 17hr 23min 33.1s'], newyear)
-    import datetime
-    tell.abstime(datetime.datetime(2025, 4, 17, 22, 54, 8, 684006))
+    Parameters
+    ----------
+    ratimes :  str, int, float, astropy.time.Time, u.Quantity, datetime, or iterable
+        The relative or absolute time(s) to convert.
+    reftime : str or astropy.time.Time, optional
+        The reference time for relative times. Default is ``'now'``.
 
-    '''
+    Returns
+    -------
+    astropy.time.Time
+        The absolute time(s).
+
+    Examples
+    --------
+    >>> import tellurion as tell
+    >>> import astropy.units as u
+    >>> import numpy as np
+    >>> newyear = tell.abstime('2025-01-01T00:00:00')
+    >>> prop5m1h = np.linspace(5.0*u.minute, 60.0*u.minute, 12)
+    >>> tell.abstime(['2025-01-01T00:00:00', '2025-01-02T00:00:00'])
+    >>> tell.abstime(prop5m1h, newyear)
+    >>> tell.abstime(5*u.hour, newyear)
+    >>> tell.abstime('12d 17hr 23min 33.1s', newyear)
+    >>> tell.abstime([5*u.hour, '12d 17hr 23min 33.1s'], newyear)
+
+    Using datetime objects:
+
+    >>> import datetime
+    >>> tell.abstime(datetime.datetime(2025, 4, 17, 22, 54, 8, 684006))
+    """
     if reftime=='now':
         reftime = astropy.time.Time(datetime.datetime.now(datetime.UTC), scale='utc')
     if type(ratimes)==astropy.time.Time:
@@ -88,7 +87,7 @@ def time_concat(time1, time2):
     return astropy.time.Time(np.concatenate([tval(time1), tval(time2)]))
 
 def timesec(t):
-    '''Convert a u.Quantity to seconds as a Python float'''
+    """Convert a u.Quantity to seconds as a Python float"""
     if type(t) is u.Quantity and u.get_physical_type(t) == 'time':
         pt = t.si.value.tolist() # convert to seconds and get the value_unit
     elif isinstance(t, collections.abc.Iterable):
@@ -102,9 +101,23 @@ def tc(t):
     of duration (time interval) components; this is the inverse of
     tq().
 
-    tc(tq('12d 17hr 23min 33.1s'))
+    Parameters
+    ----------
+    t : u.Quantity
+        A quantity with time dimension.
+
+    Returns
+    -------
+    str
+        Duration string with components (days, hours, minutes, seconds).
+
+    Examples
+    --------
+    >>> import tellurion as tell
+    >>> import astropy.units as u
+    >>> tell.tc(tell.tq('12d 17hr 23min 33.1s'))
     '12d 17hr 23min 33.1s'
-    tell.tc(123456*u.s)
+    >>> tell. tc(123456*u.s)
     '1d 10hr 17min 36.0s'
     """
     return astropy.time.TimeDelta(t).quantity_str
@@ -114,51 +127,26 @@ def tq(compstr):
     u.Quantity with physical dimension time; this is the inverse of
     tc().
 
-    tq('12d 17hr 23min 33.1s')
+    Parameters
+    ----------
+    compstr : str
+        Duration string with components (e.g., '12d 17hr 23min 33.1s').
+
+    Returns
+    -------
+    u.Quantity
+        Time quantity in seconds.
+
+    Examples
+    --------
+    >>> import tellurion as tell
+    >>> import astropy. units as u
+    >>> tell. tq('12d 17hr 23min 33.1s')
     <Quantity 1099413.1 s>
-    tq(tc(123456*u.s))
+    >>> tell.tq(tell.tc(123456*u. s))
     <Quantity 123456. s>
     """
     return astropy.time.TimeDelta(compstr).to_value('sec')*u.s
-
-def changeunits(qsq, unitlookup=prefunits):
-    '''Change the units for the quantity or structured quantity to the system of units.'''
-    if type(qsq.unit) is u.StructuredUnit:
-        tounits = u.StructuredUnit(tuple([unitlookup[u.get_physical_type(un)._physical_type_list[0]] \
-                                          for un in qsq.unit.values()]))
-    else:
-        tounits = unitlookup[u.get_physical_type(qsq.unit)._physical_type_list[0]]
-    return qsq.to(tounits)
-
-def normalizeangle(angle, wrapat=u.rev/2, exclude=[]):
-    '''Add or subtract multiples of full revolutions so that angle
-    falls in the semi-open range [-180 degrees, +180 degrees). The cut
-    point can be changed by setting wrapat differently; for example,
-    for [0, 360) degrees, set to u.rev. Parts of structured quantities
-    with names listed in `exclude` are not normalized. If
-    exclude==True, no values are changed. Default is to exclude
-    nothing.
-    '''
-    from tellurion.core import nquant
-    if type(angle) is u.Quantity:
-        if type(angle.unit) is u.StructuredUnit and exclude != True:
-            return nquant.structquant([normalizeangle(kv[1], wrapat, kv[0] in exclude)
-                                       for kv in angle.to_dict().items()],
-                                      angle.dtype.names)
-        else:
-            if u.get_physical_type(angle)=='angle' and exclude != True:
-                return normalizeangle(Angle(angle), wrapat)
-            else:
-                return angle
-    elif type(angle) is Angle:
-        return u.Quantity(angle.wrap_at(wrapat))
-    else:
-        return angle
-
-def isupperhalfplane(angle):
-    '''Angle is in the upper half plane'''
-    na = normalizeangle(angle)
-    return na >= 0.0 and na <= u.rev/2
 
 ################################################################################
 ## Time
@@ -168,21 +156,82 @@ prefnumabstime = 'mjd' # Preferred numerical format for absolute time
 astropy.time.Time.to_array = lambda self, format=prefnumabstime: to_array(self, format)
 
 def to_array(tms, format=prefnumabstime):
+    """Convert the absolute time(s) to a Numpy array using the
+    specified format to convert absolute times to a float.
+
+    Parameters
+    ----------
+    tms :  astropy.time.Time
+        The time or times to convert.
+    format : str, optional
+        The time format for conversion. Common formats include ``'mjd'``
+        (Modified Julian Date), ``'jd'`` (Julian Date), ``'unix'`` (Unix
+        timestamp), ``'cxcsec'`` (Chandra X-ray Center seconds), ``'gps'``
+        (GPS seconds), ``'plot_date'`` (Matplotlib plot date). See the
+        `astropy.time.Time formats documentation
+        <https://docs.astropy.org/en/stable/time/index.html#time-format>`_
+        for a complete list.  Default is ``'mjd'``.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of time values in the specified format.
+
+    Examples
+    --------
+    >>> import tellurion as tell
+    >>> import astropy.time
+    >>> t = astropy.time.Time('2025-01-01T00:00:00')
+    >>> tell.to_array(t, format='mjd')
+    array([60310.])
+    >>> tell.to_array(t, format='jd')
+    array([2460310.5])
+    """
     if tms.shape == ():
         mjds = np.array([tms.to_value(format=format)])
     else:
         mjds = tms.to_value(format)
     return mjds
 
-def from_array(tms, format=prefnumabstime):
-    return astropy.time.Time(astropy.time.Time(tms, format=format).to_value('isot'))
+def from_array(array, format=prefnumabstime):
+    """Convert the absolute time(s) from a Numpy array using the
+    specified format to convert absolute times from a float.
+
+    Parameters
+    ----------
+    tms :  astropy.time.Time
+        The time or times to convert.
+    format : str, optional
+        The time format for conversion. Common formats include ``'mjd'``
+        (Modified Julian Date), ``'jd'`` (Julian Date), ``'unix'`` (Unix
+        timestamp), ``'cxcsec'`` (Chandra X-ray Center seconds), ``'gps'``
+        (GPS seconds), ``'plot_date'`` (Matplotlib plot date). See the
+        `astropy.time.Time formats documentation
+        <https://docs.astropy.org/en/stable/time/index.html#time-format>`_
+        for a complete list.  Default is ``'mjd'``.
+
+    Returns
+    -------
+    astropy.time.Time
+        The time(s)
+
+    Examples
+    --------
+    >>> import tellurion as tell
+    >>> import numpy as np
+    >>> tell.from_array(np.array([60310.]), format='mjd')
+    <Time object: scale='utc' format='isot' value=['2024-01-01T00:00:00.000']>
+    >>> tell.from_array(np.array([2460310.5]), format='jd')
+    <Time object: scale='utc' format='isot' value=['2024-01-01T00:00:00.000']>
+    """
+    return astropy.time.Time(astropy.time.Time(array, format=format).to_value('isot'))
 
 ################################################################################
 ## Time series and Tables
 ################################################################################
 
 def striptime(ts):
-    '''Remove the time column from a TimeSeries and return a plain Table'''
+    """Remove the time column from a TimeSeries and return a plain Table"""
     return astropy.table.Table([ts[k] for k in ts.keys()[1:None]])
 
 def hcat(ts1, ts2):
@@ -197,7 +246,7 @@ def hcat(ts1, ts2):
     return astropy.table.hstack([ts1, striptime(ts2)])
 
 def fromtime(ts, reftime='now', label = 'from now', copy = True):
-    '''The time series `ts` starting at the specified reference time `reftime` (default is the current time) and new column showing the elapsed time from the reference time. Make a new series if `copy` is `True` (the default); otherwise, modify the original time series.'''
+    """The time series `ts` starting at the specified reference time `reftime` (default is the current time) and new column showing the elapsed time from the reference time. Make a new series if `copy` is ``True`` (the default); otherwise, modify the original time series."""
     if reftime=='now':
         reftime = abstime(0)
     elif reftime=='epoch':
@@ -215,25 +264,72 @@ def fromtime(ts, reftime='now', label = 'from now', copy = True):
     newts.add_column(newcol, index=1)
     return newts
 
+def _fromtime_method(self, reltime):
+    """Extract a portion of the time series relative to its start or end time.
 
-# Include only the end part of the table; if `reltime > 0`, start at
-# that time past the start time of the table, otherwise, start at
-# |reltime| before the end time of the table.
-#   simorb.ephemeris().fromtime(1*u.day)
-#   simorb.ephemeris().fromtime(-1*u.h)
-astropy.timeseries.TimeSeries.fromtime = \
-    lambda self, reltime: fromtime(self, abstime(reltime, self.time[0]), 'from start+'+reltime.to_string()) if reltime > 0 \
-    else                  fromtime(self, abstime(reltime, self.time[-1]), 'from end'+reltime.to_string())
+    If `reltime` > 0, start at that time past the start time of the table.
+    If `reltime` < 0, start at |reltime| before the end time of the table.
 
-def vector_components(ts, column, remove=True):
-    '''Replace 3-vector columns with three scalar columns, so that all may be seen'''
+    Parameters
+    ----------
+    reltime : u.Quantity
+        Relative time offset. Positive values are relative to the start,
+        negative values are relative to the end.
+
+    Returns
+    -------
+    astropy.timeseries.TimeSeries
+        Time series starting from the specified relative time with an
+        elapsed time column.
+
+    Examples
+    --------
+    Get time series starting 1 day from the beginning:
+
+    >>> import astropy.units as u
+    >>> simorb.ephemeris().fromtime(1*u.day)
+
+    Get time series starting 1 hour before the end:
+
+    >>> simorb.ephemeris().fromtime(-1*u.h)
+    """
+    if reltime > 0:
+        return fromtime(self, abstime(reltime, self.time[0]),
+                       'from start+' + reltime.to_string())
+    else:
+        return fromtime(self, abstime(reltime, self.time[-1]),
+                       'from end' + reltime.to_string())
+
+# Attach the method to the class
+astropy.timeseries.TimeSeries.fromtime = _fromtime_method
+
+def _components_method(self, column, remove=True):
+    """Replace a 3-vector column with three scalar component columns.
+
+    Splits a column containing 3-vectors into three separate columns
+    with ' x', ' y', and ' z' suffixes so that all components may be
+    viewed individually.
+
+    Parameters
+    ----------
+    column : str
+        Name of the column containing 3-vectors to split.
+    remove : bool, optional
+        If ``True``, remove the original vector column after splitting.
+        Default is ``True``.
+
+    Examples
+    --------
+    >>> lasthour = simorb.ephemeris().fromtime(-1*u.h)
+    >>> lasthour.components('position')
+    >>> lasthour.components('velocity')
+    """
     # Split the 3-vector into three separate columns
-    ts[column[0:3]+' x'] = ts[column][:, 0]
-    ts[column[0:3]+' y'] = ts[column][:, 1]
-    ts[column[0:3]+' z'] = ts[column][:, 2]
+    self[column[0:3]+' x'] = self[column][:, 0]
+    self[column[0:3]+' y'] = self[column][:, 1]
+    self[column[0:3]+' z'] = self[column][:, 2]
     # Optionally remove the original column
     if remove:
-        ts.remove_column(column)
+        self.remove_column(column)
 
-# lasthour = simorb.ephemeris().fromtime(-1*u.h); lasthour.components('position'); lasthour.components('velocity')
-astropy.timeseries.TimeSeries.components = lambda self, column, remove=True: vector_components(self, column, remove)
+astropy.timeseries.TimeSeries.components = _components_method

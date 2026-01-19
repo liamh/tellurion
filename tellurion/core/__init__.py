@@ -1,5 +1,5 @@
 # Import all contents from each module
-from tellurion.core.util import *
+from tellurion.core.units import *
 from tellurion.core.astro import *
 from tellurion.core.nquant import *
 from tellurion.core.pvhelper import *

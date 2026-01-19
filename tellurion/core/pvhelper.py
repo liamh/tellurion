@@ -1,6 +1,7 @@
 import numpy as np
 import astropy.units as u
 import astropy.time
+from tellurion.core import units
 from tellurion.core import astro
 from tellurion.core import nquant
 
@@ -27,15 +28,15 @@ _vel_format = '10.6f'
 # pv1 = cartesianpv(np.array([1,2,3,4,5,6]), ['m', 'm/s'])
 # pos2 = cartesianpv(np.array([[1,2,3], [-1,-2,-3], [-3,-2,-1]]), ['m'])
 # pv2 = cartesianpv([[1,2,3,4,5,6], [-1,-2,-3,-4,-5,-6]], ['m', 'm/s'])
-def cartesianpv(array, units=['length', 'speed'], unitlookup=astro.prefunits):
-    '''Make a Cartesian position or position-velocity structured
+def cartesianpv(array, units=['length', 'speed'], unitlookup=units.prefunits):
+    """Make a Cartesian position or position-velocity structured
     quantity from the array (or something that can be converted to an
     array with np.array). May be a scalar (1d array) or vector (2d
     array) structure.
-    '''
+    """
     arr = np.array(array)
     if arr.shape[arr.ndim-1] == 6:
-        nsu = [(_eph_pos, 3, units[0]), (_eph_vel, 3, units[1])]
+        nsu = [(_eph_pos, 3, unitlookup["length"]), (_eph_vel, 3, unitlookup["speed"])]
         return nquant.sq(arr, nsu, unitlookup=unitlookup)
     elif arr.shape[arr.ndim-1] == 3:
         nsu = [(_eph_pos, 3, units[0])]
@@ -44,10 +45,10 @@ def cartesianpv(array, units=['length', 'speed'], unitlookup=astro.prefunits):
     else:
         raise ValueError(f"Incorrect shape of array to make posvel {arr.shape}")
 
-def cartesianpv_sep(position, velocity, unitlookup=astro.prefunits):
-    '''Make a Cartesian position-velocity from separate position and
+def cartesianpv_sep(position, velocity, unitlookup=units.prefunits):
+    """Make a Cartesian position-velocity from separate position and
     velocity structured quantities, converting them to the desired
-    units.'''
+    units."""
     if type(position) is u.Quantity and type(velocity) is u.Quantity:
       posdec = position.decompose()
       veldec = velocity.decompose()
@@ -59,8 +60,8 @@ def cartesianpv_sep(position, velocity, unitlookup=astro.prefunits):
                                   units={'position':'length', 'velocity':'speed'}, \
                                   unitlookup=unitlookup)
 
-def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distance'], unitlookup=astro.prefunits):
-    '''Make a spherical coordinate set for position and velocity
+def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distance'], unitlookup=units.prefunits):
+    """Make a spherical coordinate set for position and velocity
 
     Args:
         sph_position: [cylang, sphang, distance] where each can be:
@@ -73,7 +74,7 @@ def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distanc
 
     Returns:
         Structured quantity with spherical coordinates.
-    '''
+    """
     if sph_velocity:
         # Include velocity components
         labels_r = [sym+'_r' for sym in labels]
@@ -98,7 +99,7 @@ def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distanc
 ##################################################
 
 def isq3vec(obj, physdim):
-    '''Is a 3-vector u.Quantity with the specified physical dimension'''
+    """Is a 3-vector u.Quantity with the specified physical dimension"""
     return type(obj) is u.Quantity \
         and u.get_physical_type(obj) == u.get_physical_type(physdim) \
         and np.size(obj)==3
@@ -116,12 +117,12 @@ def isreltime(obj):
     return type(obj) is u.Quantity and u.get_physical_type(obj) == u.get_physical_type('time')
 
 def isephem(ts):
-    '''Argument is an ephemeris table'''
+    """Argument is an ephemeris table"""
     return type(ts) is TimeSeries \
         and all([k in ts.keys() for k in _ephemeris_columns])
 
 def isephrow(row):
-    '''Argument is a row of an ephemeris table'''
+    """Argument is a row of an ephemeris table"""
     return type(row) is astropy.table.row.Row \
         and all([row.keys().__contains__(k) for k in _ephemeris_columns])
 
@@ -130,7 +131,7 @@ def isephrow(row):
 ##################################################
 
 def magdiff(a, b):
-    '''Magnitude of the difference of two vectors'''
+    """Magnitude of the difference of two vectors"""
     return u.Quantity([np.linalg.norm(ai - bi) for (ai, bi) in zip(a, b)])
 
 def posdiff(a, b):
