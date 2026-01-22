@@ -39,7 +39,7 @@ from org.orekit.propagation.analytical import KeplerianPropagator
 from org.orekit.utils import AbsolutePVCoordinates, TimeStampedPVCoordinates, PVCoordinatesProvider
 import org.orekit.forces.gravity as okgrav
 
-from ..core import astro
+import tellurion.astro.time as atime
 from ..core import posvel
 from ..core.posvel import PVT
 from ..core import element
@@ -93,7 +93,7 @@ def kaprep(initstate, proptime, events, forceenv, reftime, occluder, output):
 def _additional(events, propagator, generator, proptime, forceenv, reftime, output):
     '''Additional calculations when propagating initially'''
     detlogs = event._add_pre(events, propagator, forceenv)
-    generator['propfn'](generator['epoch'].shiftedBy(astro.timesec(proptime)))
+    generator['propfn'](generator['epoch'].shiftedBy(atime.timesec(proptime)))
     event._add_post(detlogs, events, generator, reftime, output)
 
 def niprep(initstate, proptime, events, forceenv, reftime, occluder, output):
@@ -185,7 +185,7 @@ def _additional(events, propagator, generator, proptime, forceenv, reftime, outp
         harvester = jacobian._add_stm(propagator)  # State-transition matrix
 
     # 2) Propagate, saving output (SpacecraftState)
-    ss = generator['propfn'](generator['epoch'].shiftedBy(astro.timesec(proptime)))
+    ss = generator['propfn'](generator['epoch'].shiftedBy(atime.timesec(proptime)))
     generator['final'] = {'state': ss, 'pvt': convert._pvt(ss)}
 
     # 3) Add post-propagation actions and save results to `generator`
@@ -220,9 +220,9 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', output='e
     elif reftime=='epoch' and generator.get('mindate'):
         reft = convert._okad(generator.get('mindate'))
     else:
-        reft = astro.abstime(reftime)
+        reft = atime.abstime(reftime)
 
-    atimes = astro.abstime(reltimes, reft)
+    atimes = atime.abstime(reltimes, reft)
     if include_init:
         reltimes = np.insert(atimes, 0, reft)
     atscalar = atimes.shape == ()

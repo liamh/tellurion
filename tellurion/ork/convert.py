@@ -16,7 +16,7 @@ from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 
 from tellurion.core import units as tunits
-from tellurion.core import astro
+import tellurion.astro.time as atime
 from tellurion.core import element
 from tellurion.core import posvel
 from tellurion.core import pvhelper
@@ -98,7 +98,7 @@ def _okad(t):
     elif type(t) == datetime.datetime:  # Python
         return pyhelp.datetime_to_absolutedate(t)
     elif type(t) is org.orekit.time.AbsoluteDate:
-        return astro.abstime(pyhelp.absolutedate_to_datetime(t))
+        return atime.abstime(pyhelp.absolutedate_to_datetime(t))
     else:
         raise ValueError("Cannot convert value to or from Orekit AbsoluteDate")
 

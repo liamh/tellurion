@@ -2,8 +2,8 @@ import collections
 import itertools
 import astropy.units as u
 import spacetrack
-from tellurion.core import astro
-from tellurion.core import nquant
+import tellurion.astro.time as atime
+from tellurion.astro import quant
 from tellurion.core import posvel
 
 
@@ -32,15 +32,15 @@ def mestrt(mest):
     readable tuple, save to a Python source file and call `makemest()`
     on it.
     '''
-    return(nquant.dict_decompose(mest.els), mest.t.to_string(), mest.tle, mest.model, mest.scdata)
+    return(quant.dict_decompose(mest.els), mest.t.to_string(), mest.tle, mest.model, mest.scdata)
 
 def makemest(elstuples, timestr, tle, model, scdata):
     '''Create a MeanElementSetT from readable arguments'''
-    return MeanElementSetT(nquant.dict_compose(elstuples), \
-                           astro.abstime(timestr), tle, model, scdata)
+    return MeanElementSetT(quant.dict_compose(elstuples), \
+                           atime.abstime(timestr), tle, model, scdata)
 
 def satdata(stdict):
-    epoch = astro.abstime(stdict['EPOCH']) + float(stdict['EPOCH_MICROSECONDS'])*u.microsecond
+    epoch = atime.abstime(stdict['EPOCH']) + float(stdict['EPOCH_MICROSECONDS'])*u.microsecond
     orbels = {'sma': float(stdict['SEMIMAJOR_AXIS'])*u.km,
               'ecc': float(stdict['ECCENTRICITY'])*u.dimensionless_unscaled,
               'inc': float(stdict['INCLINATION'])*u.deg,

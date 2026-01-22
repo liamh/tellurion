@@ -7,9 +7,8 @@ import astropy.units as u
 import astropy.coordinates as coord
 import astropy.time
 
-from tellurion.core import units
-from tellurion.core import astro
-from tellurion.core import nquant
+from tellurion.astro import units
+from tellurion.astro import quant
 #from tellurion.core import element
 
 obsdict1 = {'azim': 'angle', 'elev': 'angle', 'range': 'length', 'rangerate': 'speed', 'rtasc': 'angle', 'decl': 'angle'}
@@ -21,15 +20,15 @@ def azelrange(azim, elev, range, obsloc, obstime, unitlookup=units.prefunits):
     def sqaer(azim, elev, range, obstime):
         if obstime.isscalar and azim.isscalar and elev.isscalar:
             if range == None:
-                sq = nquant.structquant({'azim' : azim, 'elev' : elev}, obsdict1)
+                sq = quant.structquant({'azim' : azim, 'elev' : elev}, obsdict1)
             else:
-                sq = nquant.structquant({'azim' : azim, 'elev' : elev, 'range' : range}, obsdict1)
+                sq = quant.structquant({'azim' : azim, 'elev' : elev, 'range' : range}, obsdict1)
         else:
             if range == None:
-                sq = nquant.vstack(tuple([sqaer(a, e, t) \
+                sq = quant.vstack(tuple([sqaer(a, e, t) \
                                           for a, e, t in zip(azim,elev,obstime)]))
             else:
-                sq = nquant.vstack(tuple([sqaer(a, e, r, t) \
+                sq = quant.vstack(tuple([sqaer(a, e, r, t) \
                                           for a, e, r, t in zip(azim,elev,range,obstime)]))
         return sq
     return EarthObservationT(obsloc, units.changeunits(sqaer(azim, elev, range, obstime)), obstime)

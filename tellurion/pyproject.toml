@@ -17,11 +17,11 @@ dependencies = [
     "numpy>=1.20",
     "jdk4py",
     "orekit-jpype",
-    "git+https://gitlab.orekit.org/orekit/orekit-data.git"
-    "funcy"
-    "pandas"
-    "spacetrack"
-    "geocoder"
+    "git+https://gitlab.orekit.org/orekit/orekit-data.git",
+    "funcy",
+    "pandas",
+    "spacetrack",
+    "geocoder",
     "munch" # for demos
 ]
 

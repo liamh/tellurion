@@ -1,7 +1,6 @@
 import numpy as np
 from org.orekit.frames import TopocentricFrame
-from tellurion.core import units
-from tellurion.core import astro
+from tellurion.astro import units
 from tellurion.core import posvel
 from tellurion.core import obs
 from tellurion.ork import force
@@ -63,7 +62,7 @@ def eci(observation, name="topo loc", forceenv=force.deffe):
 
     # This handles times to return the site vector; maybe this should be a different function?
     # elif observation==None:
-    #     dttm = astro.abstime(0)
+    #     dttm = atime.abstime(0)
     # else:
     #     dttm = observation
 

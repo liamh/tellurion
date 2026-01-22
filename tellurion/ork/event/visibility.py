@@ -12,7 +12,6 @@ import astropy.coordinates as coord
 import astropy.units as u
 from org.orekit.propagation.events import ElevationDetector
 from org.orekit.frames import TopocentricFrame
-from tellurion.core import astro
 from tellurion.ork import geog
 from . import util
 

@@ -5,6 +5,7 @@ This module defines additional units beyond those in astropy.units.
 
 from typing import Final
 import numpy as np
+from tellurion.astro import quant
 from astropy.units.core import def_unit
 import astropy.units as u
 from astropy.coordinates import Angle
@@ -71,10 +72,9 @@ def normalizeangle(angle, wrapat=u.rev/2, exclude=[]):
     exclude==True, no values are changed. Default is to exclude
     nothing.
     """
-    from tellurion.core import nquant
     if type(angle) is u.Quantity:
         if type(angle.unit) is u.StructuredUnit and exclude != True:
-            return nquant.structquant([normalizeangle(kv[1], wrapat, kv[0] in exclude)
+            return quant.structquant([normalizeangle(kv[1], wrapat, kv[0] in exclude)
                                        for kv in angle.to_dict().items()],
                                       angle.dtype.names)
         else:

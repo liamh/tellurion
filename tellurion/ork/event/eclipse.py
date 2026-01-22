@@ -7,7 +7,6 @@ add a column `sunlight` that shows the sunlight state (`u`= umbra,
 """
 
 from org.orekit.propagation.events import EclipseDetector
-from tellurion.core import astro
 from . import util
 
 ############################################

@@ -1,7 +1,8 @@
 import numpy as np
 np.set_printoptions(suppress=True, precision=4, linewidth=np.inf)
 
-# Import everything from core (always available)
+# Import everything from astro (AstroPy extensions) and core
+from tellurion.astro import *
 from tellurion.core import *
 
 # Try to import ork modules if Java/jpype is available

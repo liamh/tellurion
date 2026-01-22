@@ -13,9 +13,9 @@ from org.orekit.bodies import GeodeticPoint
 from org.orekit.frames import TopocentricFrame
 import org.orekit.models.earth as oearth
 
-from tellurion.core import units
-from tellurion.core import astro
-from tellurion.core import nquant
+import tellurion.astro.time as atime
+from tellurion.astro import units
+from tellurion.astro import quant
 from tellurion.core import posvel
 from tellurion.core import geog
 from tellurion.core import obs
@@ -28,7 +28,7 @@ def siderealtime(time = None, location = None, forceenv=force.deffe):
     Greenwich sidereal time).
     '''
     if not time:
-        time = astro.abstime(0)
+        time = atime.abstime(0)
     def gst(time):
         if time.isscalar:
             vs = forceenv['gmst'].value(convert._okad(time))
@@ -60,7 +60,7 @@ def sitevec(loc, times, name="sitevec", unitlookup=units.prefunits, forceenv=for
     else:
         pvts = [sitevec(loc, t, name, unitlookup, forceenv) for t in times]
         ret = posvel.PositionVelocityT(time=times, cartesian=\
-                                       nquant.vstack(tuple([pvt.cartesian for pvt in pvts])))
+                                       quant.vstack(tuple([pvt.cartesian for pvt in pvts])))
     if name:
         ret.name = name
     return ret

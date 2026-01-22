@@ -9,8 +9,6 @@ from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType, CircularOrbit, K
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 
 from tellurion.core import units
-from tellurion.core import astro
-from tellurion.core import nquant
 from tellurion.core import posvel
 from tellurion.core import element
 from tellurion.ork import force
@@ -41,7 +39,7 @@ _eldict = element.sfdict([["sma", "semimajor axis", "length", u.meter, Keplerian
 
 _elphystype = {key: value['phystype'] for key, value in _eldict.items()}
 
-def elementval (orbstate, elt, earthrad=force.deffe["earthrad"].si.value):
+def elementval(orbstate, elt, earthrad=force.deffe["earthrad"].si.value):
     """
     Compute the orbital element from the orbital state.
 

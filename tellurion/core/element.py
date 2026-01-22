@@ -5,9 +5,8 @@ import astropy.constants # astropy.constants.R_earth
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
 
-from tellurion.core import units as tunits
-from tellurion.core import astro
-from tellurion.core import nquant
+from tellurion.astro import quant
+from tellurion.astro import units as tunits
 from tellurion.core import pvhelper
 from tellurion.core import posvel
 
@@ -70,7 +69,7 @@ def kepler(oes, dttm=None, units=(tunits.prefunits['length'], tunits.prefunits['
 
     keppt = {"inc":'angle', "argper":'angle', "raan":'angle'} | plane | timeelt
     ordoes = {k:oes[k] for k in keppt.keys()}
-    kepsq = nquant.structquant(ordoes, units=keppt, unitlookup=tunits.prefunits)
+    kepsq = quant.structquant(ordoes, units=keppt, unitlookup=tunits.prefunits)
     if not tunits.isupperhalfplane(kepsq['inc']):
         raise ValueError('Inclination must be between 0 and 180 degrees, inclusive')
     kepsqn = tunits.normalizeangle(kepsq, u.rev/2, timeelements)

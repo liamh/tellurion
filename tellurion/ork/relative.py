@@ -4,8 +4,7 @@ from org.orekit.attitudes import LofOffset
 from org.orekit.frames import LOFType
 from org.orekit.propagation import SpacecraftState
 
-from tellurion.core import units
-from tellurion.core import astro
+from tellurion.astro import units
 from tellurion.ork import convert
 
 def ntw(relsc, refsc, unitlookup=units.prefunits):

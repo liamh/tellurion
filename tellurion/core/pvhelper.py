@@ -1,9 +1,8 @@
 import numpy as np
 import astropy.units as u
 import astropy.time
-from tellurion.core import units
-from tellurion.core import astro
-from tellurion.core import nquant
+from tellurion.astro import units
+from tellurion.astro import quant
 
 ##################################################
 ####   Constants used to define field names   ####
@@ -37,10 +36,10 @@ def cartesianpv(array, units=['length', 'speed'], unitlookup=units.prefunits):
     arr = np.array(array)
     if arr.shape[arr.ndim-1] == 6:
         nsu = [(_eph_pos, 3, unitlookup["length"]), (_eph_vel, 3, unitlookup["speed"])]
-        return nquant.sq(arr, nsu, unitlookup=unitlookup)
+        return quant.sq(arr, nsu, unitlookup=unitlookup)
     elif arr.shape[arr.ndim-1] == 3:
         nsu = [(_eph_pos, 3, units[0])]
-        sq = nquant.sq(arr, nsu, unitlookup=unitlookup)
+        sq = quant.sq(arr, nsu, unitlookup=unitlookup)
         return sq[_eph_pos]
     else:
         raise ValueError(f"Incorrect shape of array to make posvel {arr.shape}")
@@ -53,9 +52,9 @@ def cartesianpv_sep(position, velocity, unitlookup=units.prefunits):
       posdec = position.decompose()
       veldec = velocity.decompose()
       dval = [(_eph_pos, '<f8', (3,)), (_eph_vel, '<f8', (3,))]
-      return nquant.compose_sq(np.hstack((posdec[0], veldec[0])), dval, (posdec[2], veldec[2]))
+      return quant.compose_sq(np.hstack((posdec[0], veldec[0])), dval, (posdec[2], veldec[2]))
     else:
-        return nquant.structquant([position, velocity], \
+        return quant.structquant([position, velocity], \
                                   [_eph_pos, _eph_vel], \
                                   units={'position':'length', 'velocity':'speed'}, \
                                   unitlookup=unitlookup)
@@ -78,7 +77,7 @@ def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distanc
     if sph_velocity:
         # Include velocity components
         labels_r = [sym+'_r' for sym in labels]
-        return nquant.structquant(
+        return quant.structquant(
             sph_position + sph_velocity,
             labels + labels_r,
             units=['angle', 'angle', 'length',
@@ -87,7 +86,7 @@ def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distanc
         )
     else:
         # Position only
-        return nquant.structquant(
+        return quant.structquant(
             sph_position,
             labels,
             units=['angle', 'angle', 'length'],

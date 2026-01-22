@@ -13,9 +13,8 @@ import astropy.time
 from astropy.timeseries import TimeSeries
 import astropy.table.row
 import astropy.coordinates as coord
-from tellurion.core import units
-from tellurion.core import astro
-from tellurion.core import nquant
+from tellurion.astro import units
+import tellurion.astro.time as atime
 from tellurion.core import pvhelper
 
 ##################################################
@@ -236,7 +235,7 @@ class PositionBase(abc.ABC):
         elif other.time is None:
             pass  # Keep self.time
         else:
-            self.time = astro.abstime([self.time, other.time])
+            self.time = atime.abstime([self.time, other.time])
 
         self.aux = funcy.merge_with(' '.join, self.aux, other.aux) # Merge aux attributes
         self.isscalar = False
@@ -253,7 +252,7 @@ class PositionBase(abc.ABC):
         """
         return self.copy().concatenate(other).timeorder()
 
-    def to_array(self, time_format=astro.prefnumabstime):
+    def to_array(self, time_format=atime.prefnumabstime):
         """Convert to a numpy array using SI units.
 
         Args:
@@ -361,7 +360,7 @@ class PositionBase(abc.ABC):
 
         # Apply reference time formatting
         if reftime is not None:
-            astro.fromtime(ts, reftime=reftime, copy=False)
+            atime.fromtime(ts, reftime=reftime, copy=False)
 
         return ts
 
@@ -624,15 +623,15 @@ def pvtcart(pv, time=None, specunits=units.prefunits):
        component
 
        pv: An array or list convertible to an array with  numerical values
-       time: Any time representation that serve as input to astro.abstime
+       time: Any time representation that serve as input to atime.abstime
        specunits: The units to be assigned to the numbers in `pv`
 
     """
     cart = pvhelper.cartesianpv(pv, specunits)
     if cart.dtype.names and pvhelper._eph_vel in cart.dtype.names:
-        return PositionVelocityT(time=astro.abstime(time), cartesian=cart)
+        return PositionVelocityT(time=atime.abstime(time), cartesian=cart)
     else:
-        return PositionT(time=astro.abstime(time), cartesian=cart)
+        return PositionT(time=atime.abstime(time), cartesian=cart)
 
 def ispvtcart(obj):
     """Check if object is a PositionVelocityT (or legacy PVT)."""

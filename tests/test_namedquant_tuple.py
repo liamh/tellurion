@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import astropy.units as u
 import tellurion as tell
-from tellurion.core.nquant import _namedquant_tuple
+from tellurion.astro.quant import _namedquant_tuple
 
 @pytest.mark.parametrize(
     "input_dict,expected_output",

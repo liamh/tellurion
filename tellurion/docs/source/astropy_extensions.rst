@@ -23,7 +23,7 @@ components()
 .. autofunction:: tellurion.core.astro._components_method
    :noindex:
 
-   Added as: ``astropy.timeseries.TimeSeries. components()``
+   Added as: ``astropy.timeseries.TimeSeries.components()``
 
 Time Extensions
 ===============

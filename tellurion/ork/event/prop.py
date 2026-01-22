@@ -1,7 +1,6 @@
 '''Add events to propagator and generate ephemeris'''
 
 from org.orekit.propagation.events import AltitudeDetector
-from tellurion.core import astro
 from tellurion.ork import convert
 from . import eclipse
 from . import visibility

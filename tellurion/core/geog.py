@@ -8,8 +8,7 @@ import numpy as np
 import astropy.units as u
 import astropy.coordinates as coord
 
-from tellurion.core import units
-from tellurion.core import astro
+from tellurion.astro import units
 from tellurion.core import posvel
 from tellurion.core import geonames
 
