@@ -46,7 +46,7 @@ def _pvt(object, unitlookup=tunits.prefunits, additional=None):
     if hasattr(object, 'getPosition') and hasattr(object, 'getVelocity'):
         pos = _v3d(object.getPosition(), posvelsiu[0])
         vel = _v3d(object.getVelocity(), posvelsiu[1])
-        pv = tunits.changeunits(pvhelper.cartesianpv_sep(pos, vel, tunits.orkunits), unitlookup)
+        pv = tunits.changeunits(pvhelper.cartesianpv_sep(pos, vel), unitlookup)
         if hasattr(object, 'getDate'):
             tm=_okad(object.getDate())
         elif type(additional) is astropy.time.Time:

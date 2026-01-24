@@ -44,20 +44,15 @@ def cartesianpv(array, units=['length', 'speed'], unitlookup=units.prefunits):
     else:
         raise ValueError(f"Incorrect shape of array to make posvel {arr.shape}")
 
-def cartesianpv_sep(position, velocity, unitlookup=units.prefunits):
-    """Make a Cartesian position-velocity from separate position and
-    velocity structured quantities, converting them to the desired
-    units."""
+def cartesianpv_sep(position, velocity):
+    """Make a Cartesian position-velocity from separate position and velocity quantities."""
     if type(position) is u.Quantity and type(velocity) is u.Quantity:
       posdec = position.decompose()
       veldec = velocity.decompose()
       dval = [(_eph_pos, '<f8', (3,)), (_eph_vel, '<f8', (3,))]
       return quant.compose_sq(np.hstack((posdec[0], veldec[0])), dval, (posdec[2], veldec[2]))
     else:
-        return quant.structquant([position, velocity], \
-                                  [_eph_pos, _eph_vel], \
-                                  units={'position':'length', 'velocity':'speed'}, \
-                                  unitlookup=unitlookup)
+        raise ValueError(f"Position and velocity {position, velocity} must be of type u.Quantity")
 
 def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distance'], unitlookup=units.prefunits):
     """Make a spherical coordinate set for position and velocity
@@ -76,22 +71,14 @@ def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distanc
     """
     if sph_velocity:
         # Include velocity components
+        posdict = {label: u.Quantity(value) for label, value in zip(labels, sph_position)}
         labels_r = [sym+'_r' for sym in labels]
-        return quant.structquant(
-            sph_position + sph_velocity,
-            labels + labels_r,
-            units=['angle', 'angle', 'length',
-                   'angular speed', 'angular speed', 'speed'],
-            unitlookup=unitlookup
-        )
+        veldict = {label: u.Quantity(value) for label, value in zip(labels_r, sph_velocity)}
+        return quant.sq_from_dict(posdict | veldict)
     else:
         # Position only
-        return quant.structquant(
-            sph_position,
-            labels,
-            units=['angle', 'angle', 'length'],
-            unitlookup=unitlookup
-        )
+        posdict = {label: u.Quantity(value) for label, value in zip(labels, sph_position)}
+        return quant.sq_from_dict(posdict)
 
 ##################################################
 ####   Tests for posvel and related types     ####

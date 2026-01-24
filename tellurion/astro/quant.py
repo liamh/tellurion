@@ -69,6 +69,31 @@ def scvec(size):
     else:
         return f"({size},)f8"
 
+def _sq_nvsu(names, values, shapes, units):
+    """Make a structured quantity from names, values, shapes, and units)"""
+    def nfsz(name, shape):
+        if len(shape) == 2:
+            return (name, '<f8', (shape[1],))
+        else:
+            return (name, 'f8')
+    dtype = [nfsz(nm,sh) for (nm,sh) in zip(names, shapes)]
+    arr = np.array([x for x in zip(*values)], dtype=dtype)
+    sq = u.Quantity(arr, u.StructuredUnit(units))
+    return sq
+
+def sq_from_dict(d):
+    """Make a structured quantity from a dictionary of quantities"""
+    nvsu = (d.keys(), \
+           [val.value for val in d.values()], \
+           [val.shape for val in d.values()], \
+           tuple([val.unit for val in d.values()]))
+    return _sq_nvsu(*nvsu)
+
+# apd = {'altper': demoa.propn.altperapo['altper'], 'altapo': demoa.propn.altperapo['altapo'], 'position': demoa.propn.pvt.cartesian['position']}
+# apq = sq_from_dict(apd)
+
+
+
 ############################################################
 ## Make scalar sq from lists and dicts: structquant()
 ############################################################
