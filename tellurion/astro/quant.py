@@ -1,6 +1,6 @@
 """Make a dictionary (`namedquant`) of named quantities or structured quantity (`structquant`)"""
 
-import string
+import numbers, string
 import collections.abc
 import numpy as np
 from numpy.lib import recfunctions as rfn
@@ -31,18 +31,19 @@ def sq(values, names_size_units, unitlookup={}):
 u.Quantity.tovector = lambda self: u.Quantity([self]) if self.isscalar else self
 
 # Extract value as np.array from quantities
-u.Quantity.to_array = lambda self: rfn.structured_to_unstructured(self.value)
+u.Quantity.to_array = lambda self: rfn.structured_to_unstructured(self.value) if isinstance(self.unit, u.StructuredUnit) else self.value
 
 # Decompose SQ into an array, dtype, and unit string
-u.Quantity.decompose = lambda self: (self.to_array(), self.dtype.descr, self.unit.to_string()) \
-    if self.dtype.names else (self.value, None, self.unit.to_string())
+# If the object is not a structured quantity, then `name` will be used for the name and if further it is a vector (1d array), isscalar is used to determine whether that should be interpreted as a scalar structure (row vector) or vector structure (column vector)
+u.Quantity.decompose = lambda self, name=None, isscalar=False: (self.to_array(), self.dtype.descr, self.unit.to_string()) \
+    if self.dtype.names else (self.value, (name, '<f8', (1,)) if isscalar else (name, '<f8'), self.unit.to_string())
 
 def compose_sq(values, dtype, unit_string):
-    '''Make a structured quantity from an np.array, dtype, and unit string'''
+    """Make a structured quantity from an np.array, dtype, and unit string"""
     return rfn.unstructured_to_structured(np.array(values), dtype=dtype)*u.Unit(unit_string)
 
 def vstack(sqs):
-    """Concatenate the structured quantities with identical structure as rows"""
+    """Concatenate the structured quantities with identical structure as rows."""
     # np.vstack does not work correctly on SQ
     alleq = lambda itb: all([x==itb[0] for x in itb])
     parts = [a.decompose() for a in sqs]
@@ -53,6 +54,31 @@ def vstack(sqs):
                           dtypes[0], units[0])
     else:
         raise ValueError('Structured quantities must have the same dtype an units')
+
+def hstack(sqs, names=[], isscalar=False):
+    """Concatenate the quantities with different structure components
+    and the same number of rows; sqs is a tuple of quantities or
+    structured quantities."""
+
+    if names:
+        parts = [a.decompose(nm) for (a, nm) in zip(sqs, names)]
+    else:
+        parts = [a.decompose('quant'+str(i)) for i, a in enumerate(sqs)]
+    dtypes = [item for element in [p[1] for p in parts] \
+              for item in (element if isinstance(element, list) else [element])]
+    # Split units by comma, flatten, strip whitespace, and rejoin
+    flattened = ', '.join(
+        item.strip()
+        for element in [p[2] for p in parts]
+        for item in element.replace('(', '').replace(')', '').split(',')
+    )
+    units = f'({flattened})'
+    if isscalar:
+        data = tuple([sq.to_array() for sq in sqs])
+    else:
+        column_vector = lambda vec: vec.reshape(-1,1) if vec.ndim == 1 else vec
+        data = tuple([column_vector(sq.to_array()) for sq in sqs])
+    return compose_sq(np.hstack(data), dtypes, units)
 
 # Make a dictionary by structure components
 u.Quantity.to_dict = lambda self: {nm: self[nm] for nm in self.dtype.names}
@@ -70,19 +96,24 @@ def scvec(size):
         return f"({size},)f8"
 
 def _sq_nvsu(names, values, shapes, units):
-    """Make a structured quantity from names, values, shapes, and units)"""
+    """Make a structured quantity from names, values, shapes, and units"""
     def nfsz(name, shape):
-        if len(shape) == 2:
+        if isinstance(shape, numbers.Number):
+            size = shape
+        elif len(shape) == 2:
             return (name, '<f8', (shape[1],))
         else:
             return (name, 'f8')
     dtype = [nfsz(nm,sh) for (nm,sh) in zip(names, shapes)]
-    arr = np.array([x for x in zip(*values)], dtype=dtype)
+    try:
+        arr = np.array(list(zip(*values)), dtype=dtype)
+    except:
+        arr = np.array(tuple(values), dtype=dtype)
     sq = u.Quantity(arr, u.StructuredUnit(units))
     return sq
 
 def sq_from_dict(d):
-    """Make a structured quantity from a dictionary of quantities"""
+    """Make a structured quantity from a dictionary of quantities (u.Quantity)"""
     nvsu = (d.keys(), \
            [val.value for val in d.values()], \
            [val.shape for val in d.values()], \

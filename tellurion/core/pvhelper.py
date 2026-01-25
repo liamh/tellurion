@@ -27,15 +27,22 @@ _vel_format = '10.6f'
 # pv1 = cartesianpv(np.array([1,2,3,4,5,6]), ['m', 'm/s'])
 # pos2 = cartesianpv(np.array([[1,2,3], [-1,-2,-3], [-3,-2,-1]]), ['m'])
 # pv2 = cartesianpv([[1,2,3,4,5,6], [-1,-2,-3,-4,-5,-6]], ['m', 'm/s'])
-def cartesianpv(array, units=['length', 'speed'], unitlookup=units.prefunits):
+def cartesianpv(array, units=('length', 'speed'), unitlookup=units.prefunits):
     """Make a Cartesian position or position-velocity structured
     quantity from the array (or something that can be converted to an
     array with np.array). May be a scalar (1d array) or vector (2d
     array) structure.
+
+    If units is not None, it should be a tuple or list of length two
+    with units for length and speed.
+
     """
-    arr = np.array(array)
+    if type(array) is tuple:
+        arr = np.array((np.hstack(array)))
+    else:
+        arr = np.array(array)
     if arr.shape[arr.ndim-1] == 6:
-        nsu = [(_eph_pos, 3, unitlookup["length"]), (_eph_vel, 3, unitlookup["speed"])]
+        nsu = [(_eph_pos, 3, units[0]), (_eph_vel, 3, units[1])]
         return quant.sq(arr, nsu, unitlookup=unitlookup)
     elif arr.shape[arr.ndim-1] == 3:
         nsu = [(_eph_pos, 3, units[0])]

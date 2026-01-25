@@ -627,7 +627,7 @@ def pvtcart(pv, time=None, specunits=units.prefunits):
        specunits: The units to be assigned to the numbers in `pv`
 
     """
-    cart = pvhelper.cartesianpv(pv, specunits)
+    cart = pvhelper.cartesianpv(pv, unitlookup=specunits)
     if cart.dtype.names and pvhelper._eph_vel in cart.dtype.names:
         return PositionVelocityT(time=atime.abstime(time), cartesian=cart)
     else:
@@ -646,6 +646,7 @@ def pvtattr(object):
         if hasthing(object,pvhelper._eph_vel):
             cart = pvhelper.cartesianpv_sep(object[pvhelper._eph_pos], \
                                             object[pvhelper._eph_vel])
+            # cart = pvhelper.cartesianpv((object[pvhelper._eph_pos], object[pvhelper._eph_vel]))
             return PositionVelocityT(time=object[pvhelper._eph_time], cartesian=cart)
         else:
             return PositionT(time=object[pvhelper._eph_time], cartesian=object[pvhelper._eph_pos])
