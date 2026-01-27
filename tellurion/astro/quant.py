@@ -10,6 +10,7 @@ import astropy.units as u
 ## Make structured quantities from arrays and other sq
 ############################################################
 
+################### Used only in cartesianpv()
 def sq(values, names_size_units, unitlookup={}):
     """Make a struct quantity from arrays. Make a scalar struct if
     `values` is a 1d np.array, or a vector struct if it is a 2d
@@ -33,6 +34,8 @@ u.Quantity.tovector = lambda self: u.Quantity([self]) if self.isscalar else self
 # Extract value as np.array from quantities
 u.Quantity.to_array = lambda self: rfn.structured_to_unstructured(self.value) if isinstance(self.unit, u.StructuredUnit) else self.value
 
+################### Used only in spacetrack to serialize/deserialize tles
+
 # Decompose SQ into an array, dtype, and unit string
 # If the object is not a structured quantity, then `name` will be used for the name and if further it is a vector (1d array), isscalar is used to determine whether that should be interpreted as a scalar structure (row vector) or vector structure (column vector)
 u.Quantity.decompose = lambda self, name=None, isscalar=False: (self.to_array(), self.dtype.descr, self.unit.to_string()) \
@@ -42,59 +45,20 @@ def compose_sq(values, dtype, unit_string):
     """Make a structured quantity from an np.array, dtype, and unit string"""
     return rfn.unstructured_to_structured(np.array(values), dtype=dtype)*u.Unit(unit_string)
 
-def vstack(sqs):
-    """Concatenate the structured quantities with identical structure as rows."""
-    # np.vstack does not work correctly on SQ
-    alleq = lambda itb: all([x==itb[0] for x in itb])
-    parts = [a.decompose() for a in sqs]
-    dtypes = [p[1] for p in parts]
-    units = [p[2] for p in parts]
-    if alleq(dtypes) and alleq(units):
-        return compose_sq(np.vstack(tuple([p[0] for p in parts])), \
-                          dtypes[0], units[0])
-    else:
-        raise ValueError('Structured quantities must have the same dtype an units')
-
-def hstack(sqs, names=[], isscalar=False):
-    """Concatenate the quantities with different structure components
-    and the same number of rows; sqs is a tuple of quantities or
-    structured quantities."""
-
-    if names:
-        parts = [a.decompose(nm) for (a, nm) in zip(sqs, names)]
-    else:
-        parts = [a.decompose('quant'+str(i)) for i, a in enumerate(sqs)]
-    dtypes = [item for element in [p[1] for p in parts] \
-              for item in (element if isinstance(element, list) else [element])]
-    # Split units by comma, flatten, strip whitespace, and rejoin
-    flattened = ', '.join(
-        item.strip()
-        for element in [p[2] for p in parts]
-        for item in element.replace('(', '').replace(')', '').split(',')
-    )
-    units = f'({flattened})'
-    if isscalar:
-        data = tuple([sq.to_array() for sq in sqs])
-    else:
-        column_vector = lambda vec: vec.reshape(-1,1) if vec.ndim == 1 else vec
-        data = tuple([column_vector(sq.to_array()) for sq in sqs])
-    return compose_sq(np.hstack(data), dtypes, units)
-
+################# Used to see what the SQ consists of
 # Make a dictionary by structure components
 u.Quantity.to_dict = lambda self: {nm: self[nm] for nm in self.dtype.names}
 
+
+################ Used only by spacetrack
 def dict_decompose(d):
     return {k: v.decompose() for k, v in d.items()}
 
 def dict_compose(d):
     return {k: v[0]*u.Unit(v[2]) for k, v in d.items()}
 
-def scvec(size):
-    if size==1:
-        return f"f8"
-    else:
-        return f"({size},)f8"
-
+################ Used only by sphericalpv,
+##### replace with vstack() below, but that assumes their already pq and don't need to be converted
 def _sq_nvsu(names, values, shapes, units):
     """Make a structured quantity from names, values, shapes, and units"""
     def nfsz(name, shape):
@@ -124,10 +88,107 @@ def sq_from_dict(d):
 # apq = sq_from_dict(apd)
 
 
+####################################################################
+##### Build structured quantities
+####################################################################
+
+def _make_structured_quantity(q, name, scalar=False):
+    """
+    Convert a non-structured Quantity into a structured Quantity with one field.
+
+    Parameters
+    ----------
+    q : astropy.units.Quantity
+        Non-structured Quantity to convert (scalar or array)
+    name : str
+        Field name for the structured array
+    scalar : bool, optional
+        If True, treat the entire input as a single scalar element in the
+        structured array (resulting in isscalar=True for the structured quantity).
+        If False (default), each element becomes a separate row in the
+        structured array (resulting in isscalar=False).
+
+    Returns
+    -------
+    structured_qty : astropy.units.Quantity
+        Structured quantity with StructuredUnit containing one field
+
+    Examples
+    --------
+    # Scalar input
+    >>> make_structured_quantity(2*u.m, 'distance')
+    # Creates single-element structured array
+
+    # Vector input, scalar=False (default)
+    >>> make_structured_quantity([1, 2, 3]*u.m, 'distance', scalar=False)
+    # Creates 3-element structured array, each element is a scalar
+    # isscalar = False
+
+    # Vector input, scalar=True
+    >>> make_structured_quantity([1, 2, 3]*u.m, 'my3vec', scalar=True)
+    # Creates 1-element structured array, the element is a 3-vector
+    # isscalar = True
+    """
+    if scalar or q.isscalar:
+        # Treat entire input as a single structured element
+        # This handles both scalar inputs and vectors that should be kept as single elements
+        dtype = [(name, q.dtype, q.shape)]
+        struct_array = np.empty(1, dtype=dtype)
+        struct_array[name][0] = q.value
+
+        struct_unit = u.StructuredUnit((q.unit,), names=(name,))
+        result = u.Quantity(struct_array, unit=struct_unit)
+
+        # Return the scalar element (not the 1-element array)
+        return result[0]
+    else:
+        # Each element of q becomes a separate row in the structured array
+        q_array = np.atleast_1d(q)
+        dtype = [(name, q.dtype)]
+        struct_array = np.empty(len(q_array), dtype=dtype)
+        struct_array[name] = q_array.value
+
+        struct_unit = u.StructuredUnit((q.unit,), names=(name,))
+        return u.Quantity(struct_array, unit=struct_unit)
+
+u.Quantity.structure = lambda self, name: _make_structured_quantity(self, name)
+
+def hstack(sqs):
+    """Concatenate the quantities with different structure components
+    and the same number of rows; sqs is a tuple or list of structured
+    quantities.
+
+    """
+    isscalars = [sq.isscalar for sq in sqs]
+    if all(isscalars):
+        compat = True
+    elif not(any(isscalars)):
+        lens = [len(sq) for sq in sqs]
+        compat = all(x==units[0] for x in units)
+    else:
+        compat = False
+    if compat:
+        return rfn.merge_arrays(sqs, flatten=True)
+    else:
+        raise ValueError("All lengths must be the same")
+
+def vstack(sqs):
+    """Concatenate rows the structured quantities with identical structure."""
+    units = [sq.unit for sq in sqs]
+    if all(x==units[0] for x in units):
+        return rfn.stack_arrays([sq.value for sq in sqs])*units[0]
+    else:
+        raise ValueError("All units must be the same")
 
 ############################################################
 ## Make scalar sq from lists and dicts: structquant()
 ############################################################
+
+def scvec(size):
+    if size==1:
+        return f"f8"
+    else:
+        return f"({size},)f8"
 
 def structquant(values, names=string.ascii_letters, units=None, unitlookup={}):
     """Make a structured quantity from numbers or quantities
