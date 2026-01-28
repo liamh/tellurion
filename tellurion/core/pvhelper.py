@@ -23,6 +23,32 @@ _vel_format = '10.6f'
 ####   Utility functions for coordinates      ####
 ##################################################
 
+def ncartesianpv(pv, given=units.prefunits, convert=units.prefunits):
+    """Create a u.Quantity position or position-velocity array or tuple of arrays."""
+    if type(pv) is tuple:
+        tup = pv
+    else:
+        arr = np.array(pv)
+        if arr.shape[arr.ndim-1] == 6:
+            if arr.ndim == 2:
+                tup = (arr[:,0:3], arr[:,3:6])
+            else:
+                tup = (arr[0:3], arr[3:6])
+    pos = tup[0]*given['length']
+    if len(tup) == 2:
+        vel = tup[1]*given['speed']
+        ou = quant.hstack((pos.structure(_eph_pos, pos.ndim==1), \
+                           vel.structure(_eph_vel, vel.ndim==1)))
+        if convert:
+            return quant.nchangeunits(ou, convert)
+        else:
+            return ou
+    else:
+        if convert:
+            return quant.nchangeunits(pos, convert)
+        else:
+            return pos
+
 # pos1 = cartesianpv(np.array([1,2,3]), ['m'])
 # pv1 = cartesianpv(np.array([1,2,3,4,5,6]), ['m', 'm/s'])
 # pos2 = cartesianpv(np.array([[1,2,3], [-1,-2,-3], [-3,-2,-1]]), ['m'])

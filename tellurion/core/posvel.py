@@ -437,7 +437,8 @@ class PositionT(PositionBase):
 
         # Convert to Cartesian representation (this handles both position and velocity)
         cart_repr = sph_repr.represent_as(CartesianRepresentation)
-        sq = pvhelper.cartesianpv(cart_repr.xyz, unitlookup=units.prefunits)
+        raise ValueError("This has never been tested")
+        # sq = pvhelper.cartesianpv(cart_repr.xyz, unitlookup=units.prefunits)
         # Create the structured quantity
         return sq
 
@@ -627,7 +628,7 @@ def pvtcart(pv, time=None, specunits=units.prefunits):
        specunits: The units to be assigned to the numbers in `pv`
 
     """
-    cart = pvhelper.cartesianpv(pv, unitlookup=specunits)
+    cart = pvhelper.ncartesianpv(pv, specunits, units.prefunits)
     if cart.dtype.names and pvhelper._eph_vel in cart.dtype.names:
         return PositionVelocityT(time=atime.abstime(time), cartesian=cart)
     else:
