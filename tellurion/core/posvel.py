@@ -645,9 +645,7 @@ def pvtattr(object):
     """Create PositionVelocityT or PositionT from any object (e.g., ephemeris) that has the time, position, and optionally velocity, properties."""
     if hasthing(object,pvhelper._eph_time) and hasthing(object,pvhelper._eph_pos):
         if hasthing(object,pvhelper._eph_vel):
-            cart = pvhelper.cartesianpv_sep(object[pvhelper._eph_pos], \
-                                            object[pvhelper._eph_vel])
-            # cart = pvhelper.cartesianpv((object[pvhelper._eph_pos], object[pvhelper._eph_vel]))
+            cart = pvhelper.ncartesianpv((object[pvhelper._eph_pos], object[pvhelper._eph_vel]))
             return PositionVelocityT(time=object[pvhelper._eph_time], cartesian=cart)
         else:
             return PositionT(time=object[pvhelper._eph_time], cartesian=object[pvhelper._eph_pos])

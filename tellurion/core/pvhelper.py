@@ -34,9 +34,17 @@ def ncartesianpv(pv, given=units.prefunits, convert=units.prefunits):
                 tup = (arr[:,0:3], arr[:,3:6])
             else:
                 tup = (arr[0:3], arr[3:6])
-    pos = tup[0]*given['length']
+        elif arr.shape[arr.ndim-1] == 3:
+            tup = (arr)
+    if type(tup[0]) is u.Quantity:
+        pos = tup[0]
+    else:
+        pos = tup[0]*given['length']
     if len(tup) == 2:
-        vel = tup[1]*given['speed']
+        if type(tup[1]) is u.Quantity:
+            vel = tup[1]
+        else:
+            vel = tup[1]*given['speed']
         ou = quant.hstack((pos.structure(_eph_pos, pos.ndim==1), \
                            vel.structure(_eph_vel, vel.ndim==1)))
         if convert:

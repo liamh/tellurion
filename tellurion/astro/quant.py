@@ -239,7 +239,7 @@ def hstack(sqs):
         compat = False
     if compat:
         ma = rfn.merge_arrays(sqs, flatten=True)
-        if isscalars:
+        if all(isscalars):
             return ma[0]
         else:
             return ma
