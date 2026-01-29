@@ -438,7 +438,7 @@ class PositionT(PositionBase):
         # Convert to Cartesian representation (this handles both position and velocity)
         cart_repr = sph_repr.represent_as(CartesianRepresentation)
         raise ValueError("This has never been tested")
-        # sq = pvhelper.cartesianpv(cart_repr.xyz, unitlookup=units.prefunits)
+        # sq = pvhelper.ncartesianpv(cart_repr.xyz, unitlookup=units.prefunits)
         # Create the structured quantity
         return sq
 
@@ -588,7 +588,7 @@ class PositionVelocityT(PositionBase):
                   cart_diff.d_x, cart_diff.d_y, cart_diff.d_z]
 
         # Create the structured quantity
-        return pvhelper.cartesianpv(posvel, unitlookup=units.prefunits)
+        return pvhelper.ncartesianpv(posvel, unitlookup=units.prefunits)
 
     def copy(self):
         """Create a copy of this PositionVelocityT."""

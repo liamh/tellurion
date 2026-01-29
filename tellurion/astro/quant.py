@@ -10,29 +10,6 @@ import astropy.units as u
 ## Make structured quantities from arrays and other sq
 ############################################################
 
-################### Used only in cartesianpv()
-def sq(values, names_size_units, unitlookup={}):
-    """Make a struct quantity from arrays. Make a scalar struct if
-    `values` is a 1d np.array, or a vector struct if it is a 2d
-    np.array.  `names_size_units` is a sequence of 3-tuples (name size
-    units).
-
-    sq(np.array([[1,2,3,6,4,5,6], [10,20,30,60,40,50,60]]), \
-                                    [('pos', 3, 'length'), ('sum', 1, 'length'), ('vel', 3, 'speed')], \
-                                    {'length': 'km', 'speed': 'km/s'})
-
-    """
-    def lookuppt(un, default=None):
-        return unitlookup.get(un) or un or default
-    dtype = [(nsu[0], scvec(nsu[1])) for nsu in names_size_units]
-    unit = tuple([lookuppt(nsu[2]) for nsu in names_size_units])
-    return compose_sq(values, dtype, unit)
-
-
-def compose_sq(values, dtype, unit_string):
-    """Make a structured quantity from an np.array, dtype, and unit string"""
-    return rfn.unstructured_to_structured(np.array(values), dtype=dtype)*u.Unit(unit_string)
-
 ################### Used only in spacetrack to serialize/deserialize tles
 ###### Maybe binary serialization with pickle or https://fsc-hdf5-io.readthedocs.io/en/latest/documentation.html would be better
 

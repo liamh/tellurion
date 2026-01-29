@@ -6,7 +6,6 @@ import tellurion as tell
 oemunits = {"time": u.second, "length": u.km, "speed": u.km/u.second,
             "angle": u.degree, "angular speed": u.radian/u.second,
             "dimensionless": u.dimensionless_unscaled}
-oemunits["posvel"] = (oemunits["length"], oemunits["speed"])
 
 # simorb = oempvt("../../../gmat/EphemerisFile1.oem")
 def oempvt(file):
@@ -14,6 +13,6 @@ def oempvt(file):
     ephemeris = OrbitEphemerisMessage.open(file)
     array = np.vstack(tuple([np.hstack((row.position, row.velocity)) \
                              for row in ephemeris.states]))
-    pv = tell.cartesianpv(array, unitlookup=oemunits)
+    pv = tell.ncartesianpv(array, oemunits)
     times = tell.abstime([s.epoch for s in ephemeris.states])
     return tell.PositionVelocityT(time=times, cartesian=pv)

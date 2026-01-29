@@ -46,8 +46,7 @@ def _pvt(object, unitlookup=tunits.prefunits, additional=None):
     if hasattr(object, 'getPosition') and hasattr(object, 'getVelocity'):
         pos = _v3d(object.getPosition(), posvelsiu[0])
         vel = _v3d(object.getVelocity(), posvelsiu[1])
-        pv = tunits.changeunits(pvhelper.cartesianpv_sep(pos, vel), unitlookup)
-        # pv = tunits.changeunits(pvhelper.cartesianpv((pos, vel)), unitlookup)
+        pv = tunits.changeunits(pvhelper.ncartesianpv((pos, vel)), unitlookup)
         if hasattr(object, 'getDate'):
             tm=_okad(object.getDate())
         elif type(additional) is astropy.time.Time:
@@ -63,7 +62,7 @@ def _pvt(object, unitlookup=tunits.prefunits, additional=None):
 def _tspvc(obj, time=None):
     """Convert tuple (posvel.pv(), astropy.time.Time) or ephemeris row to Orekit TimeStampedPVCoordinates or posvel.pv() to PVCoordinates"""
     if pvhelper.isephrow(obj):
-        opvt = posvel.pvt(obj) # pvhelper.cartesianpv((obj['position'], obj['velocity']))
+        opvt = posvel.pvt(obj)
         if time==None:
             return _tspvc(opvt.pv, opvt.time)
         elif isdttm(time):
