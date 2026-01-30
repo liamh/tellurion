@@ -13,6 +13,6 @@ def oempvt(file):
     ephemeris = OrbitEphemerisMessage.open(file)
     array = np.vstack(tuple([np.hstack((row.position, row.velocity)) \
                              for row in ephemeris.states]))
-    pv = tell.ncartesianpv(array, oemunits)
+    pv = tell.cartesianpv(array, oemunits)
     times = tell.abstime([s.epoch for s in ephemeris.states])
     return tell.PositionVelocityT(time=times, cartesian=pv)

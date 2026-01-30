@@ -407,7 +407,6 @@ class PositionT(PositionBase):
         # SphericalRepresentation uses (lon, lat, distance) format
         # which corresponds to (right ascension, declination, distance)
         sphrepr = [sph_repr.lon, sph_repr.lat, sph_repr.distance]
-        # Use the existing sph() function to create the structured quantity
         return pvhelper.sphericalpv(sphrepr, None, labels=['rtasc', 'decl', 'distance'],
                                     unitlookup=units.prefunits)
 
@@ -438,7 +437,7 @@ class PositionT(PositionBase):
         # Convert to Cartesian representation (this handles both position and velocity)
         cart_repr = sph_repr.represent_as(CartesianRepresentation)
         raise ValueError("This has never been tested")
-        # sq = pvhelper.ncartesianpv(cart_repr.xyz, unitlookup=units.prefunits)
+        # sq = pvhelper.cartesianpv(cart_repr.xyz, unitlookup=units.prefunits)
         # Create the structured quantity
         return sq
 
@@ -588,7 +587,7 @@ class PositionVelocityT(PositionBase):
                   cart_diff.d_x, cart_diff.d_y, cart_diff.d_z]
 
         # Create the structured quantity
-        return pvhelper.ncartesianpv(posvel, unitlookup=units.prefunits)
+        return pvhelper.cartesianpv(posvel, unitlookup=units.prefunits)
 
     def copy(self):
         """Create a copy of this PositionVelocityT."""
@@ -628,7 +627,7 @@ def pvtcart(pv, time=None, specunits=units.prefunits):
        specunits: The units to be assigned to the numbers in `pv`
 
     """
-    cart = pvhelper.ncartesianpv(pv, specunits, units.prefunits)
+    cart = pvhelper.cartesianpv(pv, specunits, units.prefunits)
     if cart.dtype.names and pvhelper._eph_vel in cart.dtype.names:
         return PositionVelocityT(time=atime.abstime(time), cartesian=cart)
     else:
@@ -645,7 +644,7 @@ def pvtattr(object):
     """Create PositionVelocityT or PositionT from any object (e.g., ephemeris) that has the time, position, and optionally velocity, properties."""
     if hasthing(object,pvhelper._eph_time) and hasthing(object,pvhelper._eph_pos):
         if hasthing(object,pvhelper._eph_vel):
-            cart = pvhelper.ncartesianpv((object[pvhelper._eph_pos], object[pvhelper._eph_vel]))
+            cart = pvhelper.cartesianpv((object[pvhelper._eph_pos], object[pvhelper._eph_vel]))
             return PositionVelocityT(time=object[pvhelper._eph_time], cartesian=cart)
         else:
             return PositionT(time=object[pvhelper._eph_time], cartesian=object[pvhelper._eph_pos])

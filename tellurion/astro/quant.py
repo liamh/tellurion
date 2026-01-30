@@ -47,7 +47,7 @@ def _sq_nvsu(names, values, shapes, units):
     sq = u.Quantity(arr, u.StructuredUnit(units))
     return sq
 
-def sq_from_dict(d):
+def sq_from_dict_old(d):
     """Make a structured quantity from a dictionary of quantities (u.Quantity)"""
     nvsu = (d.keys(), \
            [val.value for val in d.values()], \
@@ -230,6 +230,11 @@ def vstack(sqs):
         return rfn.stack_arrays([sq.value for sq in sqs])*units[0]
     else:
         raise ValueError("All units must be the same")
+
+def sq_from_dict(d, isscalar):
+    """Make a structured quantity from a dictionary of quantities (u.Quantity)"""
+    tup = tuple([val.structure(nm, isscalar) for nm, val in d.items()])
+    return hstack(tup)
 
 ############################################################
 ## Make scalar sq from lists and dicts: structquant()

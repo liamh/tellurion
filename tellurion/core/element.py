@@ -35,7 +35,7 @@ def statefnval (orbstate, quantname, sfdict, constants=None):
         return u.Quantity(orkval, orkunit).to(tunits.prefunits[lookup["phystype"]])
 
 def sfdict(sfvbl):
-    '''Make a state function dictionary of the state function variables'''
+    """Make a state function dictionary of the state function variables"""
     keys = ["name", "description", "phystype", "orkunit", "getter"]
     return dict(zip([ev[0] for ev in sfvbl], [dict(zip(keys,ev)) for ev in sfvbl]))
 
@@ -51,8 +51,10 @@ timeelements=['ta', 'ma']
 
 # kep1 = kepler({"ecc":0.1, "sma":8000.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25})
 # kep2 = kepler({"zper":250.0, "zapo":350.0, "inc":22.0, "argper":66.0, "raan":68.0, "ma":7.25})
-def kepler(oes, dttm=None, units=(tunits.prefunits['length'], tunits.prefunits['angle'])):
-    '''Make a Kepler orbital element set with either mean or true anomaly as the time element.'''
+def kepler(oes, dttm=None, unitlookup=tunits.prefunits):
+    """Make a Kepler orbital element set with either mean or true
+    anomaly as the time element. Units not specified default to those
+    given in unitlookup."""
     if 'ma' in oes:
         timeelt = {"ma":'angle'}
     else:
@@ -68,8 +70,9 @@ def kepler(oes, dttm=None, units=(tunits.prefunits['length'], tunits.prefunits['
         plane = {"altper":'length', "altapo":'length'}
 
     keppt = {"inc":'angle', "argper":'angle', "raan":'angle'} | plane | timeelt
-    ordoes = {k:oes[k] for k in keppt.keys()}
-    kepsq = quant.structquant(ordoes, units=keppt, unitlookup=tunits.prefunits)
+    ordoes = {k:quant.make_quantity(oes[k], keppt[k], unitlookup) for k in keppt.keys()}
+    isscalar = all([v.isscalar for v in ordoes.values()])
+    kepsq = quant.sq_from_dict(ordoes, isscalar)
     if not tunits.isupperhalfplane(kepsq['inc']):
         raise ValueError('Inclination must be between 0 and 180 degrees, inclusive')
     kepsqn = tunits.normalizeangle(kepsq, u.rev/2, timeelements)
@@ -79,9 +82,9 @@ def kepler(oes, dttm=None, units=(tunits.prefunits['length'], tunits.prefunits['
         return ElementSetT(kepsqn, dttm)
 
 def iskepels(obj, est=True):
-    '''The argument is a Keper element set or (kepels, epoch); if
+    """The argument is a Keper element set or (kepels, epoch); if
     `est` is `True`, then it is a properly constructed `ElementSetT`,
-    and if `False`, it is element values only, without an epoch time.'''
+    and if `False`, it is element values only, without an epoch time."""
     if type(obj) is ElementSetT and est:
         return iskepels(obj.els, False) and pvhelper.isdttm(obj.t)
     else:

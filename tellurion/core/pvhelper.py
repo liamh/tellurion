@@ -23,7 +23,7 @@ _vel_format = '10.6f'
 ####   Utility functions for coordinates      ####
 ##################################################
 
-def ncartesianpv(pv, given=units.prefunits, convert=units.prefunits):
+def cartesianpv(pv, given=units.prefunits, convert=units.prefunits):
     """Create a u.Quantity position or position-velocity array or tuple of arrays."""
     if type(pv) is tuple:
         tup = pv
@@ -77,11 +77,11 @@ def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distanc
         posdict = {label: u.Quantity(value) for label, value in zip(labels, sph_position)}
         labels_r = [sym+'_r' for sym in labels]
         veldict = {label: u.Quantity(value) for label, value in zip(labels_r, sph_velocity)}
-        return quant.sq_from_dict(posdict | veldict)
+        return quant.sq_from_dict_old(posdict | veldict)
     else:
         # Position only
         posdict = {label: u.Quantity(value) for label, value in zip(labels, sph_position)}
-        return quant.sq_from_dict(posdict)
+        return quant.sq_from_dict_old(posdict)
 
 ##################################################
 ####   Tests for posvel and related types     ####
