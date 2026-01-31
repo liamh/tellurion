@@ -48,12 +48,12 @@ def cartesianpv(pv, given=units.prefunits, convert=units.prefunits):
         ou = quant.hstack((pos.structure(_eph_pos, pos.ndim==1), \
                            vel.structure(_eph_vel, vel.ndim==1)))
         if convert:
-            return quant.nchangeunits(ou, convert)
+            return quant.changeunits(ou, convert)
         else:
             return ou
     else:
         if convert:
-            return quant.nchangeunits(pos, convert)
+            return quant.changeunits(pos, convert)
         else:
             return pos
 

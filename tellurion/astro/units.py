@@ -47,19 +47,6 @@ orkunits:  Final[dict] = siunits
 """ Orekit uses SI units """
 
 ################################################################################
-##### Change units
-################################################################################
-
-def changeunits(qsq, unitlookup=prefunits):
-    """Change the units for the quantity or structured quantity to the system of units."""
-    if type(qsq.unit) is u.StructuredUnit:
-        tounits = u.StructuredUnit(tuple([unitlookup[u.get_physical_type(un)._physical_type_list[0]] \
-                                          for un in qsq.unit.values()]))
-    else:
-        tounits = unitlookup[u.get_physical_type(qsq.unit)._physical_type_list[0]]
-    return qsq.to(tounits)
-
-################################################################################
 ##### Angles
 ################################################################################
 
@@ -88,4 +75,4 @@ def normalizeangle(angle, wrapat=u.rev/2, exclude=[]):
         return angle
 
 # Export everything
-__all__ = ['rev', 'revolution', 'prefunits', 'siunits', 'orkunits', 'gravconstunits', 'changeunits', 'normalizeangle']
+__all__ = ['rev', 'revolution', 'prefunits', 'siunits', 'orkunits', 'gravconstunits', 'normalizeangle']

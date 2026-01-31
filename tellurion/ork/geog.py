@@ -71,7 +71,7 @@ def eciaer(observation, name="", unitlookup=units.prefunits, forceenv=force.deff
     times, find the site vector(s). Uses Orekit.
     '''
     tf = _topoframe(observation.loc, name, forceenv)
-    aerork = units.changeunits(observation.obs, units.orkunits)
+    aerork = quant.changeunits(observation.obs, units.orkunits)
     tf = TopocentricFrame(forceenv['earth'], \
                           tf.pointAtDistance(
                               float(aerork['azim'].value), \

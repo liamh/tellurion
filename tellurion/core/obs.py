@@ -31,4 +31,6 @@ def azelrange(azim, elev, rnge, obsloc, obstime, unitlookup=units.prefunits):
                 sq = quant.vstack(tuple([sqaer(a, e, r, t) \
                                           for a, e, r, t in zip(azim,elev,rnge,obstime)]))
         return sq
-    return EarthObservationT(obsloc, units.changeunits(sqaer(azim, elev, rnge, obstime)), obstime)
+    return EarthObservationT(obsloc, \
+                             quant.changeunits(sqaer(azim, elev, rnge, obstime), unitlookup), \
+                             obstime)

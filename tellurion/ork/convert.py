@@ -16,6 +16,7 @@ from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 
 from tellurion.core import units as tunits
+from tellurion.astro import quant
 import tellurion.astro.time as atime
 from tellurion.core import element
 from tellurion.core import posvel
@@ -46,7 +47,7 @@ def _pvt(object, unitlookup=tunits.prefunits, additional=None):
     if hasattr(object, 'getPosition') and hasattr(object, 'getVelocity'):
         pos = _v3d(object.getPosition(), posvelsiu[0])
         vel = _v3d(object.getVelocity(), posvelsiu[1])
-        pv = tunits.changeunits(pvhelper.cartesianpv((pos, vel)), unitlookup)
+        pv = quant.changeunits(pvhelper.cartesianpv((pos, vel)), unitlookup)
         if hasattr(object, 'getDate'):
             tm=_okad(object.getDate())
         elif type(additional) is astropy.time.Time:

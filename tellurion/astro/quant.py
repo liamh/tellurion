@@ -6,36 +6,10 @@ import numpy as np
 from numpy.lib import recfunctions as rfn
 import astropy.units as u
 
-############################################################
-## Make structured quantities from arrays and other sq
-############################################################
-
-################### Used only in spacetrack to serialize/deserialize tles
-###### Maybe binary serialization with pickle or https://fsc-hdf5-io.readthedocs.io/en/latest/documentation.html would be better
-
-# Extract value as np.array from quantities
-u.Quantity.to_array = lambda self: rfn.structured_to_unstructured(self.value) if isinstance(self.unit, u.StructuredUnit) else self.value
-
-# Decompose SQ into an array, dtype, and unit string
-# If the object is not a structured quantity, then `name` will be used for the name and if further it is a vector (1d array), isscalar is used to determine whether that should be interpreted as a scalar structure (row vector) or vector structure (column vector)
-u.Quantity.decompose = lambda self, name=None, isscalar=False: (self.to_array(), self.dtype.descr, self.unit.to_string()) \
-    if self.dtype.names else (self.value, (name, '<f8', (1,)) if isscalar else (name, '<f8'), self.unit.to_string())
-
-################ Used only by spacetrack
-def dict_decompose(d):
-    return {k: v.decompose() for k, v in d.items()}
-
-def dict_compose(d):
-    return {k: v[0]*u.Unit(v[2]) for k, v in d.items()}
-
-############## ^^^^^^^^^^^^^^^ EVERYTHING ABOVE WILL BE REPLACED ^^^^^^^^^^^^^^
-
-
 ####################################################################
 ##### Build quantities
 ####################################################################
 
-# Make an unstructured quantity
 def make_quantity(value, unit, unitlookup={}):
     """Make an unstructured quantity given a value, a unit (which may
     be a physical type), and optionally a dictionary `unitlookup`
@@ -51,13 +25,7 @@ def make_quantity(value, unit, unitlookup={}):
         else:
             return value*u.Unit('1')
 
-
-################################################################################
-##### Change units
-################################################################################
-
-# New version, old is in units.py and does not check the dict has enough
-def nchangeunits(qsq, unitlookup={}):
+def changeunits(qsq, unitlookup={}):
     """Change the units for the quantity or structured quantity to the
     system of units. The physical types of all units that occur in qsq
     must have a matching key in the `unitlookup` dictionary."""
@@ -82,7 +50,6 @@ def nchangeunits(qsq, unitlookup={}):
 # Make a dictionary by structure components, used to see what the SQ
 # contents because it's not clear in the default print form
 u.Quantity.to_dict = lambda self: {nm: self[nm] for nm in self.dtype.names}
-
 
 ####################################################################
 ##### Build structured quantities
@@ -205,3 +172,27 @@ def sq_from_dict(d, isscalar):
     """Make a structured quantity from a dictionary of quantities (u.Quantity)"""
     tup = tuple([val.structure(nm, isscalar) for nm, val in d.items()])
     return hstack(tup)
+
+
+
+
+############################################################
+## EVERYTHING BELOW TO BE REMOVED
+## Used only in spacetrack to serialize/deserialize tles
+## Binary serialize/deserialize with fsc.hdf5-io
+## Make structured quantities from arrays and other sq
+############################################################
+
+# Extract value as np.array from quantities
+u.Quantity.to_array = lambda self: rfn.structured_to_unstructured(self.value) if isinstance(self.unit, u.StructuredUnit) else self.value
+
+# Decompose SQ into an array, dtype, and unit string
+# If the object is not a structured quantity, then `name` will be used for the name and if further it is a vector (1d array), isscalar is used to determine whether that should be interpreted as a scalar structure (row vector) or vector structure (column vector)
+u.Quantity.decompose = lambda self, name=None, isscalar=False: (self.to_array(), self.dtype.descr, self.unit.to_string()) \
+    if self.dtype.names else (self.value, (name, '<f8', (1,)) if isscalar else (name, '<f8'), self.unit.to_string())
+
+def dict_decompose(d):
+    return {k: v.decompose() for k, v in d.items()}
+
+def dict_compose(d):
+    return {k: v[0]*u.Unit(v[2]) for k, v in d.items()}
