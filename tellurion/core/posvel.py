@@ -14,6 +14,7 @@ from astropy.timeseries import TimeSeries
 import astropy.table.row
 import astropy.coordinates as coord
 from tellurion.astro import units
+from tellurion.astro import quant
 import tellurion.astro.time as atime
 from tellurion.core import pvhelper
 
@@ -407,8 +408,9 @@ class PositionT(PositionBase):
         # SphericalRepresentation uses (lon, lat, distance) format
         # which corresponds to (right ascension, declination, distance)
         sphrepr = [sph_repr.lon, sph_repr.lat, sph_repr.distance]
-        return pvhelper.sphericalpv(sphrepr, None, labels=['rtasc', 'decl', 'distance'],
-                                    unitlookup=units.prefunits)
+        ret = pvhelper.sphericalpv(sphrepr, None, labels=['rtasc', 'decl', 'distance'])
+        return quant.changeunits(ret, unitlookup=units.prefunits)
+
 
     def _spherical_to_cartesian(self, spherical):
         """Convert spherical coordinates to Cartesian state vector.
@@ -533,8 +535,8 @@ class PositionVelocityT(PositionBase):
         # which corresponds to (right ascension, declination, distance)
         sphrepr = [sph_repr.lon, sph_repr.lat, sph_repr.distance]
         sphrate = [sph_diff.d_lon, sph_diff.d_lat, sph_diff.d_distance]
-        return pvhelper.sphericalpv(sphrepr, sphrate, labels=['rtasc', 'decl', 'distance'],
-                                    unitlookup=units.prefunits)
+        ret = pvhelper.sphericalpv(sphrepr, sphrate, labels=['rtasc', 'decl', 'distance'])
+        return quant.changeunits(ret, unitlookup=units.prefunits)
 
     def _spherical_to_cartesian(self, spherical):
         """Convert spherical coordinates to Cartesian state vector.

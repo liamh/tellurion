@@ -1,3 +1,4 @@
+import numbers
 import numpy as np
 import astropy.units as u
 import astropy.time
@@ -57,6 +58,10 @@ def cartesianpv(pv, given=units.prefunits, convert=units.prefunits):
         else:
             return pos
 
+sphpospt = ['angle', 'angle', 'length']
+sphvelpt = ['angular speed', 'angular speed', 'speed']
+
+
 def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distance'], unitlookup=units.prefunits):
     """Make a spherical coordinate set for position and velocity
 
@@ -64,7 +69,7 @@ def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distanc
         sph_position: [cylang, sphang, distance] where each can be:
             - Scalar number or u.Quantity
             - List of numbers or u.Quantity
-            - 1D or 2D np.ndarray
+            - np.array
         sph_velocity: Time derivatives of sph_position (optional, same format)
         labels: Field names for the coordinates
         unitlookup: Unit lookup dictionary
@@ -72,16 +77,18 @@ def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distanc
     Returns:
         Structured quantity with spherical coordinates.
     """
+    isscalar = not(hasattr(sph_position[0], '__getitem__'))
+    posdict = dict(zip(labels, sph_position))
     if sph_velocity:
         # Include velocity components
-        posdict = {label: u.Quantity(value) for label, value in zip(labels, sph_position)}
         labels_r = [sym+'_r' for sym in labels]
-        veldict = {label: u.Quantity(value) for label, value in zip(labels_r, sph_velocity)}
-        return quant.sq_from_dict(posdict | veldict, sph_position[0].isscalar)
+        veldict = dict(zip(labels_r, sph_velocity))
+        unt = dict(zip(labels+labels_r, sphpospt+sphvelpt))
+        return quant.make_quantity(posdict | veldict, unt, isscalar, unitlookup)
     else:
         # Position only
-        posdict = {label: u.Quantity(value) for label, value in zip(labels, sph_position)}
-        return quant.sq_from_dict(posdict, sph_position[0].isscalar)
+        unt = dict(zip(labels, sphpospt))
+        return quant.make_quantity(posdict, unt, isscalar, unitlookup)
 
 ##################################################
 ####   Tests for posvel and related types     ####

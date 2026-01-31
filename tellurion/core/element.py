@@ -55,24 +55,12 @@ def kepler(oes, dttm=None, unitlookup=tunits.prefunits):
     """Make a Kepler orbital element set with either mean or true
     anomaly as the time element. Units not specified default to those
     given in unitlookup."""
-    if 'ma' in oes:
-        timeelt = {"ma":'angle'}
-    else:
-        timeelt = {"ta":'angle'}
 
-    if 'sma' in oes and 'ecc' in oes:
-        plane = {"ecc":'dimensionless', "sma":'length'}
-    elif 'memo' in oes and 'ecc' in oes:
-        plane = {"ecc":'dimensionless', "memo":'angular speed'}
-    elif 'radper' in oes and 'radapo' in oes:
-        plane = {"radper":'length', "radapo":'length'}
-    elif 'altper' in oes and 'altapo' in oes:
-        plane = {"altper":'length', "altapo":'length'}
-
-    keppt = {"inc":'angle', "argper":'angle', "raan":'angle'} | plane | timeelt
-    ordoes = {k:quant.make_quantity(oes[k], keppt[k], unitlookup) for k in keppt.keys()}
-    isscalar = all([v.isscalar for v in ordoes.values()])
-    kepsq = quant.sq_from_dict(ordoes, isscalar)
+    keppt = {"inc":'angle', "argper":'angle', "raan":'angle', "ma":'angle', "ta":'angle', \
+             "ecc":'dimensionless', "sma":'length', "memo":'angular speed', \
+             "radper":'length', "radapo":'length', "altper":'length', "altapo":'length'}
+    isscalar = not(hasattr(dttm, 'isscalar')) or dttm.isscalar
+    kepsq = quant.make_quantity(oes, keppt, isscalar, unitlookup)
     # Possibly check kepsq['inc'] is in upper halfplane with
     # .is_within_bounds('0d', '180d') on Angle instances
     #    raise ValueError('Inclination must be between 0 and 180 degrees, inclusive')

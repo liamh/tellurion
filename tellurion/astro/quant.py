@@ -1,55 +1,84 @@
-"""Make a dictionary (`namedquant`) of named quantities or structured quantity (`structquant`)"""
+"""Make and convert quantities"""
 
-import numbers, string
-import collections.abc
 import numpy as np
 from numpy.lib import recfunctions as rfn
 import astropy.units as u
+import astropy.coordinates as coord
 
 ####################################################################
 ##### Build quantities
 ####################################################################
 
-def make_quantity(value, unit, unitlookup={}):
+# ou = quant.hstack((pos.structure(_eph_pos, pos.ndim==1), \
+#                    vel.structure(_eph_vel, vel.ndim==1)))
+# ou = quant.make_quantity((pos, vel), name=(_eph_pos, _eph_vel), isscalar = pos.ndim==1, prefunits)
+# ou = quant.make_quantity({_eph_pos: pos, _eph_vel: vel}, isscalar = pos.ndim==1, convertunits=prefunits)
+
+
+def make_quantity(value, unit=None, isscalar = False, unitlookup={}):
     """Make an unstructured quantity given a value, a unit (which may
     be a physical type), and optionally a dictionary `unitlookup`
     which maps physical types to the names units.
 
+    value: number, array-like (argument to np.array), quantity, or dict
+    unit: unit-like (argument to u.Unit), or a dict with the same keys as `value`
+
+    unitlookup: dict, keys are strings that name a physical type,
+    and every physical type used in `unit` should be present in the
+    dict
+
     """
-    if type(value) is u.Quantity:
-        return value
-    else:
-        unt = unitlookup.get(unit) or unit
-        if unt:
-            return value*u.Unit(unt)
+    def qv(value, sngun):
+        if type(value) in (u.Quantity, coord.Angle, coord.Longitude, coord.Latitude, coord.Distance):
+            q = u.Quantity(value)
+        elif type(sngun) is str:
+            unt = unitlookup.get(sngun) or sngun
+            if unt:
+                q = value*u.Unit(unt)
+            else:
+                q = value*u.Unit('1')
         else:
-            return value*u.Unit('1')
+            raise TypeError("Could not assign a unit to the value")
+        return q
+
+    if type(value) is dict:
+        #tup = tuple([val.structure(nm, isscalar) for nm, val in value.items()])
+        if type(unit) is dict:
+            quants = [_make_structured_quantity(qv(value[key], unit[key]), key, isscalar) for key in value]
+        else:
+            quants = [_make_structured_quantity(qv(value[key], None), key, isscalar) for key in value]
+        return hstack(tuple(quants))
+    else:
+        return qv(value, unit)
+
+
+def sq_from_dict(d, isscalar):
+    """Make a structured quantity from a dictionary of quantities (u.Quantity)"""
+    tup = tuple([val.structure(nm, isscalar) for nm, val in d.items()])
+    return hstack(tup)
 
 def changeunits(qsq, unitlookup={}):
     """Change the units for the quantity or structured quantity to the
     system of units. The physical types of all units that occur in qsq
     must have a matching key in the `unitlookup` dictionary."""
+
+    def getanypt(un):
+        ptl = u.get_physical_type(un)._physical_type_list
+        return next((unitlookup.get(k) for k in ptl if unitlookup.get(k) is not None), None)
+
     if type(qsq.unit) is u.StructuredUnit:
-        pt = [unitlookup.get(u.get_physical_type(un)._physical_type_list[0]) \
-              for un in qsq.unit.values()]
+        pt = [getanypt(un) for un in qsq.unit.values()]
         if all(pt):
             tounits = u.StructuredUnit(tuple(pt))
         else:
             tounits = None
     else:
-        tounits = unitlookup.get(u.get_physical_type(qsq.unit)._physical_type_list[0])
+        tounits = getanypt(qsq.unit)
+
     if tounits:
         return qsq.to(tounits)
     else:
         raise ValueError("Unit physical type not found in `unitlookup`")
-
-####################################################################
-##### Convert structured quantities
-####################################################################
-
-# Make a dictionary by structure components, used to see what the SQ
-# contents because it's not clear in the default print form
-u.Quantity.to_dict = lambda self: {nm: self[nm] for nm in self.dtype.names}
 
 ####################################################################
 ##### Build structured quantities
@@ -168,10 +197,16 @@ def vstack(sqs):
     else:
         raise ValueError("All units must be the same")
 
-def sq_from_dict(d, isscalar):
-    """Make a structured quantity from a dictionary of quantities (u.Quantity)"""
-    tup = tuple([val.structure(nm, isscalar) for nm, val in d.items()])
-    return hstack(tup)
+####################################################################
+##### Convert structured quantities
+####################################################################
+
+# Make a dictionary by structure components, used to see what the SQ
+# contents because it's not clear in the default print form
+u.Quantity.to_dict = lambda self: {nm: self[nm] for nm in self.dtype.names}
+
+
+
 
 
 
