@@ -73,8 +73,9 @@ def kepler(oes, dttm=None, unitlookup=tunits.prefunits):
     ordoes = {k:quant.make_quantity(oes[k], keppt[k], unitlookup) for k in keppt.keys()}
     isscalar = all([v.isscalar for v in ordoes.values()])
     kepsq = quant.sq_from_dict(ordoes, isscalar)
-    if not tunits.isupperhalfplane(kepsq['inc']):
-        raise ValueError('Inclination must be between 0 and 180 degrees, inclusive')
+    # Possibly check kepsq['inc'] is in upper halfplane with
+    # .is_within_bounds('0d', '180d') on Angle instances
+    #    raise ValueError('Inclination must be between 0 and 180 degrees, inclusive')
     kepsqn = tunits.normalizeangle(kepsq, u.rev/2, timeelements)
     if dttm==None:
         return kepsqn

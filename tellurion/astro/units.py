@@ -74,9 +74,9 @@ def normalizeangle(angle, wrapat=u.rev/2, exclude=[]):
     """
     if type(angle) is u.Quantity:
         if type(angle.unit) is u.StructuredUnit and exclude != True:
-            return quant.structquant([normalizeangle(kv[1], wrapat, kv[0] in exclude)
-                                       for kv in angle.to_dict().items()],
-                                      angle.dtype.names)
+            return quant.sq_from_dict({k: normalizeangle(v, wrapat, k in exclude)
+                                       for k, v in angle.to_dict().items()},
+                                      angle.isscalar)
         else:
             if u.get_physical_type(angle)=='angle' and exclude != True:
                 return normalizeangle(Angle(angle), wrapat)
@@ -87,11 +87,5 @@ def normalizeangle(angle, wrapat=u.rev/2, exclude=[]):
     else:
         return angle
 
-def isupperhalfplane(angle):
-    """Angle is in the upper half plane"""
-    na = normalizeangle(angle)
-    return na >= 0.0 and na <= u.rev/2
-
-
 # Export everything
-__all__ = ['rev', 'revolution', 'prefunits', 'siunits', 'orkunits', 'gravconstunits', 'changeunits', 'normalizeangle', 'isupperhalfplane']
+__all__ = ['rev', 'revolution', 'prefunits', 'siunits', 'orkunits', 'gravconstunits', 'changeunits', 'normalizeangle']

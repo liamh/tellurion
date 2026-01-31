@@ -533,7 +533,6 @@ class PositionVelocityT(PositionBase):
         # which corresponds to (right ascension, declination, distance)
         sphrepr = [sph_repr.lon, sph_repr.lat, sph_repr.distance]
         sphrate = [sph_diff.d_lon, sph_diff.d_lat, sph_diff.d_distance]
-        # Use the existing sph() function to create the structured quantity
         return pvhelper.sphericalpv(sphrepr, sphrate, labels=['rtasc', 'decl', 'distance'],
                                     unitlookup=units.prefunits)
 

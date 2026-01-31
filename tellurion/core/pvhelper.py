@@ -77,11 +77,11 @@ def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distanc
         posdict = {label: u.Quantity(value) for label, value in zip(labels, sph_position)}
         labels_r = [sym+'_r' for sym in labels]
         veldict = {label: u.Quantity(value) for label, value in zip(labels_r, sph_velocity)}
-        return quant.sq_from_dict_old(posdict | veldict)
+        return quant.sq_from_dict(posdict | veldict, sph_position[0].isscalar)
     else:
         # Position only
         posdict = {label: u.Quantity(value) for label, value in zip(labels, sph_position)}
-        return quant.sq_from_dict_old(posdict)
+        return quant.sq_from_dict(posdict, sph_position[0].isscalar)
 
 ##################################################
 ####   Tests for posvel and related types     ####

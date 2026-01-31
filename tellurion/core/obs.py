@@ -9,26 +9,26 @@ import astropy.time
 
 from tellurion.astro import units
 from tellurion.astro import quant
-#from tellurion.core import element
 
-obsdict1 = {'azim': 'angle', 'elev': 'angle', 'range': 'length', 'rangerate': 'speed', 'rtasc': 'angle', 'decl': 'angle'}
+# obsdict1 = {'azim': 'angle', 'elev': 'angle', 'range': 'length', 'rangerate': 'speed', 'rtasc': 'angle', 'decl': 'angle'}
 
 EarthObservationT = collections.namedtuple('EarthObservationT', 'loc obs time')
 
-def azelrange(azim, elev, range, obsloc, obstime, unitlookup=units.prefunits):
-    '''Create an azimuth, elevation, and range observation'''
-    def sqaer(azim, elev, range, obstime):
+def azelrange(azim, elev, rnge, obsloc, obstime, unitlookup=units.prefunits):
+    """Create an azimuth, elevation, and range observation; the values
+    for azim, elev, rnge must be u.Quantity."""
+    def sqaer(azim, elev, rnge, obstime):
         if obstime.isscalar and azim.isscalar and elev.isscalar:
-            if range == None:
-                sq = quant.structquant({'azim' : azim, 'elev' : elev}, obsdict1)
+            if rnge == None:
+                sq = quant.sq_from_dict({'azim' : azim, 'elev' : elev}, True)
             else:
-                sq = quant.structquant({'azim' : azim, 'elev' : elev, 'range' : range}, obsdict1)
+                sq = quant.sq_from_dict({'azim' : azim, 'elev' : elev, 'range' : rnge}, True)
         else:
-            if range == None:
+            if rnge == None:
                 sq = quant.vstack(tuple([sqaer(a, e, t) \
                                           for a, e, t in zip(azim,elev,obstime)]))
             else:
                 sq = quant.vstack(tuple([sqaer(a, e, r, t) \
-                                          for a, e, r, t in zip(azim,elev,range,obstime)]))
+                                          for a, e, r, t in zip(azim,elev,rnge,obstime)]))
         return sq
-    return EarthObservationT(obsloc, units.changeunits(sqaer(azim, elev, range, obstime)), obstime)
+    return EarthObservationT(obsloc, units.changeunits(sqaer(azim, elev, rnge, obstime)), obstime)
