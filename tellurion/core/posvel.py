@@ -583,6 +583,8 @@ class PositionVelocityT(PositionBase):
         # Extract the Cartesian differential
         cart_diff = cart_repr.differentials['s']  # 's' is the time unit key
 
+        raise ValueError("This has never been tested")
+
         # Extract position and velocity as 3-vectors
         posvel = [cart_repr.x, cart_repr.y, cart_repr.z, \
                   cart_diff.d_x, cart_diff.d_y, cart_diff.d_z]
@@ -619,6 +621,7 @@ class PositionVelocityT(PositionBase):
 ####    Make PositionT,  PositionVelocityT    ####
 ##################################################
 
+### THIS FUNCTION IS ONLY USED ONCE
 def pvtcart(pv, time=None, specunits=units.prefunits):
     """Define a PositionVelocityT or PositionT by its Cartesian
        component

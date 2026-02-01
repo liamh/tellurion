@@ -15,6 +15,7 @@ _eph_vel = 'velocity'
 _ephemeris_columns = [_eph_time, _eph_pos, _eph_vel]
 _ephemeris_columns_pos_xyz = [_eph_time, 'px','py','pz']
 _ephemeris_columns_pos_only = [_eph_time, _eph_pos]
+_posvel_pt = {_eph_pos: 'length', _eph_vel: 'speed'}
 
 # These should be conditional on the units used
 _pos_format = '10.3f'
@@ -23,6 +24,24 @@ _vel_format = '10.6f'
 ##################################################
 ####   Utility functions for coordinates      ####
 ##################################################
+
+"""
+ arreph = tell.propagate(demoa.propn.gen, prop5m1h, True, output='noevents')
+ tell.new_cartesianpv(arreph, False, tell.orkunits)
+"""
+
+def new_cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunits):
+    if type(posvel) is tuple:
+        if len(posvel) == 2:
+            pv = {_eph_pos: posvel[0], _eph_vel: posvel[1]}
+        else:
+            pv = {_eph_pos: posvel[0]}
+    else:
+        pv = posvel
+    if convert and given != convert:
+        return quant.changeunits(quant.make_quantity(pv, _posvel_pt, isscalar, given), convert)
+    else:
+        return quant.make_quantity(pv, _posvel_pt, isscalar, given)
 
 def cartesianpv(pv, given=units.prefunits, convert=units.prefunits):
     """Create a u.Quantity position or position-velocity array or tuple of arrays."""

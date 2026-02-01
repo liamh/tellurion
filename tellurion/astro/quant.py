@@ -9,12 +9,6 @@ import astropy.coordinates as coord
 ##### Build quantities
 ####################################################################
 
-# ou = quant.hstack((pos.structure(_eph_pos, pos.ndim==1), \
-#                    vel.structure(_eph_vel, vel.ndim==1)))
-# ou = quant.make_quantity((pos, vel), name=(_eph_pos, _eph_vel), isscalar = pos.ndim==1, prefunits)
-# ou = quant.make_quantity({_eph_pos: pos, _eph_vel: vel}, isscalar = pos.ndim==1, convertunits=prefunits)
-
-
 def make_quantity(value, unit=None, isscalar = False, unitlookup={}):
     """Make an unstructured quantity given a value, a unit (which may
     be a physical type), and optionally a dictionary `unitlookup`
@@ -42,7 +36,6 @@ def make_quantity(value, unit=None, isscalar = False, unitlookup={}):
         return q
 
     if type(value) is dict:
-        #tup = tuple([val.structure(nm, isscalar) for nm, val in value.items()])
         if type(unit) is dict:
             quants = [_make_structured_quantity(qv(value[key], unit[key]), key, isscalar) for key in value]
         else:
@@ -50,12 +43,6 @@ def make_quantity(value, unit=None, isscalar = False, unitlookup={}):
         return hstack(tuple(quants))
     else:
         return qv(value, unit)
-
-
-def sq_from_dict(d, isscalar):
-    """Make a structured quantity from a dictionary of quantities (u.Quantity)"""
-    tup = tuple([val.structure(nm, isscalar) for nm, val in d.items()])
-    return hstack(tup)
 
 def changeunits(qsq, unitlookup={}):
     """Change the units for the quantity or structured quantity to the

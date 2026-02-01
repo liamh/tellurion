@@ -12,6 +12,7 @@ import datetime
 
 import orekit_jpype.pyhelpers as pyhelp
 import org.orekit.time
+from org.orekit.propagation import SpacecraftState
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 
@@ -37,6 +38,34 @@ posvelsiu = u.StructuredUnit((u.meter, u.meter/u.second))
 # _pvt(): Convert from orekit objects to PV or PVT
 # _tspvc(): Convert from PV/PVT to org.orekit.utils.PVCoordinates or TimeStampedPVCoordinates
 
+
+def sstopvt(data):
+    """Create a posvel structured quanitty from the SpacecraftState(s)."""
+    cartpv = pvhelper.new_cartesianpv(sstoarr(data), False, tunits.orkunits)
+    if type(data) is SpacecraftState:
+        tms = _okad(data.getDate())
+    else:
+        tms = [_okad(s.getDate()) for s in data]
+    return posvel.PositionVelocityT(time=atime.abstime(tms), cartesian=cartpv)
+
+def sstoarr(ss):
+    """Extract the position and velocity as an np.array from the
+    SpacecraftState; returns a tuple of arrays (position, velocity) in
+    Orekit units (m, m/s)."""
+    def scal(ss):
+        pvc = ss.getPVCoordinates()
+        pos = pvc.getPosition()
+        vel = pvc.getVelocity()
+        return ([pos.getX(), pos.getY(), pos.getZ()], [vel.getX(), vel.getY(), vel.getZ()])
+
+    if type(ss) is SpacecraftState:
+        tls = scal(ss)
+        return (np.array(tls[0]), np.array(tls[1]))
+    else:
+        pvs = [scal(s) for s in ss]
+        arr = np.array(pvs)
+        return (arr[:,0,:], arr[:,1,:])
+
 def _pvt(object, unitlookup=tunits.prefunits, additional=None):
     """Make the postion, velocity (), and time tuple
     (astropy.time.Time) or position and velocity from the Orekit
@@ -48,6 +77,7 @@ def _pvt(object, unitlookup=tunits.prefunits, additional=None):
         pos = _v3d(object.getPosition(), posvelsiu[0])
         vel = _v3d(object.getVelocity(), posvelsiu[1])
         pv = quant.changeunits(pvhelper.cartesianpv((pos, vel)), unitlookup)
+        #pv = pvhelper.new_cartesianpv((pos, vel), True, convert=unitlookup)
         if hasattr(object, 'getDate'):
             tm=_okad(object.getDate())
         elif type(additional) is astropy.time.Time:

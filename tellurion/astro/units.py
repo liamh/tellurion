@@ -61,9 +61,9 @@ def normalizeangle(angle, wrapat=u.rev/2, exclude=[]):
     """
     if type(angle) is u.Quantity:
         if type(angle.unit) is u.StructuredUnit and exclude != True:
-            return quant.sq_from_dict({k: normalizeangle(v, wrapat, k in exclude)
-                                       for k, v in angle.to_dict().items()},
-                                      angle.isscalar)
+            return quant.make_quantity({k: normalizeangle(v, wrapat, k in exclude)
+                                        for k, v in angle.to_dict().items()},
+                                       isscalar = angle.isscalar)
         else:
             if u.get_physical_type(angle)=='angle' and exclude != True:
                 return normalizeangle(Angle(angle), wrapat)

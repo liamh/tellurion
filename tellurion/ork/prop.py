@@ -230,7 +230,7 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', output='e
     if atscalar:
         # This includes the value of the event function
         ss = _to_spacecraft_state(generator['propfn'](convert._okad(atimes)))
-        if output=='ss':
+        if output in ['ss', 'noevents']:
             return ss
         else:
             return event._ephemeris(generator, ss)
@@ -238,6 +238,12 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', output='e
         if output=='ss':
             datalist = [propagate(generator, rt, False, reftime, output) for rt in reltimes]
             return datalist
+        elif output=='noevents':
+            # This is a prototype for redesign in which the entire PVT
+            # is made once all spacecraft states are computed, then
+            # the events are added after
+            datalist = [propagate(generator, rt, False, reftime, output) for rt in reltimes]
+            return convert.sstopvt(datalist)
         else:
             retpvt = propagate(generator, reltimes[0], False, reftime, 'pvt')
             for rt in reltimes[1:]:
