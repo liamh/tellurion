@@ -243,7 +243,9 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', output='e
             # is made once all spacecraft states are computed, then
             # the events are added after
             datalist = [propagate(generator, rt, False, reftime, output) for rt in reltimes]
-            return convert.sstopvt(datalist)
+            pvt = convert.sstopvt(datalist)
+            pvt.aux = event._evstates(generator, datalist)
+            return pvt
         else:
             retpvt = propagate(generator, reltimes[0], False, reftime, 'pvt')
             for rt in reltimes[1:]:
