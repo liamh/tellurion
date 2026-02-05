@@ -1,6 +1,7 @@
 """Add events to propagator and generate ephemeris"""
 
 import funcy
+from org.orekit.propagation import SpacecraftState
 from org.orekit.propagation.events import AltitudeDetector
 from tellurion.ork import convert
 from . import eclipse
@@ -21,26 +22,11 @@ def _add_post(detlogs, events, generator, reftime, output):
     visibility._gentrans(detlogs['visibility'], events, generator, reftime, output)
     return generator
 
-def _ephemeris(generator, spacecraft_state):
-    """Create the ephemeris with a column for each event."""
-    pvt = convert._pvt(spacecraft_state)
-    def aa(event):
-        if event:
-            if type(event) is list:
-                new = dict(event)
-            else:
-                new = {event[0]: event[1]}
-        else:
-            new = {}
-        pvt.aux = pvt.aux | new
-    ed = generator['event detectors']
-    aa(eclipse._statechar(ed.get(eclipse._column_label), spacecraft_state))
-    aa(visibility._statechar(ed.get(visibility._column_label), spacecraft_state))
-    return pvt
-
 # Replace _ephemeris with _evstates, which does not convert the pvt, just generates the event states
 def _evstates(generator, spacecraft_states):
     """Create the aux dictionary with event states."""
+    if type(spacecraft_states) is SpacecraftState:
+        spacecraft_states = [spacecraft_states]
     def aa(event):
         if event:
             if type(event) is list:

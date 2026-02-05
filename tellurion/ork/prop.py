@@ -214,46 +214,33 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', output='e
     eclipse, or 's' (full sun).
     '''
 
-    # Compute the reference time `reft`, an astropy.time.Time
+    # Compute the reference time `reft`, an astropy.time.Time, then
+    # create all the absolute times
     if reftime=='epoch' and generator.get('epoch'):
         reft = convert._okad(generator.get('epoch'))
     elif reftime=='epoch' and generator.get('mindate'):
         reft = convert._okad(generator.get('mindate'))
     else:
         reft = atime.abstime(reftime)
-
     atimes = atime.abstime(reltimes, reft)
     if include_init:
-        reltimes = np.insert(atimes, 0, reft)
-    atscalar = atimes.shape == ()
+        atimes = atime.time_concat(reft, atimes)
 
-    if atscalar:
-        # This includes the value of the event function
+    # Generate a spacecraft state at each absolute time, then
+    # optionally create a PositionVelocityT and add event states, and
+    # convert to ephemeris table
+    if atimes.isscalar:
         ss = _to_spacecraft_state(generator['propfn'](convert._okad(atimes)))
-        if output in ['ss', 'noevents']:
-            return ss
-        else:
-            return event._ephemeris(generator, ss)
     else:
-        if output=='ss':
-            datalist = [propagate(generator, rt, False, reftime, output) for rt in reltimes]
-            return datalist
-        elif output=='noevents':
-            # This is a prototype for redesign in which the entire PVT
-            # is made once all spacecraft states are computed, then
-            # the events are added after
-            datalist = [propagate(generator, rt, False, reftime, output) for rt in reltimes]
-            pvt = convert.sstopvt(datalist)
-            pvt.aux = event._evstates(generator, datalist)
-            return pvt
-        else:
-            retpvt = propagate(generator, reltimes[0], False, reftime, 'pvt')
-            for rt in reltimes[1:]:
-                retpvt.concatenate(propagate(generator, rt, False, reftime, 'pvt'))
-            if output=='pvt':
-                return retpvt.timeorder()
-            else:
-                return retpvt.timeorder().ephemeris()
+        ss = [_to_spacecraft_state(generator['propfn'](convert._okad(at))) for at in atimes]
+    if output == 'ss':
+        return ss
+    pvt = convert._sstopvt(ss)
+    pvt.aux = event._evstates(generator, ss)
+    if output == 'pvt':
+        return pvt.timeorder()
+    else:
+        return pvt.timeorder().ephemeris()
 
 def timerange(object):
     '''The time difference between the earliest (usually the initial

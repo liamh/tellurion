@@ -39,16 +39,18 @@ posvelsiu = u.StructuredUnit((u.meter, u.meter/u.second))
 # _tspvc(): Convert from PV/PVT to org.orekit.utils.PVCoordinates or TimeStampedPVCoordinates
 
 
-def sstopvt(data):
+def _sstopvt(data):
     """Create a posvel structured quanitty from the SpacecraftState(s)."""
-    cartpv = pvhelper.new_cartesianpv(sstoarr(data), False, tunits.orkunits)
     if type(data) is SpacecraftState:
+        scalar = True
         tms = _okad(data.getDate())
     else:
+        scalar = False
         tms = [_okad(s.getDate()) for s in data]
+    cartpv = pvhelper.new_cartesianpv(_sstoarr(data), scalar, tunits.orkunits)
     return posvel.PositionVelocityT(time=atime.abstime(tms), cartesian=cartpv)
 
-def sstoarr(ss):
+def _sstoarr(ss):
     """Extract the position and velocity as an np.array from the
     SpacecraftState; returns a tuple of arrays (position, velocity) in
     Orekit units (m, m/s)."""

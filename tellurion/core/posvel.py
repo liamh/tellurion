@@ -190,7 +190,7 @@ class PositionBase(abc.ABC):
         Returns:
             New instance of same type, sorted by time
         """
-        if self.time is None:
+        if self.time is None or self.time.isscalar:
             return self.copy()
         sorted_items = sorted(self, key=lambda x: x.time)
         return self._from_sorted_list(sorted_items)
@@ -332,11 +332,11 @@ class PositionBase(abc.ABC):
 
         # Create time series with appropriate data
         if len(columnnames) == 4:  # px, py, pz format
-            ts = TimeSeries(time=tm, data=self.position_vector, names=columnnames[1:])
+            ts = TimeSeries(time=tm, data=self.position_vector.tovector(), names=columnnames[1:])
         elif len(columnnames) == 2:  # position only
-            ts = TimeSeries(time=tm, data=self.position_vector, names=columnnames[1:])
+            ts = TimeSeries(time=tm, data=self.position_vector.tovector(), names=columnnames[1:])
         else:  # position and velocity
-            ts = TimeSeries(time=tm, data=self.cartesian, names=columnnames[1:])
+            ts = TimeSeries(time=tm, data=self.cartesian.tovector(), names=columnnames[1:])
 
         # Add aux attributes if present
         for key in self.aux:
