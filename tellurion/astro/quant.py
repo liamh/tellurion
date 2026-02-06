@@ -185,12 +185,17 @@ def vstack(sqs):
         raise ValueError("All units must be the same")
 
 ####################################################################
-##### Convert structured quantities
+##### Convert structured and unstructured quantities
 ####################################################################
 
 # Make a dictionary by structure components, used to see what the SQ
 # contents because it's not clear in the default print form
-u.Quantity.to_dict = lambda self: {nm: self[nm] for nm in self.dtype.names}
+u.Quantity.to_dict = lambda self: {nm: self[nm] for nm in self.dtype.names} \
+    if isinstance(self.unit, u.StructuredUnit) else {'': self.value}
+
+# Extract value as np.array from quantities
+u.Quantity.to_array = lambda self: rfn.structured_to_unstructured(self.value) \
+    if isinstance(self.unit, u.StructuredUnit) else self.value
 
 
 
@@ -204,9 +209,6 @@ u.Quantity.to_dict = lambda self: {nm: self[nm] for nm in self.dtype.names}
 ## Binary serialize/deserialize with fsc.hdf5-io
 ## Make structured quantities from arrays and other sq
 ############################################################
-
-# Extract value as np.array from quantities
-u.Quantity.to_array = lambda self: rfn.structured_to_unstructured(self.value) if isinstance(self.unit, u.StructuredUnit) else self.value
 
 # Decompose SQ into an array, dtype, and unit string
 # If the object is not a structured quantity, then `name` will be used for the name and if further it is a vector (1d array), isscalar is used to determine whether that should be interpreted as a scalar structure (row vector) or vector structure (column vector)
