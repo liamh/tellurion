@@ -25,61 +25,41 @@ _vel_format = '10.6f'
 ####   Utility functions for coordinates      ####
 ##################################################
 
-"""
- arreph = tell.propagate(demoa.propn.gen, prop5m1h, True, output='noevents')
- tell.new_cartesianpv(arreph, False, tell.orkunits)
-"""
-
-def new_cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunits):
+def cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunits):
+    """Create a u.Quantity position or position-velocity scalar or
+    array. Inputs `posvel` may be a tuple of (position, velocity) or
+    (position), with values that are u.Quantity, np.array with final
+    dimension 6 (for position and velocity) or 3 (for position)."""
+    scalar = isscalar
     if type(posvel) is tuple:
         if len(posvel) == 2:
             pv = {_eph_pos: posvel[0], _eph_vel: posvel[1]}
         else:
             pv = {_eph_pos: posvel[0]}
+    elif type(posvel) is np.ndarray:
+        if posvel.shape[posvel.ndim-1] == 6:
+            if posvel.ndim == 2:
+                pv = {_eph_pos: posvel[:,0:3], _eph_vel: posvel[:,3:6]}
+                scalar = False
+            else:
+                pv = {_eph_pos: posvel[0:3], _eph_vel: posvel[3:6]}
+                scalar = False
+        elif posvel.shape[posvel.ndim-1] == 3:
+            if posvel.ndim == 2:
+                pv = {_eph_pos: posvel[:,0:3]}
+                scalar = True
+            else:
+                pv = {_eph_pos: posvel[0:3]}
+                scalar = True
     else:
         pv = posvel
     if convert and given != convert:
-        return quant.changeunits(quant.make_quantity(pv, _posvel_pt, isscalar, given), convert)
+        return quant.changeunits(quant.make_quantity(pv, _posvel_pt, scalar, given), convert)
     else:
-        return quant.make_quantity(pv, _posvel_pt, isscalar, given)
-
-def cartesianpv(pv, given=units.prefunits, convert=units.prefunits):
-    """Create a u.Quantity position or position-velocity array or tuple of arrays."""
-    if type(pv) is tuple:
-        tup = pv
-    else:
-        arr = np.array(pv)
-        if arr.shape[arr.ndim-1] == 6:
-            if arr.ndim == 2:
-                tup = (arr[:,0:3], arr[:,3:6])
-            else:
-                tup = (arr[0:3], arr[3:6])
-        elif arr.shape[arr.ndim-1] == 3:
-            tup = (arr)
-    if type(tup[0]) is u.Quantity:
-        pos = tup[0]
-    else:
-        pos = tup[0]*given['length']
-    if len(tup) == 2:
-        if type(tup[1]) is u.Quantity:
-            vel = tup[1]
-        else:
-            vel = tup[1]*given['speed']
-        ou = quant.hstack((pos.structure(_eph_pos, pos.ndim==1), \
-                           vel.structure(_eph_vel, vel.ndim==1)))
-        if convert:
-            return quant.changeunits(ou, convert)
-        else:
-            return ou
-    else:
-        if convert:
-            return quant.changeunits(pos, convert)
-        else:
-            return pos
+        return quant.make_quantity(pv, _posvel_pt, scalar, given)
 
 sphpospt = ['angle', 'angle', 'length']
 sphvelpt = ['angular speed', 'angular speed', 'speed']
-
 
 def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distance'], unitlookup=units.prefunits):
     """Make a spherical coordinate set for position and velocity

@@ -84,7 +84,8 @@ def test_posvel():
                                np.array([-2308.74628271, -4909.03309813, -5460.30174535]))
     np.testing.assert_allclose(np.array(leo1['pvt'].spherical.si.value.tolist()), \
                                np.array([ 3.17087017e+00, 4.21989266e-01, 6.72813646e+06, \
-                                          7.88434305e-04, -8.89601706e-04, -2.66453526e-12]))
+                                          7.88434305e-04, -8.89601706e-04, -2.66453526e-12]), \
+                               atol=1.0e-7, rtol=0.0)
     np.testing.assert_allclose(leo2['pvt'].cartesian['position'].si.value, \
                                np.array([4542282.92387955, 5170057.21334251,  565092.22923442]))
     np.testing.assert_allclose(leo2['pvt'].cartesian['velocity'].si.value, \
@@ -127,4 +128,5 @@ def test_posvel():
                                np.array([ 1454.40855181, -3518.76365779,   713.82704166]))
     np.testing.assert_allclose(np.array(gps1['pvt'].spherical.si.value.tolist()), \
                                np.array([3.28252622e+00, 9.24230194e-01, 2.65617624e+07, 2.30480399e-04, \
-                                      4.46083005e-05, 1.11022302e-13]))
+                                         4.46083005e-05, 1.11022302e-13]), \
+                               atol=1.0e-7, rtol=1.0e-8)

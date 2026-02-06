@@ -47,7 +47,7 @@ def _sstopvt(data):
     else:
         scalar = False
         tms = [_okad(s.getDate()) for s in data]
-    cartpv = pvhelper.new_cartesianpv(_sstoarr(data), scalar, tunits.orkunits)
+    cartpv = pvhelper.cartesianpv(_sstoarr(data), scalar, tunits.orkunits)
     return posvel.PositionVelocityT(time=atime.abstime(tms), cartesian=cartpv)
 
 def _sstoarr(ss):
@@ -78,8 +78,8 @@ def _pvt(object, unitlookup=tunits.prefunits, additional=None):
     if hasattr(object, 'getPosition') and hasattr(object, 'getVelocity'):
         pos = _v3d(object.getPosition(), posvelsiu[0])
         vel = _v3d(object.getVelocity(), posvelsiu[1])
-        pv = quant.changeunits(pvhelper.cartesianpv((pos, vel)), unitlookup)
-        #pv = pvhelper.new_cartesianpv((pos, vel), True, convert=unitlookup)
+        #pv = quant.changeunits(pvhelper.cartesianpv((pos, vel)), unitlookup)
+        pv = pvhelper.cartesianpv((pos, vel), True, convert=unitlookup)
         if hasattr(object, 'getDate'):
             tm=_okad(object.getDate())
         elif type(additional) is astropy.time.Time:
