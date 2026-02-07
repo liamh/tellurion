@@ -4,19 +4,19 @@ API Reference
 
 This page contains the full API documentation for Tellurion.
 
-Core Subpackage
-===============
+Astro Subpackage
+================
 
-tellurion.core.units
---------------------
+tellurion.astro.quantity_utils
+------------------------------
 
-.. automodapi:: tellurion.core.units
+.. automodapi::  tellurion.astro.quantity_utils
    :no-inheritance-diagram:
 
-tellurion.core.astro
---------------------
+tellurion.astro.units
+---------------------
 
-.. automodapi::  tellurion.core.astro
+.. automodapi:: tellurion.astro.units
    :no-inheritance-diagram:
 
 Orekit Wrapper Subpackage
@@ -28,8 +28,8 @@ tellurion.ork.force
 .. automodapi:: tellurion.ork.force
    :no-inheritance-diagram:
 
-tellurion.ork. element
-----------------------
+tellurion.ork.element
+---------------------
 
 .. automodapi:: tellurion.ork.element
    :no-inheritance-diagram:

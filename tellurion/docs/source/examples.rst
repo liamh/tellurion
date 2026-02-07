@@ -12,4 +12,4 @@ the capabilities of the package.
    :maxdepth: 2
    :caption: Tutorial Notebooks
 
-   notebooks/cartprop1
+   tutorials/cartprop1

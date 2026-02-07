@@ -3,7 +3,7 @@ import itertools
 import astropy.units as u
 import spacetrack
 import tellurion.astro.time as atime
-from tellurion.astro import quant
+from tellurion.astro import quantity_utils as quant
 from tellurion.core import posvel
 
 
@@ -23,21 +23,6 @@ from tellurion.core import posvel
 # <Quantity 38.40421256 km>
 
 MeanElementSetT = collections.namedtuple('MeanElementSetT', 'els t tle model scdata')
-
-def mestrt(mest):
-    '''Create a semi-readable (only strings, numbers, dict) tuple from
-    the `MeanElementSetT` (u.Quantity are not readable). To save a
-    mean element set from spacetrack and later recreate it without
-    access to `space-track.org`, use this function to create the
-    readable tuple, save to a Python source file and call `makemest()`
-    on it.
-    '''
-    return(quant.dict_decompose(mest.els), mest.t.to_string(), mest.tle, mest.model, mest.scdata)
-
-def makemest(elstuples, timestr, tle, model, scdata):
-    '''Create a MeanElementSetT from readable arguments'''
-    return MeanElementSetT(quant.dict_compose(elstuples), \
-                           atime.abstime(timestr), tle, model, scdata)
 
 def satdata(stdict):
     epoch = atime.abstime(stdict['EPOCH']) + float(stdict['EPOCH_MICROSECONDS'])*u.microsecond

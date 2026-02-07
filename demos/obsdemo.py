@@ -3,6 +3,41 @@
 import astropy.coordinates as coord
 from demos.propdemo import *
 
+############################################################
+## TO BE REPLACED
+## Future: Binary serialize/deserialize with fsc.hdf5-io
+############################################################
+
+# Decompose SQ into an array, dtype, and unit string
+# If the object is not a structured quantity, then `name` will be used for the name and if further it is a vector (1d array), isscalar is used to determine whether that should be interpreted as a scalar structure (row vector) or vector structure (column vector)
+u.Quantity.decompose = lambda self, name=None, isscalar=False: (tell.quantity_to_array(self), self.dtype.descr, self.unit.to_string()) \
+    if self.dtype.names else (self.value, (name, '<f8', (1,)) if isscalar else (name, '<f8'), self.unit.to_string())
+
+def dict_decompose(d):
+    return {k: v.decompose() for k, v in d.items()}
+
+def dict_compose(d):
+    return {k: v[0]*u.Unit(v[2]) for k, v in d.items()}
+
+def mestrt(mest):
+    '''Create a semi-readable (only strings, numbers, dict) tuple from
+    the `MeanElementSetT` (u.Quantity are not readable). To save a
+    mean element set from spacetrack and later recreate it without
+    access to `space-track.org`, use this function to create the
+    readable tuple, save to a Python source file and call `makemest()`
+    on it.
+    '''
+    return(dict_decompose(mest.els), mest.t.to_string(), mest.tle, mest.model, mest.scdata)
+
+def makemest(elstuples, timestr, tle, model, scdata):
+    '''Create a MeanElementSetT from readable arguments'''
+    return tell.MeanElementSetT(dict_compose(elstuples), \
+                                tell.abstime(timestr), tle, model, scdata)
+
+############################################################
+## Observation demos
+############################################################
+
 ############### Earth locations
 
 eloc = Munch()
@@ -34,7 +69,7 @@ demoa.propn.obs_carbarn = tell.aereci(demoa.propn.pvt.position, eloc.carbarn)
 demod = Munch() # Example with SGP4 propagation
 # tell.mestrt(tell.spacetrack_latest(stclient, 41335)) # So that we can reproduce the results
 demod.sentinel3A =\
-    tell.makemest({'sma': (np.float64(7180.799), None, 'km'),
+    makemest({'sma': (np.float64(7180.799), None, 'km'),
                     'ecc': (np.float64(8.89e-05), None, ''),
                     'inc': (np.float64(98.6296), None, 'deg'),
                     'raan': (np.float64(65.5838), None, 'deg'),

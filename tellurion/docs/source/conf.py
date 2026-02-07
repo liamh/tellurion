@@ -30,7 +30,6 @@ extensions = [
     'sphinx_changelog',
     'sphinx_design',
     'sphinxcontrib.globalsubs',
-    'nbsphinx_link',
     'nbsphinx',
     'matplotlib.sphinxext.plot_directive',
     'IPython.sphinxext.ipython_console_highlighting',  # For better syntax highlighting

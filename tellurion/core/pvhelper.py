@@ -3,7 +3,7 @@ import numpy as np
 import astropy.units as u
 import astropy.time
 from tellurion.astro import units
-from tellurion.astro import quant
+from tellurion.astro import quantity_utils as quant
 
 ##################################################
 ####   Constants used to define field names   ####
@@ -56,7 +56,7 @@ def cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunits
     else:
         pv = posvel
     if convert and given != convert:
-        return quant.changeunits(quant.make_quantity(pv, pvunit, scalar, given), convert)
+        return quant.change_units(quant.make_quantity(pv, pvunit, scalar, given), convert)
     else:
         return quant.make_quantity(pv, pvunit, scalar, given)
 

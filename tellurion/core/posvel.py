@@ -14,9 +14,12 @@ from astropy.timeseries import TimeSeries
 import astropy.table.row
 import astropy.coordinates as coord
 from tellurion.astro import units
-from tellurion.astro import quant
+from tellurion.astro import quantity_utils as quant
 import tellurion.astro.time as atime
 from tellurion.core import pvhelper
+
+# Make the scalar structured quantity a singleton vector
+u.Quantity.tovector = lambda self: u.Quantity([self]) if self.isscalar else self
 
 ##################################################
 ####  Base class for position-bearing objects ####
@@ -409,7 +412,7 @@ class PositionT(PositionBase):
         # which corresponds to (right ascension, declination, distance)
         sphrepr = [sph_repr.lon, sph_repr.lat, sph_repr.distance]
         ret = pvhelper.sphericalpv(sphrepr, None, labels=['rtasc', 'decl', 'distance'])
-        return quant.changeunits(ret, unitlookup=units.prefunits)
+        return quant.change_units(ret, unit_lookup=units.prefunits)
 
 
     def _spherical_to_cartesian(self, spherical):
@@ -439,7 +442,7 @@ class PositionT(PositionBase):
         # Convert to Cartesian representation (this handles both position and velocity)
         cart_repr = sph_repr.represent_as(CartesianRepresentation)
         raise ValueError("This has never been tested")
-        # sq = pvhelper.cartesianpv(cart_repr.xyz, unitlookup=units.prefunits)
+        # sq = pvhelper.cartesianpv(cart_repr.xyz, unit_lookup=units.prefunits)
         # Create the structured quantity
         return sq
 
@@ -536,7 +539,7 @@ class PositionVelocityT(PositionBase):
         sphrepr = [sph_repr.lon, sph_repr.lat, sph_repr.distance]
         sphrate = [sph_diff.d_lon, sph_diff.d_lat, sph_diff.d_distance]
         ret = pvhelper.sphericalpv(sphrepr, sphrate, labels=['rtasc', 'decl', 'distance'])
-        return quant.changeunits(ret, unitlookup=units.prefunits)
+        return quant.change_units(ret, unit_lookup=units.prefunits)
 
 
     def _spherical_to_cartesian(self, spherical):

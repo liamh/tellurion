@@ -5,10 +5,13 @@ This module defines additional units beyond those in astropy.units.
 
 from typing import Final
 import numpy as np
-from tellurion.astro import quant
+from tellurion.astro import quantity_utils as quant
 from astropy.units.core import def_unit
 import astropy.units as u
 from astropy.coordinates import Angle
+
+# Make the scalar structured quantity a singleton vector
+u.Quantity.tovector = lambda self: u.Quantity([self]) if self.isscalar else self
 
 ################################################################################
 ##### Default and SI units
@@ -62,8 +65,8 @@ def normalizeangle(angle, wrapat=u.rev/2, exclude=[]):
     if type(angle) is u.Quantity:
         if type(angle.unit) is u.StructuredUnit and exclude != True:
             return quant.make_quantity({k: normalizeangle(v, wrapat, k in exclude)
-                                        for k, v in angle.to_dict().items()},
-                                       isscalar = angle.isscalar)
+                                        for k, v in quant.quantity_to_dict(angle).items()},
+                                       is_scalar = angle.isscalar)
         else:
             if u.get_physical_type(angle)=='angle' and exclude != True:
                 return normalizeangle(Angle(angle), wrapat)

@@ -5,7 +5,7 @@ import astropy.constants # astropy.constants.R_earth
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
 
-from tellurion.astro import quant
+from tellurion.astro import quantity_utils as quant
 from tellurion.astro import units as tunits
 from tellurion.core import pvhelper
 from tellurion.core import posvel

@@ -268,7 +268,7 @@ def _fromtime_method(self, reltime):
     """Extract a portion of the time series relative to its start or end time.
 
     If `reltime` > 0, start at that time past the start time of the table.
-    If `reltime` < 0, start at |reltime| before the end time of the table.
+    If `reltime` < 0, start at abs(`reltime`) before the end time of the table.
 
     Parameters
     ----------

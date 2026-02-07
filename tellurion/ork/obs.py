@@ -44,7 +44,7 @@ def eci(observation, name="topo loc", forceenv=force.deffe):
     vector(s). Uses Orekit.'''
     if type(observation) is obs.EarthObservationT:
         tf = _topoframe(observation.loc, name, forceenv)
-        obork = units.orig_changeunits(observation.obs, units.orkunits)
+        obork = units.orig_change_units(observation.obs, units.orkunits)
         tf = TopocentricFrame(forceenv['earth'], \
                               tf.pointAtDistance(
                                   float(obork['azim'].value), \

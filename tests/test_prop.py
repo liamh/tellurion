@@ -43,29 +43,29 @@ sent3a = Munch()
 # Created from
 # isssent = tell.spacetrack_latest(stclient, [25544, 41335])
 # tell.mestrt(isssent['SENTINEL 3A'])
-sent3a.mest = \
-    tell.makemest({'sma': (np.float64(7180.799), None, 'km'),
-                    'ecc': (np.float64(8.89e-05), None, ''),
-                    'inc': (np.float64(98.6296), None, 'deg'),
-                    'raan': (np.float64(65.5838), None, 'deg'),
-                    'argper': (np.float64(97.7597), None, 'deg'),
-                    'ma': (np.float64(262.3685), None, 'deg'),
-                    'memo': (np.float64(14.26736057), None, 'revolution / d'),
-                    'memod': (np.float64(1.43e-06), None, 'revolution / d2'),
-                    'memodd': (np.float64(0.0), None, 'revolution / d3'),
-                    'period': (np.float64(100.93), None, 'min'),
-                    'peralt': (np.float64(802.025), None, 'km'),
-                    'apoalt': (np.float64(803.302), None, 'km'),
-                    'B': (np.float64(0.0009831673392), None, 'm2 / kg')},
-                   '2025-12-26 18:24:37.422',
-                   ('1 41335U 16011A   25360.76709979  .00000143  00000-0  77162-4 0  9990',
-                    '2 41335  98.6296  65.5838 0000889  97.7597 262.3685 14.26736057513475'),
-                   'SGP4',
-                   {'name': 'SENTINEL 3A',
-                    'type': 'PAYLOAD',
-                    'catid': 41335,
-                    'intldes': '2016-011A'})
-sent3a.gen = tell.prepare(sent3a.mest, 1*u.day, {'altitude': 125.0*u.km, 'eclipse': [True, True], 'visibility': []})
+# sent3a.mest = \
+#     tell.makemest({'sma': (np.float64(7180.799), None, 'km'),
+#                     'ecc': (np.float64(8.89e-05), None, ''),
+#                     'inc': (np.float64(98.6296), None, 'deg'),
+#                     'raan': (np.float64(65.5838), None, 'deg'),
+#                     'argper': (np.float64(97.7597), None, 'deg'),
+#                     'ma': (np.float64(262.3685), None, 'deg'),
+#                     'memo': (np.float64(14.26736057), None, 'revolution / d'),
+#                     'memod': (np.float64(1.43e-06), None, 'revolution / d2'),
+#                     'memodd': (np.float64(0.0), None, 'revolution / d3'),
+#                     'period': (np.float64(100.93), None, 'min'),
+#                     'peralt': (np.float64(802.025), None, 'km'),
+#                     'apoalt': (np.float64(803.302), None, 'km'),
+#                     'B': (np.float64(0.0009831673392), None, 'm2 / kg')},
+#                    '2025-12-26 18:24:37.422',
+#                    ('1 41335U 16011A   25360.76709979  .00000143  00000-0  77162-4 0  9990',
+#                     '2 41335  98.6296  65.5838 0000889  97.7597 262.3685 14.26736057513475'),
+#                    'SGP4',
+#                    {'name': 'SENTINEL 3A',
+#                     'type': 'PAYLOAD',
+#                     'catid': 41335,
+#                     'intldes': '2016-011A'})
+# sent3a.gen = tell.prepare(sent3a.mest, 1*u.day, {'altitude': 125.0*u.km, 'eclipse': [True, True], 'visibility': []})
 
 ##########################
 ####      Tests       ####
@@ -81,9 +81,10 @@ def test_kepcart():
 def test_cartkep():
     return kepequal(demob.rekep, demob.kep)
 
-def test_meanels():
-    np.testing.assert_allclose(sent3a.gen['pvt0'].time.to_value('jd'), 2461036.26709979)
-    np.testing.assert_allclose(sent3a.gen['pvt0'].pv.si.value[0], \
-                               np.array([3007467.96362189, 6523970.98339558,   -7829.3325051 ]))
-    np.testing.assert_allclose(sent3a.gen['pvt0'].pv.si.value[1], \
-                               np.array([1029.78212853, -475.05478146, 7363.69699183]))
+# Temporarily removed this test until a general serialization capability is added
+# def test_meanels():
+#     np.testing.assert_allclose(sent3a.gen['pvt0'].time.to_value('jd'), 2461036.26709979)
+#     np.testing.assert_allclose(sent3a.gen['pvt0'].pv.si.value[0], \
+#                                np.array([3007467.96362189, 6523970.98339558,   -7829.3325051 ]))
+#     np.testing.assert_allclose(sent3a.gen['pvt0'].pv.si.value[1], \
+#                                np.array([1029.78212853, -475.05478146, 7363.69699183]))

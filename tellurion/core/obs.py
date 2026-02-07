@@ -8,7 +8,7 @@ import astropy.coordinates as coord
 import astropy.time
 
 from tellurion.astro import units
-from tellurion.astro import quant
+from tellurion.astro import quantity_utils as quant
 
 obsdict1 = {'azim': 'angle', 'elev': 'angle', 'range': 'length', 'rangerate': 'speed', 'rtasc': 'angle', 'decl': 'angle'}
 
@@ -22,5 +22,5 @@ def azelrange(azim, elev, rnge, obsloc, obstime, unitlookup=units.prefunits, con
         sq = quant.make_quantity({'azim' : azim, 'elev' : elev}, obsdict1, True, unitlookup)
     else:
         sq = quant.make_quantity({'azim' : azim, 'elev' : elev, 'range' : rnge}, obsdict1, True, unitlookup)
-    sqc = quant.changeunits(sq, convunits)
+    sqc = quant.change_units(sq, convunits)
     return EarthObservationT(obsloc, sqc, obstime)

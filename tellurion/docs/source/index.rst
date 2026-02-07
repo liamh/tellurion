@@ -12,6 +12,7 @@ A Python package for astrodynamics using Orekit and AstroPy.
 
    installation
    examples
+   structured_quantities
    api
    astropy_extensions
 

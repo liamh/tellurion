@@ -191,27 +191,3 @@ u.Quantity.to_dict = lambda self: {nm: self[nm] for nm in self.dtype.names} \
 # Extract value as np.array from quantities
 u.Quantity.to_array = lambda self: rfn.structured_to_unstructured(self.value) \
     if isinstance(self.unit, u.StructuredUnit) else self.value
-
-
-
-
-
-
-
-############################################################
-## EVERYTHING BELOW TO BE REMOVED
-## Used only in spacetrack to serialize/deserialize tles
-## Binary serialize/deserialize with fsc.hdf5-io
-## Make structured quantities from arrays and other sq
-############################################################
-
-# Decompose SQ into an array, dtype, and unit string
-# If the object is not a structured quantity, then `name` will be used for the name and if further it is a vector (1d array), isscalar is used to determine whether that should be interpreted as a scalar structure (row vector) or vector structure (column vector)
-u.Quantity.decompose = lambda self, name=None, isscalar=False: (self.to_array(), self.dtype.descr, self.unit.to_string()) \
-    if self.dtype.names else (self.value, (name, '<f8', (1,)) if isscalar else (name, '<f8'), self.unit.to_string())
-
-def dict_decompose(d):
-    return {k: v.decompose() for k, v in d.items()}
-
-def dict_compose(d):
-    return {k: v[0]*u.Unit(v[2]) for k, v in d.items()}

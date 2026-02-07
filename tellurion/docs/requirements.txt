@@ -4,7 +4,6 @@ sphinx-astropy
 numpydoc
 sphinx-rtd-theme
 nbsphinx
-nbsphinx-link
 ipython
 ipykernel
 astropy

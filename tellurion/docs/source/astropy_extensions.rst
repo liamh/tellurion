@@ -12,7 +12,7 @@ These methods are dynamically added to ``astropy.timeseries.TimeSeries``.
 fromtime()
 ----------
 
-.. autofunction:: tellurion.core. astro._fromtime_method
+.. autofunction:: tellurion.astro.time._fromtime_method
    :noindex:
 
    Added as:  ``astropy.timeseries.TimeSeries.fromtime()``
@@ -20,7 +20,7 @@ fromtime()
 components()
 ------------
 
-.. autofunction:: tellurion.core.astro._components_method
+.. autofunction:: tellurion.astro.time._components_method
    :noindex:
 
    Added as: ``astropy.timeseries.TimeSeries.components()``
@@ -33,7 +33,7 @@ These methods are dynamically added to ``astropy.time.Time``.
 to_array()
 ----------
 
-.. autofunction:: tellurion.core.astro.to_array
+.. autofunction:: tellurion.astro.time.to_array
    :noindex:
 
    Added as: ``astropy.time.Time.to_array()``

@@ -15,7 +15,7 @@ import org.orekit.models.earth as oearth
 
 import tellurion.astro.time as atime
 from tellurion.astro import units
-from tellurion.astro import quant
+from tellurion.astro import quantity_utils as quant
 from tellurion.core import posvel
 from tellurion.core import geog
 from tellurion.core import obs
@@ -71,7 +71,7 @@ def eciaer(observation, name="", unitlookup=units.prefunits, forceenv=force.deff
     times, find the site vector(s). Uses Orekit.
     '''
     tf = _topoframe(observation.loc, name, forceenv)
-    aerork = quant.changeunits(observation.obs, units.orkunits)
+    aerork = quant.change_units(observation.obs, units.orkunits)
     tf = TopocentricFrame(forceenv['earth'], \
                           tf.pointAtDistance(
                               float(aerork['azim'].value), \
