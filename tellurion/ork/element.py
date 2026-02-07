@@ -71,12 +71,10 @@ def _keplerianorbit(oes, units=(units.prefunits['length'], units.prefunits['angl
         return _keporb_from_components(oes.els, oes.t, units, forceenv)
     elif type(oes) is KeplerianOrbit:
         return oes
-    elif posvel.ispvtcart(oes):
+    elif type(oes) is posvel.PositionVelocityT:
         co = CartesianOrbit(convert._tspvc(oes),
                             forceenv['celestialframe'], forceenv['earthmu'].si.value)
         return OrbitType.KEPLERIAN.convertType(co)
-    elif hasattr(oes,'pvt'):
-        _keplerianorbit(oes.pvt(), units=units, forceenv=forceenv)
     else:
         raise ValueError('Cannot transform to Keplerian elements')
 

@@ -16,6 +16,10 @@ _ephemeris_columns = [_eph_time, _eph_pos, _eph_vel]
 _ephemeris_columns_pos_xyz = [_eph_time, 'px','py','pz']
 _ephemeris_columns_pos_only = [_eph_time, _eph_pos]
 _posvel_pt = {_eph_pos: 'length', _eph_vel: 'speed'}
+_sphpospt = ['angle', 'angle', 'length']
+_sphvelpt = ['angular speed', 'angular speed', 'speed']
+
+
 
 # These should be conditional on the units used
 _pos_format = '10.3f'
@@ -60,9 +64,6 @@ def cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunits
     else:
         return quant.make_quantity(pv, pvunit, scalar, given)
 
-sphpospt = ['angle', 'angle', 'length']
-sphvelpt = ['angular speed', 'angular speed', 'speed']
-
 def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distance'], unitlookup=units.prefunits):
     """Make a spherical coordinate set for position and velocity
 
@@ -84,44 +85,12 @@ def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distanc
         # Include velocity components
         labels_r = [sym+'_r' for sym in labels]
         veldict = dict(zip(labels_r, sph_velocity))
-        unt = dict(zip(labels+labels_r, sphpospt+sphvelpt))
+        unt = dict(zip(labels+labels_r, _sphpospt+_sphvelpt))
         return quant.make_quantity(posdict | veldict, unt, isscalar, unitlookup)
     else:
         # Position only
-        unt = dict(zip(labels, sphpospt))
+        unt = dict(zip(labels, _sphpospt))
         return quant.make_quantity(posdict, unt, isscalar, unitlookup)
-
-##################################################
-####   Tests for posvel and related types     ####
-##################################################
-
-def isq3vec(obj, physdim):
-    """Is a 3-vector u.Quantity with the specified physical dimension"""
-    return type(obj) is u.Quantity \
-        and u.get_physical_type(obj) == u.get_physical_type(physdim) \
-        and np.size(obj)==3
-
-def ispv(obj):
-    return type(obj) == u.Quantity and obj.dtype.names is not None \
-        and _eph_pos in obj.dtype.names and _eph_vel in obj.dtype.names \
-        and isq3vec(obj[_eph_pos],'length') and isq3vec(obj[_eph_vel],'speed')
-
-def isdttm(obj):
-    return type(obj) is astropy.time.Time
-
-def isreltime(obj):
-    """Object is a relative time: is a u.Quantity with physical type 'time'"""
-    return type(obj) is u.Quantity and u.get_physical_type(obj) == u.get_physical_type('time')
-
-def isephem(ts):
-    """Argument is an ephemeris table"""
-    return type(ts) is TimeSeries \
-        and all([k in ts.keys() for k in _ephemeris_columns])
-
-def isephrow(row):
-    """Argument is a row of an ephemeris table"""
-    return type(row) is astropy.table.row.Row \
-        and all([row.keys().__contains__(k) for k in _ephemeris_columns])
 
 ##################################################
 #### Compare positions, velocities            ####

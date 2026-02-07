@@ -103,7 +103,7 @@ def niprep(initstate, proptime, events, forceenv, reftime, occluder, output):
 
     Parameters
     ----------
-    initstate: a tell.ispvter() representing the initial state
+    initstate: a PositionVelocityT representing the initial state
 
     proptime:  u.Quantity, float
       The maximum time to propagate, numbers are in seconds
@@ -199,7 +199,7 @@ def _additional(events, propagator, generator, proptime, forceenv, reftime, outp
 def propagate(generator, reltimes, include_init=True, reftime='epoch', output='et'):
     '''From an existing ephemeris generator, propagate to the time(s)
     relative to epoch of the initial state. The relative times must
-    satisfy posvel.isreltime(reltimes), and if the size
+    be quantities with physical type `'time'` , and if the size
     prop5m1h.shape[0] > 0, an ephemeris table is returned. If reltimes
     is a single time, then a PVT is returned. If `include`_init is
     true, then include the initial PVT in the ephemeris table.

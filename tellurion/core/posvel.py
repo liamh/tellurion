@@ -641,11 +641,6 @@ def pvtcart(pv, time=None, specunits=units.prefunits):
     else:
         return PositionT(time=atime.abstime(time), cartesian=cart)
 
-def ispvtcart(obj):
-    """Check if object is a PositionVelocityT (or legacy PVT)."""
-    return type(obj).__name__ in ('PositionVelocityT', 'PVT') \
-        and pvhelper.ispv(obj.cartesian) and pvhelper.isdttm(obj.time)
-
 hasthing = lambda object, thing: hasattr(object,thing) or (hasattr(object,'colnames') and thing in object.colnames)
 
 def pvtattr(object, isscalar):

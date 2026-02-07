@@ -8,6 +8,7 @@ and thus begins with `_`.
 import numpy as np
 import pandas as pd
 import astropy.units as u
+import astropy.time
 import datetime
 
 import orekit_jpype.pyhelpers as pyhelp
@@ -33,8 +34,6 @@ posvelsiu = u.StructuredUnit((u.meter, u.meter/u.second))
 
 # Convert to and from Orekit representations of position and velocity,
 # or position, velocity and time.
-# "PV" = An object satisying ispv() (see core/posvel.py)
-# "PVT" = An object satisying ispvt() (see core/posvel.py)
 # _pvt(): Convert from orekit objects to PV or PVT
 # _tspvc(): Convert from PV/PVT to org.orekit.utils.PVCoordinates or TimeStampedPVCoordinates
 
@@ -91,36 +90,16 @@ def _pvt(object, unitlookup=tunits.prefunits, additional=None):
     else:
         raise ValueError("Cannot convert value to position, value, and time (PVT)")
 
-def _tspvc(obj, time=None):
+def _tspvc(pvt):
     """Convert tuple (posvel.pv(), astropy.time.Time) or ephemeris row to Orekit TimeStampedPVCoordinates or posvel.pv() to PVCoordinates"""
-    if pvhelper.isephrow(obj):
-        opvt = posvel.pvt(obj)
-        if time==None:
-            return _tspvc(opvt.pv, opvt.time)
-        elif isdttm(time):
-            return _tspvc(opvt.pv, time)
-        elif isreltime(time):
-            return _tspvc(opvt.pv, opvt.time+time)
-    elif posvel.ispvtcart(obj):
-        return _tspvc(obj.pv, obj.time)
-    elif pvhelper.ispv(obj):
-        conv = obj.to(posvelsiu)
-        vecp = _v3d(conv[pvhelper._eph_pos].value)
-        vecv = _v3d(conv[pvhelper._eph_vel].value)
-        if time==None:
-            return PVCoordinates(vecp, vecv)
-        else:
-            return TimeStampedPVCoordinates(_okad(time), vecp, vecv)
-    elif type(obj) is PVCoordinates:
-        return TimeStampedPVCoordinates(_okad(time), obj)
-    elif type(obj) is TimeStampedPVCoordinates:
-        return obj
-    else:
-        raise ValueError("Cannot convert value to PVCoordinates or TimeStampedPVCoordinates")
+    conv = pvt.cartesian.to(posvelsiu)
+    vecp = _v3d(conv[pvhelper._eph_pos].value)
+    vecv = _v3d(conv[pvhelper._eph_vel].value)
+    return TimeStampedPVCoordinates(_okad(pvt.time), vecp, vecv)
 
 def _okad(t):
     """ Convert time in any form to Orekit AbsoluteDate (okad), or from okad to AstroPy """
-    if pvhelper.isdttm(t): # AstroPy
+    if type(t) is astropy.time.Time: # AstroPy
         if t.isscalar:
             return pyhelp.datetime_to_absolutedate(t.datetime)
         else:

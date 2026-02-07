@@ -75,7 +75,7 @@ def iskepels(obj, est=True):
     `est` is `True`, then it is a properly constructed `ElementSetT`,
     and if `False`, it is element values only, without an epoch time."""
     if type(obj) is ElementSetT and est:
-        return iskepels(obj.els, False) and pvhelper.isdttm(obj.t)
+        return iskepels(obj.els, False) and type(obj.t) is Time
     else:
         return type(obj) is u.Quantity \
             and (not(set(kepeltma_names) - set(obj.dtype.names)) \
