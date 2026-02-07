@@ -1,3 +1,4 @@
+from importlib.metadata import version
 import numpy as np
 np.set_printoptions(suppress=True, precision=4, linewidth=np.inf)
 
@@ -18,6 +19,14 @@ except (ImportError, OSError) as e:
         "Only core functionality will be loaded.",
         ImportWarning
     )
+
+packages = ['orekit-jpype', 'orekitdata', 'astropy', 'numpy']
+print("Package versions")
+for pkg in packages:
+    try:
+        print(f"{pkg}: {version(pkg)}")
+    except Exception:
+        print(f"{pkg}: not installed")
 
 # Optionally expose availability status
 __all__ = ['_ORK_AVAILABLE']

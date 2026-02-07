@@ -55,9 +55,8 @@ def _sstoarr(ss):
     SpacecraftState; returns a tuple of arrays (position, velocity) in
     Orekit units (m, m/s)."""
     def scal(ss):
-        pvc = ss.getPVCoordinates()
-        pos = pvc.getPosition()
-        vel = pvc.getVelocity()
+        pos = ss.getPosition()
+        vel = ss.getVelocity()
         return ([pos.getX(), pos.getY(), pos.getZ()], [vel.getX(), vel.getY(), vel.getZ()])
 
     if type(ss) is SpacecraftState:

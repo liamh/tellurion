@@ -31,6 +31,7 @@ def cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunits
     (position), with values that are u.Quantity, np.array with final
     dimension 6 (for position and velocity) or 3 (for position)."""
     scalar = isscalar
+    pvunit = _posvel_pt
     if type(posvel) is tuple:
         if len(posvel) == 2:
             pv = {_eph_pos: posvel[0], _eph_vel: posvel[1]}
@@ -43,20 +44,21 @@ def cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunits
                 scalar = False
             else:
                 pv = {_eph_pos: posvel[0:3], _eph_vel: posvel[3:6]}
-                scalar = False
-        elif posvel.shape[posvel.ndim-1] == 3:
-            if posvel.ndim == 2:
-                pv = {_eph_pos: posvel[:,0:3]}
                 scalar = True
+        elif posvel.shape[posvel.ndim-1] == 3:
+            pvunit = _posvel_pt[_eph_pos]
+            if posvel.ndim == 2:
+                pv = posvel[:,0:3]
+                scalar = False
             else:
-                pv = {_eph_pos: posvel[0:3]}
+                pv = posvel[0:3]
                 scalar = True
     else:
         pv = posvel
     if convert and given != convert:
-        return quant.changeunits(quant.make_quantity(pv, _posvel_pt, scalar, given), convert)
+        return quant.changeunits(quant.make_quantity(pv, pvunit, scalar, given), convert)
     else:
-        return quant.make_quantity(pv, _posvel_pt, scalar, given)
+        return quant.make_quantity(pv, pvunit, scalar, given)
 
 sphpospt = ['angle', 'angle', 'length']
 sphvelpt = ['angular speed', 'angular speed', 'speed']

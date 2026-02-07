@@ -50,7 +50,7 @@ def changeunits(qsq, unitlookup={}):
     must have a matching key in the `unitlookup` dictionary."""
 
     def getanypt(un):
-        ptl = u.get_physical_type(un)._physical_type_list
+        ptl = u.get_physical_type(un)._physical_type
         return next((unitlookup.get(k) for k in ptl if unitlookup.get(k) is not None), None)
 
     if type(qsq.unit) is u.StructuredUnit:
@@ -73,9 +73,6 @@ def changeunits(qsq, unitlookup={}):
 
 # Make the scalar structured quantity a singleton vector
 u.Quantity.tovector = lambda self: u.Quantity([self]) if self.isscalar else self
-
-import numpy as np
-import astropy.units as u
 
 def _make_structured_quantity(q, name, scalar=False):
     """
@@ -150,8 +147,6 @@ def _make_structured_quantity(q, name, scalar=False):
 
         struct_unit = u.StructuredUnit((q.unit,), names=(name,))
         return u.Quantity(struct_array, unit=struct_unit)
-
-u.Quantity.structure = lambda self, name, isscalar: _make_structured_quantity(self, name, isscalar)
 
 def hstack(sqs):
     """Concatenate the quantities with different structure components
