@@ -51,8 +51,11 @@ def make_quantity(
         - A dict with same keys as `value` (if `value` is a dict)
         If None, assumes dimensionless (unit='1').
     is_scalar : bool, optional
-        If True and creating a structured Quantity, treat the entire input
-        as a single element (resulting in isscalar=True). Default is False.
+        Only applicable when `value` is a dict. If True, treat the entire
+        input as a single element in the structured quantity (resulting in
+        isscalar=True). If False (default), each element becomes a separate
+        row. Raises ValueError if True when value is not a dict.
+        Default is False.
     unit_lookup : dict, optional
         Mapping from physical type names (str) to unit specifications.
         Used when `unit` contains physical type names instead of actual units.
@@ -180,6 +183,11 @@ def make_quantity(
                 for key in value
             ]
         return hstack(quants)
+    elif is_scalar:
+        raise ValueError(
+            "is_scalar=True is only valid when value is a dict. "
+            "For regular quantities, scalar/array behavior is determined by the value itself."
+        )
 
     # Handle non-dict input - create regular quantity
     return _quantity_from_value(value, unit)

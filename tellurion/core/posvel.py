@@ -625,7 +625,6 @@ class PositionVelocityT(PositionBase):
 ####    Make PositionT,  PositionVelocityT    ####
 ##################################################
 
-### THIS FUNCTION IS ONLY USED ONCE
 def pvtcart(pv, time=None, specunits=units.prefunits):
     """Define a PositionVelocityT or PositionT by its Cartesian
        component
@@ -635,7 +634,7 @@ def pvtcart(pv, time=None, specunits=units.prefunits):
        specunits: The units to be assigned to the numbers in `pv`
 
     """
-    cart = pvhelper.cartesianpv(np.array(pv), None, specunits, units.prefunits)
+    cart = pvhelper.cartesianpv(pv, None, specunits, units.prefunits)
     if cart.dtype.names and pvhelper._eph_vel in cart.dtype.names:
         return PositionVelocityT(time=atime.abstime(time), cartesian=cart)
     else:

@@ -19,7 +19,7 @@ from tellurion.core import posvel
 # sent_badpvt = tork.cartesian(tell.kepler(sentst.els, sentst.t))
 # A better choice would be to use Orekit to propagate/convert; see ork/tle.py for `sent_goodpvt`.
 # sentgen = tork.SGP4gen(isssent['SENTINEL 3A'], 1*u.day, {'altitude': 125.0*u.km, 'eclipse': True, 'visibility': []})
-# tell.posdiff(sentgen['pvt0'].pv, sent_badpvt.pv)
+# tell.magdiff(sentgen['pvt0'].pv, sent_badpvt.pv)
 # <Quantity 38.40421256 km>
 
 MeanElementSetT = collections.namedtuple('MeanElementSetT', 'els t tle model scdata')

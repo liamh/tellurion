@@ -39,19 +39,12 @@ def _event_transition_table(loggers, column_label, state_labels, reftime='epoch'
         '''Create a PVT including columns having two-character
         transition label made from two one-character state labels
         '''
-
         loggedevents = logger.getLoggedEvents()
-        def pvet(ev):
-            '''A 3-tuple of posvel, event transition (2-character string with prior and posterior event state), and time.'''
-            pvt = convert._pvt(ev.getState().getPVCoordinates())
-            if ev.isIncreasing():
-                trlabel = inc_dec_labels[0]
-            else:
-                trlabel = inc_dec_labels[1]
-            pvt.aux = {column_label:trlabel}
-            return pvt
         if loggedevents:
-            return pvet(loggedevents[0]).merge([pvet(ev) for ev in loggedevents[1:]])
+            pvt = convert._sstopvt([ev.getState() for ev in loggedevents])
+            pvt.aux = {column_label: ' '.join([inc_dec_labels[0] if ev.isIncreasing() else inc_dec_labels[1]
+                                   for ev in loggedevents])}
+            return pvt
 
     if loggers:
         trprs = transition_pairs(state_labels)

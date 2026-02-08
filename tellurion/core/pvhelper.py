@@ -37,6 +37,7 @@ def cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunits
     scalar = isscalar
     pvunit = _posvel_pt
     if type(posvel) is tuple:
+        scalar = len(posvel[0].shape)==1
         if len(posvel) == 2:
             pv = {_eph_pos: posvel[0], _eph_vel: posvel[1]}
         else:
@@ -99,6 +100,3 @@ def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distanc
 def magdiff(a, b):
     """Magnitude of the difference of two vectors"""
     return u.Quantity([np.linalg.norm(ai - bi) for (ai, bi) in zip(a, b)])
-
-def posdiff(a, b):
-    return np.linalg.norm(a[_eph_pos]-b[_eph_pos])

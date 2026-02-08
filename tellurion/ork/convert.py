@@ -46,8 +46,8 @@ def _sstopvt(data):
     else:
         scalar = False
         tms = [_okad(s.getDate()) for s in data]
-    cartpv = pvhelper.cartesianpv(_sstoarr(data), scalar, tunits.orkunits)
-    return posvel.PositionVelocityT(time=atime.abstime(tms), cartesian=cartpv)
+    pvt = posvel.pvtcart(_sstoarr(data), atime.abstime(tms), tunits.orkunits)
+    return pvt
 
 def _sstoarr(ss):
     """Extract the position and velocity as an np.array from the
@@ -76,13 +76,11 @@ def _pvt(object, unitlookup=tunits.prefunits, additional=None):
     if hasattr(object, 'getPosition') and hasattr(object, 'getVelocity'):
         pos = _v3d(object.getPosition(), posvelsiu[0])
         vel = _v3d(object.getVelocity(), posvelsiu[1])
-        #pv = quant.change_units(pvhelper.cartesianpv((pos, vel)), unitlookup)
-        pv = pvhelper.cartesianpv((pos, vel), True, convert=unitlookup)
         if hasattr(object, 'getDate'):
             tm=_okad(object.getDate())
         elif type(additional) is astropy.time.Time:
             tm=additional
-        return posvel.PositionVelocityT(time=tm, cartesian=pv)
+        return posvel.pvtcart((pos, vel), tm)
     elif hasattr(object, 'getPVCoordinates'):
         return _pvt(object.getPVCoordinates(), unitlookup)
     elif hasattr(object, 'initialState'):
@@ -124,6 +122,6 @@ def _v3d(arg, unit=u.dimensionless_unscaled):
     elif argtype == np.ndarray:
         return Vector3D(arg.tolist())
     elif argtype == Vector3D:
-        return u.Quantity([arg.getX(), arg.getY(), arg.getZ()], unit)
+        return quant.make_quantity(np.array([arg.getX(), arg.getY(), arg.getZ()]), unit)
     else:
         raise ValueError("Cannot convert to or from Vector3D")

@@ -285,6 +285,13 @@ class TestHstack:
         assert len(result) == 2
         assert set(result.dtype.names) == {'x', 'y', 'z'}
 
+        def test_is_scalar_requires_dict(self):
+            """Test that is_scalar=True with non-dict value raises error."""
+            with pytest.raises(ValueError, match="is_scalar.*only valid when value is a dict"):
+                make_quantity([1, 2, 3], 'm', is_scalar=True)
+
+                with pytest.raises(ValueError, match="is_scalar.*only valid when value is a dict"):
+                    make_quantity(5.0, 'm', is_scalar=True)
 
 class TestVstack:
     """Tests for vstack function."""

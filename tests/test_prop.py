@@ -23,7 +23,7 @@ demoa = Munch()
 demoa.init = Munch()
 demoa.init.check = Munch()
 
-demoa.init.pv = [5740.13268349, 3314.06715, 0., -2.75082684, 4.76457184, 5.50165367]
+demoa.init.pv = np.array([5740.13268349, 3314.06715, 0., -2.75082684, 4.76457184, 5.50165367])
 demoa.init.pvt = tell.pvtcart(demoa.init.pv, newyear)
 # Cartesian or Kepler transformation
 demoa.init.kep = demoa.init.pvt.kepler()  # Convert PVT to Kepler elements
