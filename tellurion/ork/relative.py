@@ -35,7 +35,7 @@ def _relframe(frame, relsc, refsc, unitlookup=units.prefunits):
                                 relframe.getAttitude(refsc.getOrbit(), \
                                                 refsc.getDate(), refsc.getFrame()));
     pvrel = converted.toTransform().transformPVCoordinates(relsc.getPVCoordinates(refsc.getFrame()));
-    return convert._pvt(pvrel, unitlookup)
+    return convert._pvt(pvrel)
 
 # import astropy.coordinates as coord
 # cart12 = coord.CartesianRepresentation(demoa.prop.ntw_4x4hpB01_to_4x4[12]['NTW position'])

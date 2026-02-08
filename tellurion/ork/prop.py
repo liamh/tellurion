@@ -235,7 +235,7 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', output='e
         ss = [_to_spacecraft_state(generator['propfn'](convert._okad(at))) for at in atimes]
     if output == 'ss':
         return ss
-    pvt = convert._sstopvt(ss)
+    pvt = convert._pvt(ss)
     pvt.aux = event._evstates(generator, ss)
     if output == 'pvt':
         return pvt.timeorder()

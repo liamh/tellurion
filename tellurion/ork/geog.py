@@ -56,7 +56,7 @@ def sitevec(loc, times, name="sitevec", unitlookup=units.prefunits, forceenv=for
     if times.isscalar:
         tf = _topoframe(loc, name, forceenv)
         tspvc = tf.getPVCoordinates(convert._okad(times), forceenv['celestialframe'])
-        ret = convert._pvt(tspvc, unitlookup)
+        ret = convert._pvt(tspvc)
     else:
         pvts = [sitevec(loc, t, name, unitlookup, forceenv) for t in times]
         ret = posvel.PositionVelocityT(time=times, cartesian=\
@@ -79,7 +79,7 @@ def eciaer(observation, name="", unitlookup=units.prefunits, forceenv=force.deff
                               float(aerork['range'].value)), \
                           name)
     tspvc = tf.getPVCoordinates(convert._okad(observation.time), forceenv['celestialframe'])
-    pvt = convert._pvt(tspvc, unitlookup)
+    pvt = convert._pvt(tspvc)
     return pvt.position
 
 def aereci(postime, location, forceenv=force.deffe):

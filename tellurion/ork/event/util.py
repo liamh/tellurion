@@ -41,7 +41,7 @@ def _event_transition_table(loggers, column_label, state_labels, reftime='epoch'
         '''
         loggedevents = logger.getLoggedEvents()
         if loggedevents:
-            pvt = convert._sstopvt([ev.getState() for ev in loggedevents])
+            pvt = convert._pvt([ev.getState() for ev in loggedevents])
             pvt.aux = {column_label: ' '.join([inc_dec_labels[0] if ev.isIncreasing() else inc_dec_labels[1]
                                    for ev in loggedevents])}
             return pvt

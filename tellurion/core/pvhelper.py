@@ -60,10 +60,7 @@ def cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunits
                 scalar = True
     else:
         pv = posvel
-    if convert and given != convert:
-        return quant.change_units(quant.make_quantity(pv, pvunit, scalar, given), convert)
-    else:
-        return quant.make_quantity(pv, pvunit, scalar, given)
+    return quant.change_units(quant.make_quantity(pv, pvunit, scalar, given), convert)
 
 def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distance'], unitlookup=units.prefunits):
     """Make a spherical coordinate set for position and velocity

@@ -5,6 +5,7 @@ and thus begins with `_`.
 
 """
 
+import collections.abc
 import numpy as np
 import pandas as pd
 import astropy.units as u
@@ -38,55 +39,42 @@ posvelsiu = u.StructuredUnit((u.meter, u.meter/u.second))
 # _tspvc(): Convert from PV/PVT to org.orekit.utils.PVCoordinates or TimeStampedPVCoordinates
 
 
-def _sstopvt(data):
-    """Create a posvel structured quanitty from the SpacecraftState(s)."""
-    if type(data) is SpacecraftState:
-        scalar = True
-        tms = _okad(data.getDate())
-    else:
-        scalar = False
-        tms = [_okad(s.getDate()) for s in data]
-    pvt = posvel.pvtcart(_sstoarr(data), atime.abstime(tms), tunits.orkunits)
-    return pvt
-
-def _sstoarr(ss):
-    """Extract the position and velocity as an np.array from the
-    SpacecraftState; returns a tuple of arrays (position, velocity) in
-    Orekit units (m, m/s)."""
-    def scal(ss):
-        pos = ss.getPosition()
-        vel = ss.getVelocity()
-        return ([pos.getX(), pos.getY(), pos.getZ()], [vel.getX(), vel.getY(), vel.getZ()])
-
-    if type(ss) is SpacecraftState:
-        tls = scal(ss)
-        return (np.array(tls[0]), np.array(tls[1]))
-    else:
-        pvs = [scal(s) for s in ss]
-        arr = np.array(pvs)
-        return (arr[:,0,:], arr[:,1,:])
-
-def _pvt(object, unitlookup=tunits.prefunits, additional=None):
+def _pvt(object, additional=None):
     """Make the postion, velocity (), and time tuple
     (astropy.time.Time) or position and velocity from the Orekit
-    object that has them defined; there is no transformation (e.g.,
-    from Kepler elements).
+    object or iterable of Orekit objects that has them defined; there
+    is no transformation (e.g., from Kepler elements).
 
     """
-    if hasattr(object, 'getPosition') and hasattr(object, 'getVelocity'):
-        pos = _v3d(object.getPosition(), posvelsiu[0])
-        vel = _v3d(object.getVelocity(), posvelsiu[1])
-        if hasattr(object, 'getDate'):
-            tm=_okad(object.getDate())
+
+    def orkpv(obj):
+        """Extract the position and velocity from the Orekit object and return a tuple of them."""
+        if hasattr(obj, 'getPosition') and hasattr(obj, 'getVelocity'):
+            pos = _v3d(obj.getPosition(), posvelsiu[0])
+            vel = _v3d(obj.getVelocity(), posvelsiu[1])
+            return (pos, vel)
+        elif hasattr(obj, 'getPVCoordinates'):
+            return orkpv(obj.getPVCoordinates())
+        elif hasattr(obj, 'initialState'):
+            return orkpv(obj.initialState)
+        else:
+            raise ValueError("Cannot find position and velocity in Orekit object")
+
+    def orktime(obj):
+        if hasattr(obj, 'getDate'):
+            tm=_okad(obj.getDate())
         elif type(additional) is astropy.time.Time:
             tm=additional
-        return posvel.pvtcart((pos, vel), tm)
-    elif hasattr(object, 'getPVCoordinates'):
-        return _pvt(object.getPVCoordinates(), unitlookup)
-    elif hasattr(object, 'initialState'):
-        return _pvt(object.initialState, unitlookup)
+        else:
+            raise ValueError("Cannot find time in Orekit object nor intrerpret `additional` as a time")
+        return tm
+
+    if isinstance(object, collections.abc.Iterable):
+        pvlist = [pvhelper.cartesianpv(orkpv(obj), True) for obj in object]
+        times = atime.abstime([orktime(obj) for obj in object])
+        return posvel.pvtcart(quant.vstack(pvlist), times)
     else:
-        raise ValueError("Cannot convert value to position, value, and time (PVT)")
+        return posvel.pvtcart(orkpv(object), orktime(object))
 
 def _tspvc(pvt):
     """Convert tuple (posvel.pv(), astropy.time.Time) or ephemeris row to Orekit TimeStampedPVCoordinates or posvel.pv() to PVCoordinates"""
