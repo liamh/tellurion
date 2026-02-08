@@ -70,9 +70,9 @@ def _pvt(object, additional=None):
         return tm
 
     if isinstance(object, collections.abc.Iterable):
-        pvlist = [pvhelper.cartesianpv(orkpv(obj), True) for obj in object]
+        pvlist = [orkpv(obj) for obj in object]
         times = atime.abstime([orktime(obj) for obj in object])
-        return posvel.pvtcart(quant.vstack(pvlist), times)
+        return posvel.pvtcart(pvlist, times)
     else:
         return posvel.pvtcart(orkpv(object), orktime(object))
 

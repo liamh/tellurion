@@ -1,0 +1,10 @@
+# Sphinx documentation
+docs/_build/
+docs/build/
+docs/source/_autosummary/
+docs/source/api/
+docs/source/generated/
+
+# Common auto-generated API doc directories
+**/autosummary/
+**/generated/

@@ -411,7 +411,7 @@ class PositionT(PositionBase):
         # SphericalRepresentation uses (lon, lat, distance) format
         # which corresponds to (right ascension, declination, distance)
         sphrepr = [sph_repr.lon, sph_repr.lat, sph_repr.distance]
-        ret = pvhelper.sphericalpv(sphrepr, None, labels=['rtasc', 'decl', 'distance'])
+        ret = pvhelper._sphericalpv(sphrepr, None, labels=['rtasc', 'decl', 'distance'])
         return quant.change_units(ret, unit_lookup=units.prefunits)
 
 
@@ -442,7 +442,7 @@ class PositionT(PositionBase):
         # Convert to Cartesian representation (this handles both position and velocity)
         cart_repr = sph_repr.represent_as(CartesianRepresentation)
         raise ValueError("This has never been tested")
-        # sq = pvhelper.cartesianpv(cart_repr.xyz, unit_lookup=units.prefunits)
+        # sq = pvhelper._cartesianpv(cart_repr.xyz, unit_lookup=units.prefunits)
         # Create the structured quantity
         return sq
 
@@ -538,7 +538,7 @@ class PositionVelocityT(PositionBase):
         # which corresponds to (right ascension, declination, distance)
         sphrepr = [sph_repr.lon, sph_repr.lat, sph_repr.distance]
         sphrate = [sph_diff.d_lon, sph_diff.d_lat, sph_diff.d_distance]
-        ret = pvhelper.sphericalpv(sphrepr, sphrate, labels=['rtasc', 'decl', 'distance'])
+        ret = pvhelper._sphericalpv(sphrepr, sphrate, labels=['rtasc', 'decl', 'distance'])
         return quant.change_units(ret, unit_lookup=units.prefunits)
 
 
@@ -594,7 +594,7 @@ class PositionVelocityT(PositionBase):
                   cart_diff.d_x, cart_diff.d_y, cart_diff.d_z]
 
         # Create the structured quantity
-        return pvhelper.cartesianpv(np.array(posvel), None, units.prefunits)
+        return pvhelper._cartesianpv(np.array(posvel), None, units.prefunits)
 
     def copy(self):
         """Create a copy of this PositionVelocityT."""
@@ -625,36 +625,39 @@ class PositionVelocityT(PositionBase):
 ####    Make PositionT,  PositionVelocityT    ####
 ##################################################
 
-def pvtcart(pv, time=None, specunits=units.prefunits):
+def pvtcart(pv, time, specunits=units.prefunits):
     """Define a PositionVelocityT or PositionT by its Cartesian
-       component
+       components
 
-       pv: An array or list convertible to an array with  numerical values
+       pv: A tuple (position, velocity), or list of tuples, or array with 3 (position only) or 6 columns
        time: Any time representation that serve as input to atime.abstime
        specunits: The units to be assigned to the numbers in `pv`
 
     """
-    cart = pvhelper.cartesianpv(pv, None, specunits, units.prefunits)
+    if isinstance(pv, list):
+        cart = quant.vstack([pvhelper._cartesianpv(pv1, True, specunits, units.prefunits) \
+                             for pv1 in pv])
+    else:
+        cart = pvhelper._cartesianpv(pv, None, specunits, units.prefunits)
     if cart.dtype.names and pvhelper._eph_vel in cart.dtype.names:
         return PositionVelocityT(time=atime.abstime(time), cartesian=cart)
     else:
         return PositionT(time=atime.abstime(time), cartesian=cart)
 
-hasthing = lambda object, thing: hasattr(object,thing) or (hasattr(object,'colnames') and thing in object.colnames)
-
-def pvtattr(object, isscalar):
+def _pvtattr(object, isscalar):
     """Create PositionVelocityT or PositionT from any object (e.g., ephemeris) that has the time, position, and optionally velocity, properties."""
+    hasthing = lambda object, thing: hasattr(object,thing) or (hasattr(object,'colnames') and thing in object.colnames)
     if hasthing(object,pvhelper._eph_time) and hasthing(object,pvhelper._eph_pos):
         if hasthing(object,pvhelper._eph_vel):
-            cart = pvhelper.cartesianpv((object[pvhelper._eph_pos], object[pvhelper._eph_vel]), isscalar)
+            cart = pvhelper._cartesianpv((object[pvhelper._eph_pos], object[pvhelper._eph_vel]), isscalar)
             return PositionVelocityT(time=object[pvhelper._eph_time], cartesian=cart)
         else:
             return PositionT(time=object[pvhelper._eph_time], cartesian=object[pvhelper._eph_pos])
     else:
         raise ValueError('Cannot make a PositionVelocityT or PositionT from this object')
 
-astropy.timeseries.TimeSeries.pvt = lambda self: pvtattr(self, False)
-astropy.table.row.Row.pvt = lambda self: pvtattr(self, True)
+astropy.timeseries.TimeSeries.pvt = lambda self: _pvtattr(self, False)
+astropy.table.row.Row.pvt = lambda self: _pvtattr(self, True)
 
 ##################################################
 #### Legacy aliases for backward compatibility ####

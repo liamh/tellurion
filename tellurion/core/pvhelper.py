@@ -1,6 +1,5 @@
 import numbers
 import numpy as np
-import astropy.units as u
 import astropy.time
 from tellurion.astro import units
 from tellurion.astro import quantity_utils as quant
@@ -29,7 +28,7 @@ _vel_format = '10.6f'
 ####   Utility functions for coordinates      ####
 ##################################################
 
-def cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunits):
+def _cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunits):
     """Create a u.Quantity position or position-velocity scalar or
     array. Inputs `posvel` may be a tuple of (position, velocity) or
     (position), with values that are u.Quantity, np.array with final
@@ -62,7 +61,7 @@ def cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunits
         pv = posvel
     return quant.change_units(quant.make_quantity(pv, pvunit, scalar, given), convert)
 
-def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distance'], unitlookup=units.prefunits):
+def _sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distance'], unitlookup=units.prefunits):
     """Make a spherical coordinate set for position and velocity
 
     Args:
@@ -89,11 +88,3 @@ def sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distanc
         # Position only
         unt = dict(zip(labels, _sphpospt))
         return quant.make_quantity(posdict, unt, isscalar, unitlookup)
-
-##################################################
-#### Compare positions, velocities            ####
-##################################################
-
-def magdiff(a, b):
-    """Magnitude of the difference of two vectors"""
-    return u.Quantity([np.linalg.norm(ai - bi) for (ai, bi) in zip(a, b)])
