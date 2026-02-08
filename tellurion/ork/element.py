@@ -86,14 +86,14 @@ def _keporb_from_components(oes, epoch, units=(units.prefunits['length'], units.
                               float(oessi['argper']), float(oessi['raan']), \
                               float(oessi['ma']), PositionAngleType.MEAN, \
                               fe['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                              convert._okad(epoch),   # Sets the date of the orbital parameters
+                              convert._abstime_to_okad(epoch),   # Sets the date of the orbital parameters
                               fe['earthmu'].si.value)   # Sets the central attraction coefficient (m³/s²)
     elif 'ta' in oessi.dtype.names:
         return KeplerianOrbit(float(oessi['sma']), float(oessi['ecc']), float(oessi['inc']), \
                               float(oessi['argper']), float(oessi['raan']), \
                               float(oessi['ma']), PositionAngleType.TRUE, \
                               fe['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                              convert._okad(epoch),   # Sets the date of the orbital parameters
+                              convert._abstime_to_okad(epoch),   # Sets the date of the orbital parameters
                               fe['earthmu'].si.value)   # Sets the central attraction coefficient (m³/s²)
     else:
         raise ValueError('Time element (ma or ta) required in element set')

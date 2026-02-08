@@ -62,7 +62,7 @@ def _pvt(object, additional=None):
 
     def orktime(obj):
         if hasattr(obj, 'getDate'):
-            tm=_okad(obj.getDate())
+            tm=_abstime_from_okad(obj.getDate())
         elif type(additional) is astropy.time.Time:
             tm=additional
         else:
@@ -81,9 +81,12 @@ def _tspvc(pvt):
     conv = pvt.cartesian.to(posvelsiu)
     vecp = _v3d(conv[pvhelper._eph_pos].value)
     vecv = _v3d(conv[pvhelper._eph_vel].value)
-    return TimeStampedPVCoordinates(_okad(pvt.time), vecp, vecv)
+    return TimeStampedPVCoordinates(_abstime_to_okad(pvt.time), vecp, vecv)
 
-def _okad(t):
+def _abstime_from_okad(t):
+    return atime.abstime(pyhelp.absolutedate_to_datetime(t))
+
+def _abstime_to_okad(t):
     """ Convert time in any form to Orekit AbsoluteDate (okad), or from okad to AstroPy """
     if type(t) is astropy.time.Time: # AstroPy
         if t.isscalar:
@@ -94,10 +97,8 @@ def _okad(t):
         return pyhelp.datetime_to_absolutedate(pd.Timestamp(t).to_pydatetime())
     elif type(t) == datetime.datetime:  # Python
         return pyhelp.datetime_to_absolutedate(t)
-    elif type(t) is org.orekit.time.AbsoluteDate:
-        return atime.abstime(pyhelp.absolutedate_to_datetime(t))
     else:
-        raise ValueError("Cannot convert value to or from Orekit AbsoluteDate")
+        raise ValueError("Cannot convert value to Orekit AbsoluteDate")
 
 def _v3d(arg, unit=u.dimensionless_unscaled):
     """Make a Vector3D from the argument; if the argument is a Vector3D, return the components as a u.Quantity"""

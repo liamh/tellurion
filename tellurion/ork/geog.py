@@ -31,7 +31,7 @@ def siderealtime(time = None, location = None, forceenv=force.deffe):
         time = atime.abstime(0)
     def gst(time):
         if time.isscalar:
-            vs = forceenv['gmst'].value(convert._okad(time))
+            vs = forceenv['gmst'].value(convert._abstime_to_okad(time))
         else:
             vs = [gst(tm) for tm in time]
         return coord.Longitude(vs, u.radian).to(u.deg)
@@ -55,7 +55,7 @@ def sitevec(loc, times, name="sitevec", unitlookup=units.prefunits, forceenv=for
     '''The site vector for an earth location at the specified times.'''
     if times.isscalar:
         tf = _topoframe(loc, name, forceenv)
-        tspvc = tf.getPVCoordinates(convert._okad(times), forceenv['celestialframe'])
+        tspvc = tf.getPVCoordinates(convert._abstime_to_okad(times), forceenv['celestialframe'])
         ret = convert._pvt(tspvc)
     else:
         pvts = [sitevec(loc, t, name, unitlookup, forceenv) for t in times]
@@ -78,7 +78,7 @@ def eciaer(observation, name="", unitlookup=units.prefunits, forceenv=force.deff
                               float(aerork['elev'].value), \
                               float(aerork['range'].value)), \
                           name)
-    tspvc = tf.getPVCoordinates(convert._okad(observation.time), forceenv['celestialframe'])
+    tspvc = tf.getPVCoordinates(convert._abstime_to_okad(observation.time), forceenv['celestialframe'])
     pvt = convert._pvt(tspvc)
     return pvt.position
 
@@ -89,7 +89,7 @@ def aereci(postime, location, forceenv=force.deffe):
     def aer(postime):
         if postime.isscalar:
             pt = convert._v3d(postime.cartesian)
-            oktime = convert._okad(postime.time)
+            oktime = convert._abstime_to_okad(postime.time)
             azm = tf.getAzimuth(pt, cf, oktime)
             elv = tf.getElevation(pt, cf, oktime)
             rng = tf.getRange(pt, cf, oktime)

@@ -217,9 +217,9 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', output='e
     # Compute the reference time `reft`, an astropy.time.Time, then
     # create all the absolute times
     if reftime=='epoch' and generator.get('epoch'):
-        reft = convert._okad(generator.get('epoch'))
+        reft = convert._abstime_from_okad(generator.get('epoch'))
     elif reftime=='epoch' and generator.get('mindate'):
-        reft = convert._okad(generator.get('mindate'))
+        reft = convert._abstime_from_okad(generator.get('mindate'))
     else:
         reft = atime.abstime(reftime)
     atimes = atime.abstime(reltimes, reft)
@@ -230,9 +230,9 @@ def propagate(generator, reltimes, include_init=True, reftime='epoch', output='e
     # optionally create a PositionVelocityT and add event states, and
     # convert to ephemeris table
     if atimes.isscalar:
-        ss = _to_spacecraft_state(generator['propfn'](convert._okad(atimes)))
+        ss = _to_spacecraft_state(generator['propfn'](convert._abstime_to_okad(atimes)))
     else:
-        ss = [_to_spacecraft_state(generator['propfn'](convert._okad(at))) for at in atimes]
+        ss = [_to_spacecraft_state(generator['propfn'](convert._abstime_to_okad(at))) for at in atimes]
     if output == 'ss':
         return ss
     pvt = convert._pvt(ss)
@@ -248,7 +248,7 @@ def timerange(object):
     drag can shorten the timespan
     '''
     if object.get('maxdate') and object.get('mindate'):
-        return (convert._okad(object.get('maxdate'))-convert._okad(object.get('mindate'))).to(u.s)
+        return (convert._abstime_from_okad(object.get('maxdate'))-convert._abstime_from_okad(object.get('mindate'))).to(u.s)
     else:
         raise ValueError('Cannot get timerange for this object')
 
