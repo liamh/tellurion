@@ -51,12 +51,8 @@ def _cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunit
                 scalar = True
         elif posvel.shape[posvel.ndim-1] == 3:
             pvunit = _posvel_pt[_eph_pos]
-            if posvel.ndim == 2:
-                pv = posvel[:,0:3]
-                scalar = False
-            else:
-                pv = posvel[0:3]
-                scalar = True
+            pv = {_eph_pos: posvel}
+            scalar = posvel.ndim == 1
     else:
         pv = posvel
     return quant.change_units(quant.make_quantity(pv, pvunit, scalar, given), convert)

@@ -49,9 +49,11 @@ def _pvt(object, additional=None):
 
     def orkpv(obj):
         """Extract the position and velocity from the Orekit object and return a tuple of them."""
+        def _quant_from_v3d(arg, unit):
+            return quant.make_quantity(np.array([arg.getX(), arg.getY(), arg.getZ()]), unit)
         if hasattr(obj, 'getPosition') and hasattr(obj, 'getVelocity'):
-            pos = _v3d(obj.getPosition(), posvelsiu[0])
-            vel = _v3d(obj.getVelocity(), posvelsiu[1])
+            pos = _quant_from_v3d(obj.getPosition(), tunits.orkunits['length'])
+            vel = _quant_from_v3d(obj.getVelocity(), tunits.orkunits['speed'])
             return (pos, vel)
         elif hasattr(obj, 'getPVCoordinates'):
             return orkpv(obj.getPVCoordinates())
@@ -79,8 +81,8 @@ def _pvt(object, additional=None):
 def _tspvc(pvt):
     """Convert tuple (posvel.pv(), astropy.time.Time) or ephemeris row to Orekit TimeStampedPVCoordinates or posvel.pv() to PVCoordinates"""
     conv = pvt.cartesian.to(posvelsiu)
-    vecp = _v3d(conv[pvhelper._eph_pos].value)
-    vecv = _v3d(conv[pvhelper._eph_vel].value)
+    vecp = Vector3D(conv[pvhelper._eph_pos].value.tolist())
+    vecv = Vector3D(conv[pvhelper._eph_vel].value.tolist())
     return TimeStampedPVCoordinates(_abstime_to_okad(pvt.time), vecp, vecv)
 
 def _abstime_from_okad(t):
@@ -99,18 +101,3 @@ def _abstime_to_okad(t):
         return pyhelp.datetime_to_absolutedate(t)
     else:
         raise ValueError("Cannot convert value to Orekit AbsoluteDate")
-
-def _v3d(arg, unit=u.dimensionless_unscaled):
-    """Make a Vector3D from the argument; if the argument is a Vector3D, return the components as a u.Quantity"""
-    # match/case will not work because `case list` causes an error
-    argtype = type(arg)
-    if argtype == list:
-        return Vector3D(arg)
-    elif argtype == u.Quantity:
-        return _v3d(arg.to(tunits.orkunits["length"]).value)
-    elif argtype == np.ndarray:
-        return Vector3D(arg.tolist())
-    elif argtype == Vector3D:
-        return quant.make_quantity(np.array([arg.getX(), arg.getY(), arg.getZ()]), unit)
-    else:
-        raise ValueError("Cannot convert to or from Vector3D")

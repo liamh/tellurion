@@ -12,6 +12,7 @@ from astropy.timeseries import TimeSeries
 from org.orekit.bodies import GeodeticPoint
 from org.orekit.frames import TopocentricFrame
 import org.orekit.models.earth as oearth
+from org.hipparchus.geometry.euclidean.threed import Vector3D
 
 import tellurion.astro.time as atime
 from tellurion.astro import units
@@ -88,7 +89,7 @@ def aereci(postime, location, forceenv=force.deffe):
     cf = forceenv['celestialframe']
     def aer(postime):
         if postime.isscalar:
-            pt = convert._v3d(postime.cartesian)
+            pt = Vector3D(postime.cartesian.value.tolist())
             oktime = convert._abstime_to_okad(postime.time)
             azm = tf.getAzimuth(pt, cf, oktime)
             elv = tf.getElevation(pt, cf, oktime)
