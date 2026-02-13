@@ -659,6 +659,10 @@ def _pvtattr(object, isscalar):
 astropy.timeseries.TimeSeries.pvt = lambda self: _pvtattr(self, False)
 astropy.table.row.Row.pvt = lambda self: _pvtattr(self, True)
 
+# def vstack(pvts):
+#     ret = posvel.PositionVelocityT(time=times, cartesian=\
+#                                    quant.vstack(tuple([pvt.cartesian for pvt in pvts])))
+
 ##################################################
 #### Legacy aliases for backward compatibility ####
 ##################################################

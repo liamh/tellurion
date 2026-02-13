@@ -24,10 +24,10 @@ from tellurion.ork import force
 from tellurion.ork import convert
 
 def siderealtime(time = None, location = None, forceenv=force.deffe):
-    '''The Greenwich or local sidereal time(s). Default `time` is the
+    """The Greenwich or local sidereal time(s). Default `time` is the
     current time, default `location` is the prime meridian (i.e.,
     Greenwich sidereal time).
-    '''
+    """
     if not time:
         time = atime.abstime(0)
     def gst(time):
@@ -42,7 +42,7 @@ def siderealtime(time = None, location = None, forceenv=force.deffe):
         return gst(time)
 
 def geodpt(earthloc):
-    '''Create the Orekit GeodeticPoint from an AstroPy EarthLocation'''
+    """Create the Orekit GeodeticPoint from an AstroPy EarthLocation"""
     geod = earthloc.geodetic
     lat_rdn = float(geod.lat.radian)
     lon_rdn = float(geod.lon.radian)
@@ -53,24 +53,18 @@ def _topoframe(loc, name="", forceenv=force.deffe):
     return TopocentricFrame(forceenv['earth'], geodpt(loc), name)
 
 def sitevec(loc, times, name="sitevec", unitlookup=units.prefunits, forceenv=force.deffe):
-    '''The site vector for an earth location at the specified times.'''
-    if times.isscalar:
-        tf = _topoframe(loc, name, forceenv)
-        tspvc = tf.getPVCoordinates(convert._abstime_to_okad(times), forceenv['celestialframe'])
-        ret = convert._pvt(tspvc)
-    else:
-        pvts = [sitevec(loc, t, name, unitlookup, forceenv) for t in times]
-        ret = posvel.PositionVelocityT(time=times, cartesian=\
-                                       quant.vstack(tuple([pvt.cartesian for pvt in pvts])))
+    """The site vector for an earth location at the specified times."""
+    tf = _topoframe(loc, name, forceenv)
+    ret = convert._pvt_from_coordinates(tf, times, forceenv['celestialframe'])
     if name:
         ret.name = name
     return ret
 
 def eciaer(observation, name="", unitlookup=units.prefunits, forceenv=force.deffe):
-    '''Find the ECI position and time of the az-el-range observations
+    """Find the ECI position and time of the az-el-range observations
     made from the location. If observation is a Time or multiple
     times, find the site vector(s). Uses Orekit.
-    '''
+    """
     tf = _topoframe(observation.loc, name, forceenv)
     aerork = quant.change_units(observation.obs, units.orkunits)
     tf = TopocentricFrame(forceenv['earth'], \
@@ -84,7 +78,7 @@ def eciaer(observation, name="", unitlookup=units.prefunits, forceenv=force.deff
     return pvt.position
 
 def aereci(postime, location, forceenv=force.deffe):
-    '''The EarthObservation (az-el-range) for a PositionT from an observer location'''
+    """The EarthObservation (az-el-range) for a PositionT from an observer location"""
     tf = _topoframe(location, "local frame", forceenv)
     cf = forceenv['celestialframe']
     def aer(postime):

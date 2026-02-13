@@ -78,6 +78,30 @@ def _pvt(object, additional=None):
     else:
         return posvel.pvtcart(orkpv(object), orktime(object))
 
+def _pvt_from_coordinates(obj, time, frame):
+    """Get PVT by calling getPVCoordinates with time and frame.
+
+    Parameters
+    ----------
+    obj : Orekit object
+        Object that has a getPVCoordinates method
+    time : AbsoluteDate or iterable of AbsoluteDate
+        Single time or sequence of times
+    frame : Frame
+        Reference frame for the coordinates
+
+    Returns
+    -------
+    PositionVelocityT
+        Position, velocity, and time data
+    """
+
+    if isinstance(time, collections.abc.Iterable):
+        pv_list = [obj.getPVCoordinates(_abstime_to_okad(tm), frame) for tm in time]
+        return _pvt(pv_list, additional=time)
+    else:
+        return _pvt(obj.getPVCoordinates(_abstime_to_okad(time), frame), additional=time)
+
 def _tspvc(pvt):
     """Convert tuple (posvel.pv(), astropy.time.Time) or ephemeris row to Orekit TimeStampedPVCoordinates or posvel.pv() to PVCoordinates"""
     conv = pvt.cartesian.to(posvelsiu)
