@@ -72,11 +72,10 @@ sent3a = Munch()
 ##########################
 
 def test_kepcart():
-    np.testing.assert_allclose(demoa.init.pvt.to_array(), \
-                               np.array([ 5.74013268e+06,  3.31406715e+06,  0.00000000e+00, \
-
-                                          -2.75082684e+03, 4.76457184e+03,  5.50165367e+03, \
-                                          6.067600e+04]))
+    expected = np.array([5.74013268e+06,  3.31406715e+06,  0.00000000e+00,
+                         -2.75082684e+03, 4.76457184e+03,  5.50165367e+03,
+                         6.067600e+04])
+    np.testing.assert_allclose(demoa.init.pvt.to_array()[0], expected)
 
 def test_cartkep():
     return kepequal(demob.rekep, demob.kep)

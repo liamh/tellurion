@@ -1,20 +1,26 @@
-.. tellurion documentation master file, created by
-   sphinx-quickstart on Tue Nov 11 12:45:00 2025.
+.. Tellurion documentation master file
 
-Welcome to Tellurion Documentation
-======================================
+Welcome to Tellurion's Documentation
+====================================
 
-A Python package for astrodynamics using Orekit and AstroPy.
+Tellurion is a Python package for satellite orbit propagation and analysis,
+built on AstroPy.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: User Guide
 
    installation
-   examples
    structured_quantities
-   api
    astropy_extensions
+   posvel
+   examples
+
+.. toctree::
+   :maxdepth: 1
+   :caption: API Reference
+
+   api
 
 See the :doc:`installation` page to get started.
 
@@ -24,8 +30,6 @@ Quick Example
 .. code-block:: python
 
    from demos.obsdemo import *
-
-
 
 Indices and tables
 ==================

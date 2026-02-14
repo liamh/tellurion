@@ -1,35 +1,30 @@
-*************
+.. _api:
+
+#############
 API Reference
-*************
+#############
 
-This page contains the full API documentation for Tellurion.
+This page provides quick access to all API documentation.
 
-Astro Subpackage
-================
+Core Modules
+============
 
-tellurion.astro.quantity_utils
-------------------------------
+* :mod:`tellurion.core.posvel` - Position, Velocity, and Time classes (see :doc:`posvel`)
 
-.. automodapi::  tellurion.astro.quantity_utils
-   :no-inheritance-diagram:
+Other Core Modules
+==================
 
-tellurion.astro.units
----------------------
+* :mod:`tellurion.core.pvhelper` - Helper functions for position/velocity handling
 
-.. automodapi:: tellurion.astro.units
-   :no-inheritance-diagram:
+Astro Modules
+=============
 
-Orekit Wrapper Subpackage
-==========================
+* :mod:`tellurion.astro.quantity_utils` - Quantity manipulation utilities
+* :mod:`tellurion.astro.time` - Time handling extensions
+* :mod:`tellurion.astro.units` - Unit definitions and conversions
 
-tellurion.ork.force
--------------------
+Orekit Integration
+==================
 
-.. automodapi:: tellurion.ork.force
-   :no-inheritance-diagram:
-
-tellurion.ork.element
----------------------
-
-.. automodapi:: tellurion.ork.element
-   :no-inheritance-diagram:
+* :mod:`tellurion.ork.element` - Orbital elements
+* :mod:`tellurion.ork.force` - Force models

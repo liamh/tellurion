@@ -35,6 +35,19 @@ extensions = [
     'IPython.sphinxext.ipython_console_highlighting',  # For better syntax highlighting
 ]
 
+suppress_warnings = [
+    'app.add_directive',
+    'app.add_node',
+    'ref.python',
+    'autosummary.import_cycle',
+    'automodapi',
+    'toc.not_included',
+    'ref.ref',
+    'autosummary',
+    'autodoc',  # Suppress "don't know which module" warnings
+    'docutils',  # Suppress the "Explicit markup ends without blank line" warning
+]
+
 plot_rcparams = {
     'axes.labelsize': 'large',
     'figure.figsize': (6, 6),
@@ -57,13 +70,6 @@ intersphinx_mapping = {
     'matplotlib': ('https://matplotlib.org/stable/', None),
     'astropy': ('https://docs.astropy.org/en/stable/', None),
 }
-
-
-
-
-
-# Suppress the harmless cache warning
-suppress_warnings = ['config.cache']
 
 # Don't execute notebooks during build (use pre-executed outputs)
 nbsphinx_execute = 'never'
@@ -105,28 +111,12 @@ autodoc_default_options = {
 # This helps with monkey-patched methods
 autodoc_mock_imports = []
 
-# Configure automodapi to not generate separate API files
+# Configure automodapi
 automodapi_toctreedirnm = 'api'
-numpydoc_show_class_members = False
-
-#### None of the following attempts to suppress the duplicate object
-#### warnings work, there are lots, but the generated documentation is
-#### correct
-
-# Suppress duplicate object warnings from automodapi
-suppress_warnings = ['app. add_directive', 'app.add_node', 'ref.python']
-
-# Override astropy defaults that cause duplicates
-automodapi_toctreedirnm = 'api'
+automodsumm_writereprocessed = False  # Don't write separate reprocessed files
+automodapi_writereprocessed = False   # Don't write separate API files
 numpydoc_show_class_members = False
 autosummary_generate = False  # Don't auto-generate, let automodapi handle it
 
-suppress_warnings = [
-    'app. add_directive',
-    'autosummary.import_cycle',
-    'automodapi',
-]
-
-# Or suppress all duplicate warnings
-import sphinx
+# Not nitpicky about references
 nitpicky = False

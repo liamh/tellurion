@@ -3,7 +3,7 @@
 Creating Structured Quantities
 ===============================
 
-Structured quantities are |Quantity| objects that have multiple named fields,
+Structured quantities are :class:`~astropy.units.Quantity` objects that have multiple named fields,
 each with potentially different units. They are useful for representing
 collections of related physical quantities, such as position vectors,
 phase space coordinates, or observational data with multiple measured quantities.

@@ -17,6 +17,8 @@ import collections.abc
 ## Time
 ################################################################################
 
+prefnumabstime = 'mjd' # Preferred numerical format for absolute time
+
 def abstime(ratimes, reftime='now'):
     """Convert `ratimes`, which is a relative time (also known as
     "time delta" or "time interval"), or an absolute time, or an
@@ -58,8 +60,10 @@ def abstime(ratimes, reftime='now'):
         reftime = astropy.time.Time(datetime.datetime.now(datetime.UTC), scale='utc')
     if type(ratimes)==astropy.time.Time:
         return ratimes
-    if type(ratimes) in [datetime.datetime, np.datetime64]:
+    if type(ratimes) == datetime.datetime:
         return astropy.time.Time(ratimes.isoformat())
+    if type(ratimes) == np.datetime64:
+        return astropy.time.Time(str(ratimes))
     if type(ratimes)==str:
         try:
             return (astropy.time.Time(ratimes, scale='utc'))
@@ -73,18 +77,53 @@ def abstime(ratimes, reftime='now'):
     if type(ratimes) == u.Quantity:
         return reftime + ratimes
     if isinstance(ratimes, collections.abc.Iterable):
+        # Check if all elements are already Time objects
+        if all(isinstance(t, astropy.time.Time) for t in ratimes):
+            # All are Time objects - use AstroPy's native concatenation
+            # This preserves the original format
+            time_list = [t if not t.isscalar else astropy.time.Time([t.value], format=t.format, scale=t.scale)
+                        for t in ratimes]
+            # Use vstack to concatenate (preserves format)
+            return astropy.time.Time(np.hstack([t.value for t in time_list]),
+                                    format=time_list[0].format,
+                                    scale=time_list[0].scale)
+
+        # Mixed types or not all Time objects - process individually
         cum = abstime(ratimes[0], reftime)
         for t1 in ratimes[1:]:
             cum = time_concat(cum, abstime(t1, reftime))
         return cum
 
 def time_concat(time1, time2):
-    def tval(time):
-        if time.isscalar:
-            return [time.value]
-        else:
-            return time.value
-    return astropy.time.Time(np.concatenate([tval(time1), tval(time2)]))
+    """Concatenate two Time objects or arrays of Time objects.
+
+    Parameters
+    ----------
+    time1 : astropy.time.Time
+        First time or array of times
+    time2 : astropy.time.Time
+        Second time or array of times
+
+    Returns
+    -------
+    astropy.time.Time
+        Concatenated times preserving original format
+    """
+    # Get values in their native format
+    if time1.isscalar:
+        vals1 = np.array([time1.value])
+    else:
+        vals1 = time1.value
+
+    if time2.isscalar:
+        vals2 = np.array([time2.value])
+    else:
+        vals2 = time2.value
+
+    # Concatenate and preserve format from time1
+    return astropy.time.Time(np.concatenate([vals1, vals2]),
+                            format=time1.format,
+                            scale=time1.scale)
 
 def timesec(t):
     """Convert a u.Quantity to seconds as a Python float"""
@@ -152,7 +191,6 @@ def tq(compstr):
 ## Time
 ################################################################################
 
-prefnumabstime = 'mjd' # Preferred numerical format for absolute time
 astropy.time.Time.to_array = lambda self, format=prefnumabstime: to_array(self, format)
 
 def to_array(tms, format=prefnumabstime):
