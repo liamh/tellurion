@@ -32,7 +32,7 @@ def _cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunit
     """Create a u.Quantity position or position-velocity scalar or
     array. Inputs `posvel` may be a tuple of (position, velocity) or
     (position), with values that are u.Quantity, np.array with final
-    dimension 6 (for position and velocity) or 3 (for position)."""
+    dimension at least 6 (for position and velocity) or 3 or 4 (for position)."""
     scalar = isscalar
     pvunit = _posvel_pt
     if type(posvel) is tuple:
@@ -42,14 +42,15 @@ def _cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunit
         else:
             pv = {_eph_pos: posvel[0]}
     elif type(posvel) is np.ndarray:
-        if posvel.shape[posvel.ndim-1] == 6:
+        width = posvel.shape[posvel.ndim-1]
+        if width >= 6:
             if posvel.ndim == 2:
                 pv = {_eph_pos: posvel[:,0:3], _eph_vel: posvel[:,3:6]}
                 scalar = False
             else:
                 pv = {_eph_pos: posvel[0:3], _eph_vel: posvel[3:6]}
                 scalar = True
-        elif posvel.shape[posvel.ndim-1] == 3:
+        elif width == 3 or width == 4:
             pvunit = _posvel_pt[_eph_pos]
             pv = {_eph_pos: posvel}
             scalar = posvel.ndim == 1

@@ -20,7 +20,7 @@ def celestial(force):
     efr = FramesFactory.getITRF(IERSConventions.IERS_2010, True)
     efl = Constants.IERS2010_EARTH_FLATTENING
     return {'earthframe': efr, \
-            'celestialframe': FramesFactory.getGCRF(), \
+            'celestialframe': FramesFactory.getEME2000(), \
             'earthangspd': Constants.IERS2010_EARTH_ANGULAR_VELOCITY, \
             'earthflat': efl, \
             'sun': CelestialBodyFactory.getSun(), \

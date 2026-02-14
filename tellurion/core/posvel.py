@@ -629,15 +629,24 @@ def pvtcart(pv, time, specunits=units.prefunits):
     """Define a PositionVelocityT or PositionT by its Cartesian
        components
 
-       pv: A tuple (position, velocity), or list of tuples, or array with 3 (position only) or 6 columns
+       pv: A tuple (position, velocity), or list of tuples, or array with 3 (position only) or 6 columns. If it is an array with 4 or 7 columns, the last column is interpreted to be a time in the format specified by to_array().
+
        time: Any time representation that serve as input to atime.abstime
        specunits: The units to be assigned to the numbers in `pv`
 
+    Example
+
+    prop = tell.propagate(demoa.propa.gen, prop5m1h, include_init=True, output='pvt')
+    new = tell.pvtcart(prop.to_array(), None, tell.siunits)
     """
     if isinstance(pv, list):
         cart = quant.vstack([pvhelper._cartesianpv(pv1, True, specunits, units.prefunits) \
                              for pv1 in pv])
     else:
+        if isinstance(pv, np.ndarray):
+            width = pv.shape[pv.ndim-1]
+            if width==4 or width==7:
+                time = atime.from_array(pv[:,width-1])
         cart = pvhelper._cartesianpv(pv, None, specunits, units.prefunits)
     if cart.dtype.names and pvhelper._eph_vel in cart.dtype.names:
         return PositionVelocityT(time=atime.abstime(time), cartesian=cart)

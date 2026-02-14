@@ -587,6 +587,7 @@ def quantity_to_dict(quantity: u.Quantity) -> Dict[str, Any]:
     else:
         return {'': quantity.value}
 
+u.Quantity.to_dict = quantity_to_dict
 
 def quantity_to_array(quantity: u.Quantity) -> np.ndarray:
     """Extract numerical values from a Quantity as a numpy array.
@@ -633,3 +634,5 @@ def quantity_to_array(quantity: u.Quantity) -> np.ndarray:
         return rfn.structured_to_unstructured(quantity.value)
     else:
         return quantity.value
+
+u.Quantity.to_array = quantity_to_array
