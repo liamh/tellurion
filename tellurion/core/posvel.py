@@ -523,7 +523,7 @@ class PositionBase(abc.ABC):
             else:
                 return np.hstack((pos_vals, time_array))
 
-    def ephemeris(self, elapsed=True, reftime='epoch', columnnames=None,
+    def ephemeris(self, elapsed=True, reftime='epoch', coordinate_type='cartesian', columnnames=None,
                   pvformats=(pvhelper._pos_format, pvhelper._vel_format)):
         """
         Create an AstroPy time series.
@@ -538,6 +538,8 @@ class PositionBase(abc.ABC):
             If True (default), add a column with elapsed time from previous step
         reftime : str, optional
             Reference time format (default: 'epoch')
+        coordinate_type: str, optional
+            One of 'cartesian', 'spherical', or 'both' (default: 'cartesian')
         columnnames : list of str, optional
             Column names to use (auto-detected if None)
         pvformats : tuple of str, optional
@@ -553,6 +555,10 @@ class PositionBase(abc.ABC):
         >>> pvt = pvtcart(SATELLITE_STATES, None)
         >>> ts = pvt.ephemeris()
         >>> print(ts)
+
+        Ephemeris in spherical coordinates (right ascension, declination, etc.)
+
+        >>> pvt.ephemeris(coordinate_type='spherical')
 
         Create ephemeris without elapsed time column:
 
@@ -579,45 +585,46 @@ class PositionBase(abc.ABC):
             columnnames = [self.name + " " + cn for cn in columnnames]
             columnnames[0]=timenm
 
-        # Prepare time array
-        if self.time.isscalar:
-            tm = astropy.time.Time([self.time.to_value('iso')])
-        else:
-            tm = self.time
-
         # Get position data
         pos_data = self.position_vector.tovector()
 
         # Create time series with appropriate data
-        if len(columnnames) == 4:  # px, py, pz, time format
-            # Need to split position into individual columns
-            ts = TimeSeries(time=tm)
-            ts[columnnames[1]] = pos_data[:, 0]
-            ts[columnnames[2]] = pos_data[:, 1]
-            ts[columnnames[3]] = pos_data[:, 2]
-        elif len(columnnames) == 2:  # position only (single column)
-            ts = TimeSeries(time=tm, data={columnnames[1]: pos_data})
-        else:  # position and velocity
-            ts = TimeSeries(time=tm, data=self.cartesian.tovector(), names=columnnames[1:])
+        if coordinate_type=='cartesian':
+            if len(columnnames) == 4:  # px, py, pz, time format
+                # Need to split position into individual columns
+                ts = TimeSeries(time=self.time)
+                ts[columnnames[1]] = pos_data[:, 0]
+                ts[columnnames[2]] = pos_data[:, 1]
+                ts[columnnames[3]] = pos_data[:, 2]
+            elif len(columnnames) == 2:  # position only (single column)
+                ts = TimeSeries(time=self.time, data={columnnames[1]: pos_data})
+            else:  # position and velocity
+                ts = TimeSeries(time=self.time, data=self.cartesian.tovector(), names=columnnames[1:])
+            # Set display formats
+            if len(columnnames) == 4:  # px, py, pz format
+                ts[columnnames[1]].info.format = pvformats[0]
+                ts[columnnames[2]].info.format = pvformats[0]
+                ts[columnnames[3]].info.format = pvformats[0]
+            elif len(columnnames) == 2:  # position only
+                ts[columnnames[1]].info.format = pvformats[0]
+            else:  # position and velocity
+                ts[columnnames[1]].info.format = pvformats[0]
+                ts[columnnames[2]].info.format = pvformats[1]
+        else:
+            # Spherical coordinates
+            ts = TimeSeries(time=self.time, data=self.spherical)
+            for nm in self.spherical.dtype.names[0:3]:
+                ts[nm].info.format = pvformats[0]
+            for nm in self.spherical.dtype.names[3:6]:
+                ts[nm].info.format = pvformats[1]
 
         # Add aux attributes if present
         for key in self.aux:
             ts[key] = self.aux[key].split(' ')
 
-        # Set display formats
-        if len(columnnames) == 4:  # px, py, pz format
-            ts[columnnames[1]].info.format = pvformats[0]
-            ts[columnnames[2]].info.format = pvformats[0]
-            ts[columnnames[3]].info.format = pvformats[0]
-        elif len(columnnames) == 2:  # position only
-            ts[columnnames[1]].info.format = pvformats[0]
-        else:  # position and velocity
-            ts[columnnames[1]].info.format = pvformats[0]
-            ts[columnnames[2]].info.format = pvformats[1]
-
         # Add elapsed time column
         if elapsed:
-            elapsed_times = [dt.quantity_str for dt in np.diff(tm)]
+            elapsed_times = [dt.quantity_str for dt in np.diff(self.time)]
             elapsed_times.insert(0, '')
             ts.add_column(elapsed_times, index=1, name='elapsed')
 

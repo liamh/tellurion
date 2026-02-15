@@ -57,6 +57,9 @@ Create an ephemeris from multiple states::
     ephemeris = pvt.ephemeris()
     print(ephemeris)
 
+    # Create ephemeris in spherical coordinates
+    pvt.ephemeris(coordinate_type='spherical')
+
 Position-Only Objects
 ---------------------
 
