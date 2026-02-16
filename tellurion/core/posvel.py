@@ -523,7 +523,7 @@ class PositionBase(abc.ABC):
             else:
                 return np.hstack((pos_vals, time_array))
 
-    def ephemeris(self, elapsed=True, reftime='epoch', coordinate_type='cartesian', columnnames=None,
+    def ephemeris(self, elapsed=True, reftime='epoch', coordinate_type='cartesian', columnnames=None, components=False,
                   pvformats=(pvhelper._pos_format, pvhelper._vel_format)):
         """
         Create an AstroPy time series.
@@ -539,9 +539,10 @@ class PositionBase(abc.ABC):
         reftime : str, optional
             Reference time format (default: 'epoch')
         coordinate_type: str, optional
-            One of 'cartesian', 'spherical', or 'both' (default: 'cartesian')
+            One of 'cartesian', 'spherical', or 'both' [not yet functional] (default: 'cartesian')
         columnnames : list of str, optional
-            Column names to use (auto-detected if None)
+            Column names to use (default: ['position', 'velocity'])
+        components : Split 3-vectors into scalar components
         pvformats : tuple of str, optional
             Tuple of (position_format, velocity_format) for display
 
@@ -570,10 +571,7 @@ class PositionBase(abc.ABC):
         """
         # Determine column names based on velocity presence and aux attributes
         if columnnames is None:
-            if self.aux:
-                # Has aux attributes - use individual position columns
-                columnnames = pvhelper._ephemeris_columns_pos_xyz
-            elif self.has_velocity:
+            if self.has_velocity:
                 # Has velocity - use position and velocity columns
                 columnnames = pvhelper._ephemeris_columns
             else:
@@ -590,26 +588,18 @@ class PositionBase(abc.ABC):
 
         # Create time series with appropriate data
         if coordinate_type=='cartesian':
-            if len(columnnames) == 4:  # px, py, pz, time format
-                # Need to split position into individual columns
-                ts = TimeSeries(time=self.time)
-                ts[columnnames[1]] = pos_data[:, 0]
-                ts[columnnames[2]] = pos_data[:, 1]
-                ts[columnnames[3]] = pos_data[:, 2]
-            elif len(columnnames) == 2:  # position only (single column)
-                ts = TimeSeries(time=self.time, data={columnnames[1]: pos_data})
-            else:  # position and velocity
-                ts = TimeSeries(time=self.time, data=self.cartesian.tovector(), names=columnnames[1:])
-            # Set display formats
-            if len(columnnames) == 4:  # px, py, pz format
-                ts[columnnames[1]].info.format = pvformats[0]
-                ts[columnnames[2]].info.format = pvformats[0]
-                ts[columnnames[3]].info.format = pvformats[0]
-            elif len(columnnames) == 2:  # position only
-                ts[columnnames[1]].info.format = pvformats[0]
-            else:  # position and velocity
-                ts[columnnames[1]].info.format = pvformats[0]
-                ts[columnnames[2]].info.format = pvformats[1]
+            # Cartesian coordinates
+            if self.has_velocity:
+                ts = TimeSeries(time=self.time, data=self.cartesian)
+                names = self.cartesian.dtype.names
+                ts[names[0]].info.format = pvformats[0]
+                ts[names[1]].info.format = pvformats[1]
+            else:
+                colnames=[columnnames[1]+'_x', columnnames[1]+'_y', columnnames[1]+'_z']
+                ts = TimeSeries(time=self.time, data=self.cartesian, names=colnames)
+                ts[colnames[0]].info.format = pvformats[0]
+                ts[colnames[1]].info.format = pvformats[0]
+                ts[colnames[2]].info.format = pvformats[0]
         else:
             # Spherical coordinates
             ts = TimeSeries(time=self.time, data=self.spherical)

@@ -12,7 +12,6 @@ _eph_time = 'time'
 _eph_pos = 'position'
 _eph_vel = 'velocity'
 _ephemeris_columns = [_eph_time, _eph_pos, _eph_vel]
-_ephemeris_columns_pos_xyz = [_eph_time, 'px','py','pz']
 _ephemeris_columns_pos_only = [_eph_time, _eph_pos]
 _posvel_pt = {_eph_pos: 'length', _eph_vel: 'speed'}
 _sphpospt = ['angle', 'angle', 'length']

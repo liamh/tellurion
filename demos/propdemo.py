@@ -57,7 +57,7 @@ demoa.props.finstm = demoa.props.gen['final']['stm'] # STM of final state wrt in
 demoa.propn.eclipse = Munch()
 demoa.propn.eclipse.events = {'altitude': 125.0*u.km, 'eclipse': [True, True], 'visibility': []}
 demoa.propn.eclipse.genevpvt = tell.prepare(demoa.init.pvt, 8*u.hour, demoa.propn.eclipse.events, output='pvt')
-demoa.propn.eclipse.suntrans = demoa.propn.eclipse.genevpvt['sun transition'].ephemeris()
+demoa.propn.eclipse.suntrans = demoa.propn.eclipse.genevpvt['sun transition'].position.ephemeris()
 demoa.propn.eclipse.ephempvt = tell.propagate(demoa.propn.eclipse.genevpvt, np.linspace(0.25*u.hour, 8*u.hour, 32), output='pvt')
 demoa.propn.eclipse.ephem = demoa.propn.eclipse.ephempvt.ephemeris()
 demoa.propn.eclipse.merged = \
@@ -68,9 +68,13 @@ demoa.propn.eclipse.um4h15m = tell.propagate(demoa.propn.eclipse.genevpvt, tell.
 ### Analytical
 demoa.propa = Munch()
 demoa.propa.gen = tell.prepare(demoa.init.pvt, 1*u.day, forceenv=tell.kepleranalytic())
-demoa.propa.ephem = tell.propagate(demoa.propa.gen, prop5m1h, include_init=True)  # Propagate to each step, and include the initial state in the ephemeris table
+demoa.propa.pvt = tell.propagate(demoa.propa.gen, prop5m1h, include_init=True, output='pvt')  #
+demoa.propa.cartephem = demoa.propa.pvt.ephemeris()
+demoa.propa.sphephem = demoa.propa.pvt.ephemeris(coordinate_type='spherical')
+demoa.propa.posonly_cartephem = demoa.propa.pvt.position.ephemeris()
+demoa.propa.posonly_sphephem = demoa.propa.pvt.position.ephemeris(coordinate_type='spherical')
 # Difference between analytical and numerical
-demoa.propa.andiff = tell.magdiff(demoa.propa.ephem['position'], demoa.propn.ephem['position'])
+demoa.propa.andiff = tell.magdiff(demoa.propa.cartephem['position'], demoa.propn.ephem['position'])
 
 # Eclipsing
 demoa.propa.eclipse = Munch()
