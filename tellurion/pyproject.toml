@@ -22,6 +22,7 @@ dependencies = [
     "pandas",
     "spacetrack",
     "geocoder",
+    "astropy-hdf5io",  # Save objects to HDF5 files
     "munch" # for demos
 ]
 
