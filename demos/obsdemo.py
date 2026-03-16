@@ -1,38 +1,12 @@
 # Geographic locations and observations
 
+import pathlib
 import astropy.coordinates as coord
 from demos.propdemo import *
+from fsc.hdf5_io import save, load
+import astropy_hdf5io  # registers all serializers including MeanElementSetT
 
-############################################################
-## TO BE REPLACED
-## Future: Binary serialize/deserialize with fsc.hdf5-io
-############################################################
-
-# Decompose SQ into an array, dtype, and unit string
-# If the object is not a structured quantity, then `name` will be used for the name and if further it is a vector (1d array), isscalar is used to determine whether that should be interpreted as a scalar structure (row vector) or vector structure (column vector)
-u.Quantity.decompose = lambda self, name=None, isscalar=False: (tell.quantity_to_array(self), self.dtype.descr, self.unit.to_string()) \
-    if self.dtype.names else (self.value, (name, '<f8', (1,)) if isscalar else (name, '<f8'), self.unit.to_string())
-
-def dict_decompose(d):
-    return {k: v.decompose() for k, v in d.items()}
-
-def dict_compose(d):
-    return {k: v[0]*u.Unit(v[2]) for k, v in d.items()}
-
-def mestrt(mest):
-    '''Create a semi-readable (only strings, numbers, dict) tuple from
-    the `MeanElementSetT` (u.Quantity are not readable). To save a
-    mean element set from spacetrack and later recreate it without
-    access to `space-track.org`, use this function to create the
-    readable tuple, save to a Python source file and call `makemest()`
-    on it.
-    '''
-    return(dict_decompose(mest.els), mest.t.to_string(), mest.tle, mest.model, mest.scdata)
-
-def makemest(elstuples, timestr, tle, model, scdata):
-    '''Create a MeanElementSetT from readable arguments'''
-    return tell.MeanElementSetT(dict_compose(elstuples), \
-                                tell.abstime(timestr), tle, model, scdata)
+_MODULE_DIR = pathlib.Path(__file__).parent # To find pre-recorded file sentinel3a.h5 in this directory
 
 ############################################################
 ## Observation demos
@@ -67,29 +41,7 @@ demoa.propn.obs_carbarn = tell.aereci(demoa.propn.pvt.position, eloc.carbarn)
 ############### Satellite visibility from ground observers
 
 demod = Munch() # Example with SGP4 propagation
-# tell.mestrt(tell.spacetrack_latest(stclient, 41335)) # So that we can reproduce the results
-demod.sentinel3A =\
-    makemest({'sma': (np.float64(7180.799), None, 'km'),
-                    'ecc': (np.float64(8.89e-05), None, ''),
-                    'inc': (np.float64(98.6296), None, 'deg'),
-                    'raan': (np.float64(65.5838), None, 'deg'),
-                    'argper': (np.float64(97.7597), None, 'deg'),
-                    'ma': (np.float64(262.3685), None, 'deg'),
-                    'memo': (np.float64(14.26736057), None, 'revolution / d'),
-                    'memod': (np.float64(1.43e-06), None, 'revolution / d2'),
-                    'memodd': (np.float64(0.0), None, 'revolution / d3'),
-                    'period': (np.float64(100.93), None, 'min'),
-                    'peralt': (np.float64(802.025), None, 'km'),
-                    'apoalt': (np.float64(803.302), None, 'km'),
-                    'B': (np.float64(0.0009831673392), None, 'm2 / kg')},
-                   '2025-12-26 18:24:37.422',
-                   ('1 41335U 16011A   25360.76709979  .00000143  00000-0  77162-4 0  9990',
-                    '2 41335  98.6296  65.5838 0000889  97.7597 262.3685 14.26736057513475'),
-                   'SGP4',
-                   {'name': 'SENTINEL 3A',
-                    'type': 'PAYLOAD',
-                    'catid': 41335,
-                    'intldes': '2016-011A'})
+demod.sentinel3A = load(_MODULE_DIR / 'sentinel3a.h5')
 demod.mcd_cb_vis = Munch() # Visibility from McDonald and Carbarn
 demod.mcd_cb_vis.ev = {'altitude': 125.0*u.km, 'eclipse': [], \
                        'visibility': [tell.observer_location(eloc.mcd, "McDonald"), \
