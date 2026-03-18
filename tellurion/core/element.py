@@ -42,11 +42,53 @@ def sfdict(sfvbl):
 ####  Element sets        ####
 ##############################
 
-ElementSetT = collections.namedtuple('ElementSetT', 'els t')
-
 kepeltma_names = ["ecc", "sma", "inc", "argper", "raan", "ma"]
 kepeltta_names = ["ecc", "sma", "inc", "argper", "raan", "ta"]
 timeelements=['ta', 'ma']
+
+
+class ElementSetT:
+    """
+    An orbital element set paired with an epoch time.
+
+    Parameters
+    ----------
+    els : `~astropy.units.Quantity`
+        Structured Quantity array of orbital elements (e.g. sma, ecc, inc, …).
+    t : `~astropy.time.Time`
+        The epoch associated with the element set.
+    """
+
+    def __init__(self, els, t):
+        if not isinstance(t, Time):
+            raise TypeError(f"t must be an astropy Time, got {type(t)}")
+        self.els = els
+        self.t = t
+
+    # ------------------------------------------------------------------ #
+    #  Equality / repr helpers that the old namedtuple provided for free   #
+    # ------------------------------------------------------------------ #
+
+    def __repr__(self):
+        return f"ElementSetT(els={self.els!r}, t={self.t!r})"
+
+    def __eq__(self, other):
+        if not isinstance(other, ElementSetT):
+            return NotImplemented
+        return (np.all(self.els == other.els) and self.t == other.t)
+
+    # ------------------------------------------------------------------ #
+    #  Iteration / unpacking — keeps backward compatibility with code     #
+    #  that did  `els, t = element_set_t_instance`                        #
+    # ------------------------------------------------------------------ #
+
+    def __iter__(self):
+        yield self.els
+        yield self.t
+
+    def __getitem__(self, idx):
+        return (self.els, self.t)[idx]
+
 
 # kep1 = kepler({"ecc":0.1, "sma":8000.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25})
 # kep2 = kepler({"zper":250.0, "zapo":350.0, "inc":22.0, "argper":66.0, "raan":68.0, "ma":7.25})
@@ -64,18 +106,19 @@ def kepler(oes, dttm=None, unitlookup=tunits.prefunits):
     # .is_within_bounds('0d', '180d') on Angle instances
     #    raise ValueError('Inclination must be between 0 and 180 degrees, inclusive')
     kepsqn = tunits.normalizeangle(kepsq, u.rev/2, timeelements)
-    if dttm==None:
+    if dttm is None:
         return kepsqn
     else:
         return ElementSetT(kepsqn, dttm)
 
 def iskepels(obj, est=True):
-    """The argument is a Keper element set or (kepels, epoch); if
+    """The argument is a Kepler element set or (kepels, epoch); if
     `est` is `True`, then it is a properly constructed `ElementSetT`,
     and if `False`, it is element values only, without an epoch time."""
     if type(obj) is ElementSetT and est:
         return iskepels(obj.els, False) and type(obj.t) is Time
     else:
         return type(obj) is u.Quantity \
+            and obj.dtype.names is not None \
             and (not(set(kepeltma_names) - set(obj.dtype.names)) \
                  or not(set(kepeltta_names) - set(obj.dtype.names)))
