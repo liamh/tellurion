@@ -1,18 +1,76 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "tellurion"
-version = "0.0.0"
-description = "Astrodynamics"
+version = "0.1.0"
+description = "Astrodynamics and satellite navigation using Orekit and AstroPy"
+authors = [{name = "Liam Healy"}]
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
 
-[build-system]
-build-backend = "flit_core.buildapi"
-requires = ["flit_core >=3.2,<4"]
+# Core package dependencies
+dependencies = [
+    "astropy>=7.0",
+    "numpy>=1.20",
+    "jdk4py",
+    "orekit-jpype",
+    "git+https://gitlab.orekit.org/orekit/orekit-data.git",
+    "funcy",
+    "pandas",
+    "spacetrack",
+    "geocoder",
+    "munch",  # for demos
+]
 
 [project.optional-dependencies]
+# HDF5 serialization support
+hdf5 = [
+    "astropy-hdf5io>=0.1.0",
+]
+
+# Documentation dependencies
 docs = [
-    "sphinx>=8.2.0",
-    "sphinx-astropy[confv2]>=1.9.1",
-    "sphinx-changelog>=1.2.0",
-    "sphinx_design>=0.6.1",
-    "matplotlib>=3.9.1",
-    "sphinxcontrib-globalsubs>=0.1.1",
+    "sphinx>=7.0",
+    "sphinx-rtd-theme",
+    "sphinx-automodapi",
+    "sphinx-astropy",
+    "numpydoc",
+    "nbsphinx",
+    "nbsphinx-link",
+    "jupyter",
+    "jupyterlab",
+    "ipython",
+    "ipykernel",
+]
+
+# Development dependencies (includes hdf5 so tests can cover it)
+dev = [
+    "tellurion[hdf5]",
+    "pytest>=7.0",
+    "pytest-cov",
+    "black",
+    "flake8",
+]
+
+# All optional dependencies combined
+all = [
+    "tellurion[hdf5,docs,dev]",
+]
+
+[project.urls]
+Homepage = "none"
+Documentation = "none"
+Repository = "none"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+markers = [
+    "hdf5: tests requiring astropy-hdf5io (deselect with '-m not hdf5')",
 ]

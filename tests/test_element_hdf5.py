@@ -5,31 +5,23 @@
 #
 # Run with: pytest -q test_element_hdf5.py
 
+# Skip entire module if astropy_hdf5io is not installed
+import pytest
+astropy_hdf5io = pytest.importorskip("astropy_hdf5io")
+fsc_hdf5_io = pytest.importorskip("fsc.hdf5_io")
+pytestmark = pytest.mark.hdf5
 import tempfile
 import os
-
-import pytest
 import numpy as np
 import astropy.units as u
 from astropy.time import Time
 import tellurion as tell
 from tellurion.core.element import ElementSetT
+# Import HDF5 save/load functions
+from fsc.hdf5_io import save, load
 
-# Importing element_hdf5 registers the ElementSetT serializer as a side-effect.
-# The import is guarded so the whole module still collects cleanly even when
-# the HDF5 libraries are absent; individual tests skip themselves as needed.
-try:
-    from fsc.hdf5_io import save, load
-    from tellurion.core import element_hdf5  # noqa: F401 – registers serializer
-    _HDF5IO_AVAILABLE = True
-except ImportError:
-    _HDF5IO_AVAILABLE = False
-
-pytestmark = pytest.mark.skipif(
-    not _HDF5IO_AVAILABLE,
-    reason="fsc.hdf5-io / astropy-hdf5io not installed"
-)
-
+# Import astropy-hdf5io to register AstroPy serializers
+import astropy_hdf5io
 
 # -----------------------------------------------------------------------
 # Shared orbit fixtures

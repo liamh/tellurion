@@ -3,7 +3,11 @@ Comprehensive test suite for posvel_hdf5 module.
 
 Tests HDF5 serialization and deserialization of PositionT and PositionVelocityT objects.
 """
+# Skip entire module if astropy_hdf5io is not installed
 import pytest
+astropy_hdf5io = pytest.importorskip("astropy_hdf5io")
+fsc_hdf5_io = pytest.importorskip("fsc.hdf5_io")
+pytestmark = pytest.mark.hdf5
 import numpy as np
 import astropy.units as u
 import astropy.time
@@ -51,19 +55,19 @@ class TestPositionTHDF5:
         """Test saving and loading a scalar PositionT with time."""
         pos = SATELLITE_STATES[0, 0:3] * u.km
         time = astropy.time.Time(60676.0, format='mjd')
-        
+
         pt = posvel.PositionT(time=time, cartesian=pos)
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(pt, filename)
-            
+
             # Load
             loaded_pt = load(filename)
-            
+
             # Verify
             assert isinstance(loaded_pt, posvel.PositionT)
             assert loaded_pt.isscalar is True
@@ -75,19 +79,19 @@ class TestPositionTHDF5:
     def test_save_load_scalar_without_time(self):
         """Test saving and loading a scalar PositionT without time."""
         pos = SATELLITE_STATES[0, 0:3] * u.km
-        
+
         pt = posvel.PositionT(time=None, cartesian=pos)
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(pt, filename)
-            
+
             # Load
             loaded_pt = load(filename)
-            
+
             # Verify
             assert isinstance(loaded_pt, posvel.PositionT)
             assert loaded_pt.time is None
@@ -99,19 +103,19 @@ class TestPositionTHDF5:
         """Test saving and loading an array of PositionT."""
         positions = SATELLITE_STATES[:5, :3] * u.km
         times = astropy.time.Time(SATELLITE_STATES[:5, 6], format='mjd')
-        
+
         pt = posvel.PositionT(time=times, cartesian=positions)
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(pt, filename)
-            
+
             # Load
             loaded_pt = load(filename)
-            
+
             # Verify
             assert isinstance(loaded_pt, posvel.PositionT)
             assert loaded_pt.isscalar is False
@@ -126,19 +130,19 @@ class TestPositionTHDF5:
         pos = SATELLITE_STATES[0, 0:3] * u.km
         time = astropy.time.Time(60676.0, format='mjd')
         aux = {'label': 'test_satellite', 'flag': 'active', 'mission_id': '12345'}
-        
+
         pt = posvel.PositionT(time=time, cartesian=pos, aux=aux)
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(pt, filename)
-            
+
             # Load
             loaded_pt = load(filename)
-            
+
             # Verify
             assert isinstance(loaded_pt, posvel.PositionT)
             # Note: Simple string values will be preserved
@@ -151,19 +155,19 @@ class TestPositionTHDF5:
         # Use meters instead of km
         pos = SATELLITE_STATES[0, 0:3] * 1000 * u.m
         time = astropy.time.Time(60676.0, format='mjd')
-        
+
         pt = posvel.PositionT(time=time, cartesian=pos)
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(pt, filename)
-            
+
             # Load
             loaded_pt = load(filename)
-            
+
             # Verify units are preserved (can convert back to original)
             assert_allclose(loaded_pt.cartesian.to(u.m).value, pos.value, rtol=1e-10)
         finally:
@@ -173,21 +177,21 @@ class TestPositionTHDF5:
         """Test that multiple save/load cycles don't degrade data."""
         positions = SATELLITE_STATES[:3, :3] * u.km
         times = astropy.time.Time(SATELLITE_STATES[:3, 6], format='mjd')
-        
+
         pt = posvel.PositionT(time=times, cartesian=positions)
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Multiple save/load cycles
             current_pt = pt
             for i in range(3):
                 save(current_pt, filename)
                 current_pt = load(filename)
-            
+
             # Verify final result matches original
-            assert_allclose(current_pt.cartesian.to(u.km).value, 
+            assert_allclose(current_pt.cartesian.to(u.km).value,
                           positions.value, rtol=1e-10)
             assert_allclose(current_pt.time.mjd, times.mjd, rtol=1e-10)
         finally:
@@ -201,29 +205,29 @@ class TestPositionVelocityTHDF5:
         """Test saving and loading a scalar PositionVelocityT with time."""
         state = SATELLITE_STATES[0, :6]
         time = astropy.time.Time(SATELLITE_STATES[0, 6], format='mjd')
-        
+
         pvt = posvel.pvtcart(state, time)
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(pvt, filename)
-            
+
             # Load
             loaded_pvt = load(filename)
-            
+
             # Verify
             assert isinstance(loaded_pvt, posvel.PositionVelocityT)
             assert loaded_pvt.isscalar is True
             assert loaded_pvt.time == time
             assert loaded_pvt.has_velocity is True
-            
+
             # Verify position
             assert_allclose(loaded_pvt.position_vector.to(u.km).value,
                           state[:3], rtol=1e-10)
-            
+
             # Verify velocity
             vel_loaded = loaded_pvt.cartesian['velocity'].to(u.km / u.s).value
             assert_allclose(vel_loaded, state[3:6], rtol=1e-10)
@@ -233,19 +237,19 @@ class TestPositionVelocityTHDF5:
     def test_save_load_with_time_in_array(self):
         """Test saving and loading with time in the array."""
         state = SATELLITE_STATES[0]  # includes time as last element
-        
+
         pvt = posvel.pvtcart(state, None)
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(pvt, filename)
-            
+
             # Load
             loaded_pvt = load(filename)
-            
+
             # Verify
             assert isinstance(loaded_pvt, posvel.PositionVelocityT)
             assert_allclose(loaded_pvt.time.mjd, SATELLITE_STATES[0, 6], rtol=1e-10)
@@ -255,25 +259,25 @@ class TestPositionVelocityTHDF5:
     def test_save_load_array(self):
         """Test saving and loading an array of PositionVelocityT."""
         pvt = posvel.pvtcart(SATELLITE_STATES, None)
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(pvt, filename)
-            
+
             # Load
             loaded_pvt = load(filename)
-            
+
             # Verify
             assert isinstance(loaded_pvt, posvel.PositionVelocityT)
             assert loaded_pvt.isscalar is False
             assert len(loaded_pvt) == len(SATELLITE_STATES)
-            
+
             # Verify times
             assert_allclose(loaded_pvt.time.mjd, SATELLITE_STATES[:, 6], rtol=1e-10)
-            
+
             # Verify positions
             assert_allclose(loaded_pvt.position_vector.to(u.km).value,
                           SATELLITE_STATES[:, :3], rtol=1e-10)
@@ -285,20 +289,20 @@ class TestPositionVelocityTHDF5:
         state = SATELLITE_STATES[0, :6]
         time = astropy.time.Time(SATELLITE_STATES[0, 6], format='mjd')
         aux = {'satellite': 'ISS', 'orbit_number': '12345'}
-        
+
         pvt = posvel.pvtcart(state, time)
         pvt.aux = aux
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(pvt, filename)
-            
+
             # Load
             loaded_pvt = load(filename)
-            
+
             # Verify
             assert isinstance(loaded_pvt, posvel.PositionVelocityT)
             # Aux attributes should be preserved (at least as strings)
@@ -310,17 +314,17 @@ class TestPositionVelocityTHDF5:
         """Test that structured quantity format is preserved."""
         state = SATELLITE_STATES[0]
         pvt = posvel.pvtcart(state, None)
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(pvt, filename)
-            
+
             # Load
             loaded_pvt = load(filename)
-            
+
             # Verify structured format
             assert hasattr(loaded_pvt.cartesian, 'dtype')
             assert loaded_pvt.cartesian.dtype.names is not None
@@ -333,21 +337,21 @@ class TestPositionVelocityTHDF5:
         """Test that save/load preserves numerical accuracy."""
         states = SATELLITE_STATES[:5]
         pvt = posvel.pvtcart(states, None)
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(pvt, filename)
-            
+
             # Load
             loaded_pvt = load(filename)
-            
+
             # Convert both to arrays and compare
             original_array = pvt.to_array()
             loaded_array = loaded_pvt.to_array()
-            
+
             assert_allclose(loaded_array, original_array, rtol=1e-12)
         finally:
             os.unlink(filename)
@@ -355,20 +359,20 @@ class TestPositionVelocityTHDF5:
     def test_save_load_subset(self):
         """Test saving and loading a subset of states."""
         pvt = posvel.pvtcart(SATELLITE_STATES, None)
-        
+
         # Extract subset
         pvt_subset = pvt[2:7]
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save subset
             save(pvt_subset, filename)
-            
+
             # Load
             loaded_pvt = load(filename)
-            
+
             # Verify
             assert len(loaded_pvt) == 5
             assert_allclose(loaded_pvt.time.mjd, SATELLITE_STATES[2:7, 6], rtol=1e-10)
@@ -384,23 +388,23 @@ class TestNestedStructures:
         state = SATELLITE_STATES[0]
         pvt = posvel.pvtcart(state, None)
         time = astropy.time.Time(SATELLITE_STATES[0, 6], format='mjd')
-        
+
         data = {
             'orbit': pvt,
             'epoch': time,
             'mission_id': 'TEST-001'
         }
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(data, filename)
-            
+
             # Load
             loaded_data = load(filename)
-            
+
             # Verify
             assert isinstance(loaded_data, dict)
             assert 'orbit' in loaded_data
@@ -414,19 +418,19 @@ class TestNestedStructures:
         pvt1 = posvel.pvtcart(SATELLITE_STATES[0], None)
         pvt2 = posvel.pvtcart(SATELLITE_STATES[1], None)
         pvt3 = posvel.pvtcart(SATELLITE_STATES[2], None)
-        
+
         data = [pvt1, pvt2, pvt3]
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(data, filename)
-            
+
             # Load
             loaded_data = load(filename)
-            
+
             # Verify
             assert isinstance(loaded_data, list)
             assert len(loaded_data) == 3
@@ -440,24 +444,24 @@ class TestNestedStructures:
         """Test saving PositionVelocityT mixed with other AstroPy types."""
         state = SATELLITE_STATES[0]
         pvt = posvel.pvtcart(state, None)
-        
+
         data = {
             'state': pvt,
             'altitude': 408 * u.km,
             'period': 92.5 * u.min,
             'inclination': 51.6 * u.deg
         }
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(data, filename)
-            
+
             # Load
             loaded_data = load(filename)
-            
+
             # Verify
             assert isinstance(loaded_data['state'], posvel.PositionVelocityT)
             assert_allclose(loaded_data['altitude'].to(u.km).value, 408, rtol=1e-10)
@@ -473,21 +477,21 @@ class TestEdgeCases:
         """Test saving and loading with empty aux dictionary."""
         state = SATELLITE_STATES[0, :6]
         time = astropy.time.Time(SATELLITE_STATES[0, 6], format='mjd')
-        
+
         pvt = posvel.pvtcart(state, time)
         # Explicitly set empty aux
         pvt.aux = {}
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(pvt, filename)
-            
+
             # Load
             loaded_pvt = load(filename)
-            
+
             # Verify
             assert isinstance(loaded_pvt, posvel.PositionVelocityT)
             assert loaded_pvt.aux == {}
@@ -498,20 +502,20 @@ class TestEdgeCases:
         """Test saving a 1-element array (not scalar)."""
         states = SATELLITE_STATES[:1]  # Single row but as array
         pvt = posvel.pvtcart(states, None)
-        
+
         # Force it to be non-scalar
         pvt.isscalar = False
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(pvt, filename)
-            
+
             # Load
             loaded_pvt = load(filename)
-            
+
             # Should still be length 1
             assert len(loaded_pvt) == 1
         finally:
@@ -521,19 +525,19 @@ class TestEdgeCases:
         """Test saving and loading a large array of states."""
         # Create a larger dataset by repeating
         large_states = np.tile(SATELLITE_STATES, (10, 1))
-        
+
         pvt = posvel.pvtcart(large_states, None)
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(pvt, filename)
-            
+
             # Load
             loaded_pvt = load(filename)
-            
+
             # Verify
             assert len(loaded_pvt) == len(large_states)
             assert_allclose(loaded_pvt.position_vector.to(u.km).value,
@@ -550,24 +554,24 @@ class TestCompatibility:
         pos = SATELLITE_STATES[0, :3] * u.km
         state = SATELLITE_STATES[0, :6]
         time = astropy.time.Time(SATELLITE_STATES[0, 6], format='mjd')
-        
+
         pt = posvel.PositionT(time=time, cartesian=pos)
         pvt = posvel.pvtcart(state, time)
-        
+
         with tempfile.NamedTemporaryFile(suffix='_pt.hdf5', delete=False) as f:
             pt_filename = f.name
         with tempfile.NamedTemporaryFile(suffix='_pvt.hdf5', delete=False) as f:
             pvt_filename = f.name
-        
+
         try:
             # Save both
             save(pt, pt_filename)
             save(pvt, pvt_filename)
-            
+
             # Load both
             loaded_pt = load(pt_filename)
             loaded_pvt = load(pvt_filename)
-            
+
             # Verify types are preserved
             assert isinstance(loaded_pt, posvel.PositionT)
             assert isinstance(loaded_pvt, posvel.PositionVelocityT)
@@ -580,30 +584,30 @@ class TestCompatibility:
     def test_interoperability_with_native_astropy(self):
         """Test that native AstroPy types can be saved alongside posvel objects."""
         from astropy.coordinates import SkyCoord
-        
+
         state = SATELLITE_STATES[0]
         pvt = posvel.pvtcart(state, None)
-        
+
         # Create some native AstroPy objects
         coord = SkyCoord(ra=10 * u.degree, dec=40 * u.degree, distance=1000 * u.pc)
         time = astropy.time.Time('2023-01-01T00:00:00')
-        
+
         data = {
             'satellite_state': pvt,
             'target_coordinate': coord,
             'observation_time': time
         }
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save
             save(data, filename)
-            
+
             # Load
             loaded_data = load(filename)
-            
+
             # Verify all types preserved
             assert isinstance(loaded_data['satellite_state'], posvel.PositionVelocityT)
             assert isinstance(loaded_data['target_coordinate'], SkyCoord)
@@ -626,7 +630,7 @@ class TestErrorHandling:
         with tempfile.NamedTemporaryFile(mode='w', suffix='.hdf5', delete=False) as f:
             filename = f.name
             f.write("This is not an HDF5 file")
-        
+
         try:
             with pytest.raises(Exception):  # Should raise some kind of error
                 load(filename)
@@ -641,26 +645,26 @@ class TestIntegrationWorkflows:
         """Test a complete workflow: create, save, load, modify, save again."""
         # Create initial orbit
         pvt = posvel.pvtcart(SATELLITE_STATES[:5], None)
-        
+
         with tempfile.NamedTemporaryFile(suffix='_initial.hdf5', delete=False) as f:
             initial_file = f.name
         with tempfile.NamedTemporaryFile(suffix='_modified.hdf5', delete=False) as f:
             modified_file = f.name
-        
+
         try:
             # Save initial
             save(pvt, initial_file)
-            
+
             # Load and modify
             loaded_pvt = load(initial_file)
             loaded_pvt.aux['mission'] = 'ISS'
-            
+
             # Save modified
             save(loaded_pvt, modified_file)
-            
+
             # Load modified
             final_pvt = load(modified_file)
-            
+
             # Verify
             assert len(final_pvt) == 5
             assert 'mission' in final_pvt.aux
@@ -672,24 +676,24 @@ class TestIntegrationWorkflows:
         """Test loading multiple files and merging."""
         pvt1 = posvel.pvtcart(SATELLITE_STATES[:5], None)
         pvt2 = posvel.pvtcart(SATELLITE_STATES[5:10], None)
-        
+
         with tempfile.NamedTemporaryFile(suffix='_1.hdf5', delete=False) as f:
             file1 = f.name
         with tempfile.NamedTemporaryFile(suffix='_2.hdf5', delete=False) as f:
             file2 = f.name
-        
+
         try:
             # Save both
             save(pvt1, file1)
             save(pvt2, file2)
-            
+
             # Load both
             loaded1 = load(file1)
             loaded2 = load(file2)
-            
+
             # Merge
             merged = loaded1.merge(loaded2)
-            
+
             # Verify
             assert len(merged) == 10
         finally:
@@ -699,20 +703,20 @@ class TestIntegrationWorkflows:
     def test_extract_subset_and_save(self):
         """Test extracting a subset and saving it separately."""
         pvt = posvel.pvtcart(SATELLITE_STATES, None)
-        
+
         # Extract subset
         subset = pvt[3:8]
-        
+
         with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
             filename = f.name
-        
+
         try:
             # Save subset
             save(subset, filename)
-            
+
             # Load
             loaded_subset = load(filename)
-            
+
             # Verify it's the correct subset
             assert len(loaded_subset) == 5
             assert_allclose(loaded_subset.time.mjd, SATELLITE_STATES[3:8, 6], rtol=1e-10)

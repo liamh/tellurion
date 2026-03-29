@@ -250,3 +250,6 @@ API Reference
 .. automodapi:: tellurion.core.posvel
    :no-inheritance-diagram:
    :skip: TimeSeries
+
+.. seealso::
+   :ref:`hdf5-serialization` — saving and loading ``PositionVelocityT`` objects.

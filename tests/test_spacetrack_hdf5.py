@@ -12,11 +12,14 @@ MeanElementSetT is a plain class (not a namedtuple) with fields:
     els, t, tle, model, scdata
 and __eq__ based on tle, model, and scdata only.
 """
+# Skip entire module if astropy_hdf5io is not installed
+import pytest
+astropy_hdf5io = pytest.importorskip("astropy_hdf5io")
+fsc_hdf5_io = pytest.importorskip("fsc.hdf5_io")
+pytestmark = pytest.mark.hdf5
 import os
 import pathlib
 import tempfile
-
-import pytest
 import numpy as np
 import astropy.units as u
 import astropy.time
