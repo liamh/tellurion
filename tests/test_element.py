@@ -7,8 +7,11 @@ import numpy as np
 import astropy.units as u
 from astropy.time import Time
 import tellurion as tell
-from tellurion.core.element import ElementSetT, iskepels
-
+import pytest
+from tellurion.core.element import (ElementSetT, iskepels,
+                                    isequels, iscircels,
+                                    equeltma_names, equeltta_names,
+                                    circeltma_names, circeltta_names)
 
 def keppvt(dictels, time):
     """From the dictionary of element values, compute the Kepler
@@ -86,21 +89,32 @@ class TestElementSetT:
         est = _make_leo1_elementset()
         assert isinstance(est, ElementSetT)
 
-    def test_has_els_attribute(self):
+    def test_has_elements_attribute(self):
         est = _make_leo1_elementset()
-        assert isinstance(est.els, u.Quantity)
+        assert isinstance(est.elements, u.Quantity)
 
-    def test_has_t_attribute(self):
+    def test_has_time_attribute(self):
         est = _make_leo1_elementset()
-        assert isinstance(est.t, Time)
+        assert isinstance(est.time, Time)
+
+    def test_iskepels_true_elements_only(self):
+        est = _make_leo1_elementset()
+        assert iskepels(est.elements, est=False)
+
+    def test_unpack_iteration(self):
+        est = _make_leo1_elementset()
+        elements, time = est
+        assert isinstance(elements, u.Quantity)
+        assert isinstance(time, Time)
+
+    def test_getitem(self):
+        est = _make_leo1_elementset()
+        assert est[0] is est.elements
+        assert est[1] is est.time
 
     def test_iskepels_true_with_epoch(self):
         est = _make_leo1_elementset()
         assert iskepels(est, est=True)
-
-    def test_iskepels_true_els_only(self):
-        est = _make_leo1_elementset()
-        assert iskepels(est.els, est=False)
 
     def test_iskepels_false_for_plain_quantity(self):
         assert not iskepels(1.0*u.km, est=False)
@@ -119,8 +133,8 @@ class TestElementSetT:
 
     def test_getitem(self):
         est = _make_leo1_elementset()
-        assert est[0] is est.els
-        assert est[1] is est.t
+        assert est[0] is est.elements
+        assert est[1] is est.time
 
     def test_equality(self):
         est1 = _make_leo1_elementset()
@@ -140,7 +154,7 @@ class TestElementSetT:
         import pytest
         est = _make_leo1_elementset()
         with pytest.raises(TypeError):
-            ElementSetT(est.els, "not-a-time")
+            ElementSetT(est.elements, "not-a-time")
 
 
 # -----------------------------------------------------------------------
@@ -159,11 +173,11 @@ def test_allplane():
     np.testing.assert_allclose(smaecc['ecc'], 0.60573583*u.dimensionless_unscaled)
     np.testing.assert_allclose(alts['altper'], 821.86354*u.km)
     np.testing.assert_allclose(alts['altapo'], 2421.86354*u.km)
-    np.testing.assert_allclose(geo1['kep'].els['sma'], 42164.1696233*u.km)
+    np.testing.assert_allclose(geo1['kep'].elements['sma'], 42164.1696233*u.km)
     # Test conversion to semimajor axis
     np.testing.assert_allclose(tell.sma(1e4*u.s), 10032.11910363*u.km)
     np.testing.assert_allclose(tell.sma(-20*(u.km/u.s)**2), 9965.0110375*u.km)
-    np.testing.assert_allclose(ell1['kep'].els['sma'], 24446.15304165*u.km)
+    np.testing.assert_allclose(ell1['kep'].elements['sma'], 24446.15304165*u.km)
 
 
 # -----------------------------------------------------------------------
@@ -223,3 +237,373 @@ def test_posvel():
                                np.array([3.28252622e+00, 9.24230194e-01, 2.65617624e+07,
                                          2.30480399e-04, 4.46083005e-05, 1.11022302e-13]),
                                atol=1.0e-7, rtol=1.0e-8)
+
+# -----------------------------------------------------------------------
+# Reuse the existing fixtures from the top of the file
+# -----------------------------------------------------------------------
+
+def _make_eq_from_pvt(pvtobj):
+    """Equinoctial ElementSetT from a PVT via the monkey-patch."""
+    return pvtobj.equinoctial()
+
+def _make_circ_from_pvt(pvtobj):
+    """Circular ElementSetT from a PVT via the monkey-patch."""
+    return pvtobj.circular()
+
+# -----------------------------------------------------------------------
+# Equinoctial: structural tests
+# -----------------------------------------------------------------------
+
+class TestEquinoctialStructure:
+
+    def test_returns_elementset_t(self):
+        est = _make_eq_from_pvt(leo1['pvt'])
+        assert isinstance(est, ElementSetT)
+
+    def test_has_t_attribute(self):
+        est = _make_eq_from_pvt(leo1['pvt'])
+        assert isinstance(est.time, Time)
+
+    def test_els_is_quantity(self):
+        est = _make_eq_from_pvt(leo1['pvt'])
+        assert isinstance(est.elements, u.Quantity)
+
+    def test_field_names_mean(self):
+        """Round-trip via mean longitude should produce mean-longitude field names."""
+        est = _make_eq_from_pvt(leo1['pvt'])   # default is mean
+        assert set(equeltma_names) <= set(est.elements.dtype.names)
+
+    def test_unpack(self):
+        est = _make_eq_from_pvt(leo1['pvt'])
+        els, t = est
+        assert isinstance(els, u.Quantity)
+        assert isinstance(t, Time)
+
+    def test_getitem(self):
+        est = _make_eq_from_pvt(leo1['pvt'])
+        assert est[0] is est.elements
+        assert est[1] is est.time
+
+    def test_repr(self):
+        est = _make_eq_from_pvt(leo1['pvt'])
+        assert 'ElementSetT' in repr(est)
+
+    def test_equality(self):
+        est1 = _make_eq_from_pvt(leo1['pvt'])
+        est2 = _make_eq_from_pvt(leo1['pvt'])
+        assert est1 == est2
+
+    def test_inequality(self):
+        eq_leo1 = _make_eq_from_pvt(leo1['pvt'])
+        eq_leo2 = _make_eq_from_pvt(leo2['pvt'])
+        assert eq_leo1 != eq_leo2
+
+
+# -----------------------------------------------------------------------
+# Equinoctial: predicate tests
+# -----------------------------------------------------------------------
+
+class TestIsequels:
+
+    def test_true_with_epoch(self):
+        est = _make_eq_from_pvt(leo1['pvt'])
+        assert isequels(est, est=True)
+
+    def test_true_els_only(self):
+        est = _make_eq_from_pvt(leo1['pvt'])
+        assert isequels(est.elements, est=False)
+
+    def test_false_for_keplerian_est(self):
+        assert not isequels(leo1['kep'])
+
+    def test_false_for_plain_quantity(self):
+        assert not isequels(1.0 * u.km, est=False)
+
+    def test_false_for_circular_est(self):
+        circ = _make_circ_from_pvt(leo1['pvt'])
+        assert not isequels(circ)
+
+    def test_iskepels_false_for_equinoctial(self):
+        est = _make_eq_from_pvt(leo1['pvt'])
+        assert not iskepels(est)
+
+
+# -----------------------------------------------------------------------
+# Equinoctial: numerical consistency
+# -----------------------------------------------------------------------
+
+class TestEquinoctialValues:
+
+    def test_sma_matches_keplerian(self):
+        """Equinoctial sma must equal Keplerian sma for the same orbit."""
+        eq_sma  = tell.elementval(leo1['pvt'].equinoctial(), 'sma')
+        kep_sma = tell.elementval(leo1['pvt'].kepler(),      'sma')
+        np.testing.assert_allclose(eq_sma.si.value, kep_sma.si.value, rtol=1e-10)
+
+    def test_circular_orbit_ex_ey_near_zero(self):
+        """For a near-circular orbit (leo1, altper=altapo=350km), ex and ey ≈ 0."""
+        est = _make_eq_from_pvt(leo1['pvt'])
+        np.testing.assert_allclose(est.elements['ex'].value, 0.0, atol=1e-6)
+        np.testing.assert_allclose(est.elements['ey'].value, 0.0, atol=1e-6)
+
+    def test_geo_hx_hy_near_zero(self):
+        """For a zero-inclination GEO orbit, hx=tan(i/2)cos(Ω)≈0, hy≈0."""
+        est = _make_eq_from_pvt(geo1['pvt'])
+        np.testing.assert_allclose(est.elements['hx'].value, 0.0, atol=1e-8)
+        np.testing.assert_allclose(est.elements['hy'].value, 0.0, atol=1e-8)
+
+    def test_elementval_sma_from_equinoctial(self):
+        """elementval dispatches correctly to _eqdict for an equinoctial ElementSetT."""
+        est = _make_eq_from_pvt(gps1['pvt'])
+        sma = tell.elementval(est, 'sma')
+        np.testing.assert_allclose(sma.to(u.km).value,
+                                   tell.sma(2.0).to(u.km).value,
+                                   rtol=1e-6)
+
+    def test_elementval_list_from_equinoctial(self):
+        """elementval with a list of element names works for equinoctial."""
+        est  = _make_eq_from_pvt(leo2['pvt'])
+        vals = tell.elementval(est, ['sma', 'ex', 'ey', 'hx', 'hy', 'ml'])
+        assert len(vals) == 6
+        assert all(isinstance(v, u.Quantity) for v in vals)
+
+    def test_sma_multiple_orbits(self):
+        """Equinoctial sma matches Keplerian sma across a range of orbit types."""
+        for d in [leo1, leo2, geo1, ell1, ell2, vang1, gps1]:
+            eq_sma  = tell.elementval(_make_eq_from_pvt(d['pvt']), 'sma')
+            kep_sma = tell.elementval(d['kep'], 'sma')
+            np.testing.assert_allclose(eq_sma.si.value, kep_sma.si.value,
+                                       rtol=1e-9,
+                                       err_msg=f"sma mismatch for {d}")
+
+
+# -----------------------------------------------------------------------
+# Equinoctial: round-trip tests
+# -----------------------------------------------------------------------
+
+class TestEquinoctialRoundTrip:
+
+    def _pvt_array(self, pvtobj):
+        return np.concatenate([pvtobj.cartesian['position'].si.value,
+                               pvtobj.cartesian['velocity'].si.value])
+
+    def test_pvt_to_equinoctial_to_pvt(self):
+        """PVT → equinoctial ElementSetT → PVT should recover original."""
+        eq_est = _make_eq_from_pvt(leo1['pvt'])
+        recovered = tell.pvt(eq_est)
+        np.testing.assert_allclose(self._pvt_array(recovered),
+                                   self._pvt_array(leo1['pvt']),
+                                   rtol=1e-9)
+
+    def test_round_trip_elliptical(self):
+        eq_est = _make_eq_from_pvt(ell2['pvt'])
+        recovered = tell.pvt(eq_est)
+        np.testing.assert_allclose(self._pvt_array(recovered),
+                                   self._pvt_array(ell2['pvt']),
+                                   rtol=1e-9)
+
+    def test_round_trip_geo(self):
+        eq_est = _make_eq_from_pvt(geo1['pvt'])
+        recovered = tell.pvt(eq_est)
+        np.testing.assert_allclose(self._pvt_array(recovered),
+                                   self._pvt_array(geo1['pvt']),
+                                   rtol=1e-9)
+
+
+# -----------------------------------------------------------------------
+# Circular: structural tests
+# -----------------------------------------------------------------------
+
+class TestCircularStructure:
+
+    def test_returns_elementset_t(self):
+        est = _make_circ_from_pvt(leo1['pvt'])
+        assert isinstance(est, ElementSetT)
+
+    def test_has_t_attribute(self):
+        est = _make_circ_from_pvt(leo1['pvt'])
+        assert isinstance(est.time, Time)
+
+    def test_els_is_quantity(self):
+        est = _make_circ_from_pvt(leo1['pvt'])
+        assert isinstance(est.elements, u.Quantity)
+
+    def test_field_names_mean(self):
+        est = _make_circ_from_pvt(leo1['pvt'])
+        assert set(circeltma_names) <= set(est.elements.dtype.names)
+
+    def test_unpack(self):
+        est = _make_circ_from_pvt(leo1['pvt'])
+        els, t = est
+        assert isinstance(els, u.Quantity)
+        assert isinstance(t, Time)
+
+    def test_repr(self):
+        est = _make_circ_from_pvt(leo1['pvt'])
+        assert 'ElementSetT' in repr(est)
+
+    def test_equality(self):
+        est1 = _make_circ_from_pvt(leo1['pvt'])
+        est2 = _make_circ_from_pvt(leo1['pvt'])
+        assert est1 == est2
+
+    def test_inequality(self):
+        c1 = _make_circ_from_pvt(leo1['pvt'])
+        c2 = _make_circ_from_pvt(leo2['pvt'])
+        assert c1 != c2
+
+
+# -----------------------------------------------------------------------
+# Circular: predicate tests
+# -----------------------------------------------------------------------
+
+class TestIscircels:
+
+    def test_true_with_epoch(self):
+        est = _make_circ_from_pvt(leo1['pvt'])
+        assert iscircels(est, est=True)
+
+    def test_true_els_only(self):
+        est = _make_circ_from_pvt(leo1['pvt'])
+        assert iscircels(est.elements, est=False)
+
+    def test_false_for_keplerian_est(self):
+        assert not iscircels(leo1['kep'])
+
+    def test_false_for_plain_quantity(self):
+        assert not iscircels(1.0 * u.km, est=False)
+
+    def test_false_for_equinoctial_est(self):
+        eq = _make_eq_from_pvt(leo1['pvt'])
+        assert not iscircels(eq)
+
+    def test_iskepels_false_for_circular(self):
+        est = _make_circ_from_pvt(leo1['pvt'])
+        assert not iskepels(est)
+
+
+# -----------------------------------------------------------------------
+# Circular: numerical consistency
+# -----------------------------------------------------------------------
+
+class TestCircularValues:
+
+    def test_sma_matches_keplerian(self):
+        circ_sma = tell.elementval(_make_circ_from_pvt(leo1['pvt']), 'sma')
+        kep_sma  = tell.elementval(leo1['kep'], 'sma')
+        np.testing.assert_allclose(circ_sma.si.value, kep_sma.si.value, rtol=1e-10)
+
+    def test_inc_matches_keplerian(self):
+        circ_inc = tell.elementval(_make_circ_from_pvt(leo2['pvt']), 'inc')
+        kep_inc  = tell.elementval(leo2['kep'], 'inc')
+        np.testing.assert_allclose(circ_inc.si.value, kep_inc.si.value, rtol=1e-10)
+
+    def test_raan_matches_keplerian(self):
+        circ_raan = tell.elementval(_make_circ_from_pvt(leo2['pvt']), 'raan')
+        kep_raan  = tell.elementval(leo2['kep'], 'raan')
+        np.testing.assert_allclose(circ_raan.si.value, kep_raan.si.value, rtol=1e-10)
+
+    def test_circular_orbit_cex_cey_near_zero(self):
+        """For a near-circular orbit, cex and cey ≈ 0."""
+        est = _make_circ_from_pvt(leo1['pvt'])
+        np.testing.assert_allclose(est.elements['cex'].value, 0.0, atol=1e-6)
+        np.testing.assert_allclose(est.elements['cey'].value, 0.0, atol=1e-6)
+
+    def test_elementval_list_from_circular(self):
+        est  = _make_circ_from_pvt(leo2['pvt'])
+        vals = tell.elementval(est, ['sma', 'cex', 'cey', 'inc', 'raan', 'mla'])
+        assert len(vals) == 6
+        assert all(isinstance(v, u.Quantity) for v in vals)
+
+    def test_sma_multiple_orbits(self):
+        for d in [leo1, leo2, geo1, ell1, ell2, vang1, gps1]:
+            circ_sma = tell.elementval(_make_circ_from_pvt(d['pvt']), 'sma')
+            kep_sma  = tell.elementval(d['kep'], 'sma')
+            np.testing.assert_allclose(circ_sma.si.value, kep_sma.si.value,
+                                       rtol=1e-9,
+                                       err_msg=f"sma mismatch for {d}")
+
+
+# -----------------------------------------------------------------------
+# Circular: round-trip tests
+# -----------------------------------------------------------------------
+
+class TestCircularRoundTrip:
+
+    def _pvt_array(self, pvtobj):
+        return np.concatenate([pvtobj.cartesian['position'].si.value,
+                               pvtobj.cartesian['velocity'].si.value])
+
+    def test_pvt_to_circular_to_pvt(self):
+        circ_est  = _make_circ_from_pvt(leo1['pvt'])
+        recovered = tell.pvt(circ_est)
+        np.testing.assert_allclose(self._pvt_array(recovered),
+                                   self._pvt_array(leo1['pvt']),
+                                   rtol=1e-9)
+
+    def test_round_trip_elliptical(self):
+        circ_est  = _make_circ_from_pvt(ell2['pvt'])
+        recovered = tell.pvt(circ_est)
+        np.testing.assert_allclose(self._pvt_array(recovered),
+                                   self._pvt_array(ell2['pvt']),
+                                   rtol=1e-9)
+
+    def test_round_trip_gps(self):
+        circ_est  = _make_circ_from_pvt(gps1['pvt'])
+        recovered = tell.pvt(circ_est)
+        np.testing.assert_allclose(self._pvt_array(recovered),
+                                   self._pvt_array(gps1['pvt']),
+                                   rtol=1e-9)
+
+
+# -----------------------------------------------------------------------
+# tselements: regression and dispatch tests
+# -----------------------------------------------------------------------
+
+#### This file doesn't have propagation tests, only single points, so this possibly belongs in test_prop.py?
+
+# class TestTselements:
+
+#     def test_keplerian_altper_altapo(self):
+#         """Regression: altper/altapo must work (was broken by equinoctial refactor)."""
+#         ts = tell.tselements(leo1['propn_ephem'], ["altper", "altapo"])
+#         assert 'altper' in ts.colnames
+#         assert 'altapo' in ts.colnames
+
+#     def test_equinoctial_elements_in_tselements(self):
+#         ts = tell.tselements(leo1['propn_ephem'], ["sma", "ex", "ey"])
+#         assert 'sma' in ts.colnames
+
+#     def test_circular_elements_in_tselements(self):
+#         ts = tell.tselements(leo1['propn_ephem'], ["sma", "cex", "cey"])
+#         assert 'sma' in ts.colnames
+
+#     def test_tselements_length_matches_ephem(self):
+#         ts = tell.tselements(leo1['propn_ephem'], ["altper", "altapo"])
+#         assert len(ts) == len(leo1['propn_ephem'])
+
+
+# -----------------------------------------------------------------------
+# Cross-type predicate exclusivity
+# -----------------------------------------------------------------------
+
+class TestPredicateExclusivity:
+    """Each is*els predicate must be True for exactly one element type."""
+
+    def test_keplerian_only(self):
+        est = leo1['kep']
+        assert     iskepels(est)
+        assert not isequels(est)
+        assert not iscircels(est)
+
+    def test_equinoctial_only(self):
+        est = _make_eq_from_pvt(leo1['pvt'])
+        assert not iskepels(est)
+        assert     isequels(est)
+        assert not iscircels(est)
+
+    def test_circular_only(self):
+        est = _make_circ_from_pvt(leo1['pvt'])
+        assert not iskepels(est)
+        assert not isequels(est)
+        assert     iscircels(est)

@@ -14,6 +14,10 @@ from tellurion.core import element
 from tellurion.ork import force
 from tellurion.ork import convert
 
+from org.orekit.orbits import (Orbit, CartesianOrbit, OrbitType,
+                                CircularOrbit, EquinoctialOrbit,
+                                KeplerianOrbit, PositionAngleType)
+
 ###########################################
 #### Element values from orbital state ####
 ###########################################
@@ -39,26 +43,62 @@ _eldict = element.sfdict([["sma", "semimajor axis", "length", u.meter, Keplerian
 
 _elphystype = {key: value['phystype'] for key, value in _eldict.items()}
 
-def elementval(orbstate, elt, earthrad=force.deffe["earthrad"].si.value):
-    """
-    Compute the orbital element from the orbital state.
+def elementval(orbstate, elt, earthrad=force.deffe["earthrad"].si.value, forceenv=force.deffe):
+    """Compute orbital element(s) from any orbital state representation."""
+    if element.iskepels(orbstate) or type(orbstate) is KeplerianOrbit:
+        ko = _keplerianorbit(orbstate, forceenv=forceenv)
+        return element.statefnval(ko, elt, _eldict, earthrad)
+    elif element.isequels(orbstate) or type(orbstate) is EquinoctialOrbit:
+        eo = _equinoctialorbit(orbstate, forceenv=forceenv)
+        return element.statefnval(eo, elt, _eqdict)
+    elif element.iscircels(orbstate) or type(orbstate) is CircularOrbit:
+        co = _circularorbit(orbstate, forceenv=forceenv)
+        return element.statefnval(co, elt, _circdict)
+    else:
+        # PVT or other Cartesian input: convert to Keplerian
+        ko = _keplerianorbit(orbstate, forceenv=forceenv).withCachedPositionAngleType(PositionAngleType.MEAN)
+        return element.statefnval(ko, elt, _eldict, earthrad)
 
-    Parameters
-    ----------
-      orbstate
-          Representation of orbital state in any form.
-      elt
-          The orbital element desired, see list eldict.keys(); may be a list, e.g. ["sma", "ecc"].
-      earthrad
-          the radius of the earth, necessary to provide for altitudes of perigee and apogee
-    """
-    return element.statefnval(_keplerianorbit(orbstate), elt, _eldict, earthrad)
+# def elementval(orbstate, elt, earthrad=force.deffe["earthrad"].si.value):
+#     """Compute orbital element(s) from any orbital state representation."""
+#     if element.iskepels(orbstate) or type(orbstate) is KeplerianOrbit:
+#         return element.statefnval(_keplerianorbit(orbstate), elt, _eldict, earthrad)
+#     elif element.isequels(orbstate) or type(orbstate) is EquinoctialOrbit:
+#         return element.statefnval(_equinoctialorbit(orbstate), elt, _eqdict)
+#     elif element.iscircels(orbstate) or type(orbstate) is CircularOrbit:
+#         return element.statefnval(_circularorbit(orbstate), elt, _circdict)
+#     else:
+#         # Fall back to Keplerian conversion (works from PVT etc.)
+#         return element.statefnval(_keplerianorbit(orbstate), elt, _eldict, earthrad)
 
-def tselements(ephem, elements):
-    """Make a time series of selected orbital elements"""
+def tselements(ephem, elements, forceenv=force.deffe):
+    """Make a time series of selected orbital elements."""
     return TimeSeries(time=ephem.time,
-                      data=[dict(zip(elements, elementval(ephrow, elements)))
+                      data=[dict(zip(elements, elementval(ephrow, elements, forceenv=forceenv)))
                             for ephrow in ephem.pvt()])
+
+# def tselements(ephem, elements, forceenv=force.deffe):
+#     """Make a time series of selected orbital elements, with angle-type
+#     caching for equinoctial orbits to avoid redundant conversions."""
+
+#     # Determine the best angle type to cache based on what's being requested
+#     _mean_els = {'ml', 'ma', 'mla'}
+#     _true_els = {'tl', 'ta', 'tla'}
+#     elset = set(elements)
+#     if elset & _mean_els:
+#         pat = PositionAngleType.MEAN
+#     elif elset & _true_els:
+#         pat = PositionAngleType.TRUE
+#     else:
+#         pat = PositionAngleType.MEAN   # default
+
+#     def _row_elementval(ephrow):
+#         orb = _equinoctialorbit(ephrow, forceenv).withCachedPositionAngleType(pat)
+#         return element.statefnval(orb, elements, _eqdict)
+
+#     return TimeSeries(time=ephem.time,
+#                       data=[dict(zip(elements, _row_elementval(ephrow)))
+#                             for ephrow in ephem.pvt()])
 
 ########################################
 ####    Make Kepler element set     ####
@@ -68,7 +108,7 @@ def _keplerianorbit(oes, units=(units.prefunits['length'], units.prefunits['angl
                     forceenv=force.deffe):
     """Make a org.orekit.orbits.KeplerianOrbit from anything"""
     if element.iskepels(oes):
-        return _keporb_from_components(oes.els, oes.t, units, forceenv)
+        return _keporb_from_components(oes.elements, oes.time, units, forceenv)
     elif type(oes) is KeplerianOrbit:
         return oes
     elif type(oes) is posvel.PositionVelocityT:
@@ -82,21 +122,124 @@ def _keporb_from_components(oes, epoch, units=(units.prefunits['length'], units.
     """Make a org.orekit.orbits.KeplerianOrbit from orbital elements as a u.Quantity or Dict"""
     oessi = oes.si.value
     if 'ma' in oessi.dtype.names:
-        return KeplerianOrbit(float(oessi['sma']), float(oessi['ecc']), float(oessi['inc']), \
-                              float(oessi['argper']), float(oessi['raan']), \
-                              float(oessi['ma']), PositionAngleType.MEAN, \
-                              fe['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                              convert._abstime_to_okad(epoch),   # Sets the date of the orbital parameters
-                              fe['earthmu'].si.value)   # Sets the central attraction coefficient (m³/s²)
+        pat = PositionAngleType.MEAN
+        anom = float(oessi['ma'])
     elif 'ta' in oessi.dtype.names:
-        return KeplerianOrbit(float(oessi['sma']), float(oessi['ecc']), float(oessi['inc']), \
-                              float(oessi['argper']), float(oessi['raan']), \
-                              float(oessi['ma']), PositionAngleType.TRUE, \
-                              fe['celestialframe'], # The frame in which the parameters are defined (must be a pseudo-inertial frame)
-                              convert._abstime_to_okad(epoch),   # Sets the date of the orbital parameters
-                              fe['earthmu'].si.value)   # Sets the central attraction coefficient (m³/s²)
+        pat = PositionAngleType.TRUE
+        anom = float(oessi['ta'])
     else:
         raise ValueError('Time element (ma or ta) required in element set')
+    orb = KeplerianOrbit(float(oessi['sma']), float(oessi['ecc']), float(oessi['inc']),
+                         float(oessi['argper']), float(oessi['raan']),
+                         anom, pat,
+                         fe['celestialframe'],
+                         convert._abstime_to_okad(epoch),
+                         fe['earthmu'].si.value)
+    return orb.withCachedPositionAngleType(pat)
+
+###########################################
+#### Non-Kepler elsets and converters  ####
+###########################################
+
+# ── Equinoctial element dict ───────────────────────────────────────────────
+_eqdict = element.sfdict([
+    ["sma", "semimajor axis",        "length",        u.meter,                   EquinoctialOrbit.getA],
+    ["ex",  "equinoctial ex",        "dimensionless", u.dimensionless_unscaled,  EquinoctialOrbit.getEquinoctialEx],
+    ["ey",  "equinoctial ey",        "dimensionless", u.dimensionless_unscaled,  EquinoctialOrbit.getEquinoctialEy],
+    ["hx",  "equinoctial hx",        "dimensionless", u.dimensionless_unscaled,  EquinoctialOrbit.getHx],
+    ["hy",  "equinoctial hy",        "dimensionless", u.dimensionless_unscaled,  EquinoctialOrbit.getHy],
+    ["ml",  "mean longitude",        "angle",         u.radian,                  EquinoctialOrbit.getLM],
+    ["tl",  "true longitude",        "angle",         u.radian,                  EquinoctialOrbit.getLv],
+    ["el",  "eccentric longitude",   "angle",         u.radian,                  EquinoctialOrbit.getLE],
+])
+
+# ── Circular element dict ──────────────────────────────────────────────────
+_circdict = element.sfdict([
+    ["sma",  "semimajor axis",          "length",        u.meter,                   CircularOrbit.getA],
+    ["cex",  "circular ex",             "dimensionless", u.dimensionless_unscaled,  CircularOrbit.getCircularEx],
+    ["cey",  "circular ey",             "dimensionless", u.dimensionless_unscaled,  CircularOrbit.getCircularEy],
+    ["inc",  "inclination",             "angle",         u.radian,                  CircularOrbit.getI],
+    ["raan", "right ascension of AN",   "angle",         u.radian,                  CircularOrbit.getRightAscensionOfAscendingNode],
+    ["mla",  "mean latitude argument",  "angle",         u.radian,                  CircularOrbit.getAlphaM],
+    ["tla",  "true latitude argument",  "angle",         u.radian,                  CircularOrbit.getAlphaV],
+    ["ela",  "eccentric lat argument",  "angle",         u.radian,                  CircularOrbit.getAlphaE],
+])
+
+def _equinoctialorbit(oes, forceenv=force.deffe):
+    """Make an org.orekit.orbits.EquinoctialOrbit from anything."""
+    if element.isequels(oes):
+        return _eqorb_from_components(oes.elements, oes.time, forceenv)
+    elif type(oes) is EquinoctialOrbit:
+        return oes
+    elif type(oes) is posvel.PositionVelocityT:
+        co = CartesianOrbit(convert._tspvc(oes),
+                            forceenv['celestialframe'], forceenv['earthmu'].si.value)
+        return OrbitType.EQUINOCTIAL.convertType(co)
+    else:
+        # Try converting via Keplerian as intermediate
+        return OrbitType.EQUINOCTIAL.convertType(_keplerianorbit(oes, forceenv=forceenv))
+
+def _eqorb_from_components(oes, epoch, fe=force.deffe):
+    """Make an EquinoctialOrbit from a structured element Quantity."""
+    oessi = oes.si.value
+    if 'ml' in oessi.dtype.names:
+        pat = PositionAngleType.MEAN
+        lon = float(oessi['ml'])
+    elif 'tl' in oessi.dtype.names:
+        pat = PositionAngleType.TRUE
+        lon = float(oessi['tl'])
+    else:
+        raise ValueError('Time element (ml or tl) required in equinoctial set')
+
+    orb = EquinoctialOrbit(
+        float(oessi['sma']), float(oessi['ex']), float(oessi['ey']),
+        float(oessi['hx']), float(oessi['hy']), lon, pat,
+        fe['celestialframe'],
+        convert._abstime_to_okad(epoch),
+        fe['earthmu'].si.value)
+
+    # Cache the construction angle type so reads of the same type are free
+    orb = orb.withCachedPositionAngleType(pat)
+
+    # Defensive check — getCachedPositionAngleType lets us verify this
+    if orb.getCachedPositionAngleType() != pat:
+        raise RuntimeError(
+            f"Orekit cached {orb.getCachedPositionAngleType()} "
+            f"but expected {pat}; check Orekit version compatibility")
+
+    return orb
+
+def _circularorbit(oes, forceenv=force.deffe):
+    """Make an org.orekit.orbits.CircularOrbit from anything."""
+    if element.iscircels(oes):
+        return _circorb_from_components(oes.elements, oes.time, forceenv)
+    elif type(oes) is CircularOrbit:
+        return oes
+    elif type(oes) is posvel.PositionVelocityT:
+        co = CartesianOrbit(convert._tspvc(oes),
+                            forceenv['celestialframe'], forceenv['earthmu'].si.value)
+        return OrbitType.CIRCULAR.convertType(co)
+    else:
+        return OrbitType.CIRCULAR.convertType(_keplerianorbit(oes, forceenv=forceenv))
+
+def _circorb_from_components(oes, epoch, fe=force.deffe):
+    """Make a CircularOrbit from a structured element Quantity."""
+    oessi = oes.si.value
+    if 'mla' in oessi.dtype.names:
+        pat = PositionAngleType.MEAN
+        lat = float(oessi['mla'])
+    elif 'tla' in oessi.dtype.names:
+        pat = PositionAngleType.TRUE
+        lat = float(oessi['tla'])
+    else:
+        raise ValueError('Time element (mla or tla) required in circular set')
+    orb = CircularOrbit(
+        float(oessi['sma']), float(oessi['cex']), float(oessi['cey']),
+        float(oessi['inc']), float(oessi['raan']), lat, pat,
+        fe['celestialframe'],
+        convert._abstime_to_okad(epoch),
+        fe['earthmu'].si.value)
+    return orb.withCachedPositionAngleType(pat)
 
 ###############################
 ####  Transformations      ####
@@ -113,25 +256,45 @@ def _kepler(object, forceenv=force.deffe, mean_time_element=True): # Add prefuni
         elnames = element.kepeltma_names
     else:
         elnames = element.kepeltta_names
-    if hasattr(object, 't'):
-        dttm = object.t
-    elif hasattr(object, 'time'):
+    if hasattr(object, 'time'):
         dttm = object.time
     kepels = dict(zip(elnames, elementval(ko, elnames)))
     return element.kepler(kepels, dttm)
 
 posvel.PositionVelocityT.kepler = _kepler
 
+def _equinoctial(object, forceenv=force.deffe, mean_time_element=True):
+    """The equinoctial element set from the Cartesian PVT or equivalent."""
+    co = CartesianOrbit(convert._tspvc(object),
+                        forceenv['celestialframe'], forceenv['earthmu'].si.value)
+    eo = OrbitType.EQUINOCTIAL.convertType(co)
+    elnames = element.equeltma_names if mean_time_element else element.equeltta_names
+    dttm = object.time
+    equels = dict(zip(elnames, elementval(eo, elnames)))
+    return element.equinoctial(equels, dttm)
+
+def _circular(object, forceenv=force.deffe, mean_time_element=True):
+    """The circular element set from the Cartesian PVT or equivalent."""
+    co = CartesianOrbit(convert._tspvc(object),
+                        forceenv['celestialframe'], forceenv['earthmu'].si.value)
+    circ = OrbitType.CIRCULAR.convertType(co)
+    elnames = element.circeltma_names if mean_time_element else element.circeltta_names
+    dttm = object.time
+    circs = dict(zip(elnames, elementval(circ, elnames)))
+    return element.circular(circs, dttm)
+
+posvel.PositionVelocityT.equinoctial = _equinoctial
+posvel.PositionVelocityT.circular    = _circular
+
 def pvt(object, dttm=None):
-    """Make a Cartesian PVT from the object, or an ephemeris
-    generator, which has an initial state. If the object is an
-    elements set without a datetime, it must be supplied in `dttm`."""
     if element.iskepels(object, True):
         return convert._pvt(_keplerianorbit(object))
-    elif element.iskepels(object, False):
-        return convert._pvt(_keplerianorbit(object, dttm))
+    elif element.isequels(object, True):
+        return convert._pvt(_equinoctialorbit(object))
+    elif element.iscircels(object, True):
+        return convert._pvt(_circularorbit(object))
     else:
-        raise ValueError('Can only transform Kepler element sets')
+        raise ValueError('Can only transform element sets with an epoch')
 
 def allplane(oesdict, forceenv=force.deffe, unitlookup=units.prefunits):
     """Generate all plane pairs (sma, ecc), (radper, radapo), (altper, altapo) from the first or last pairs; additionally, the mean motion can be substituted for semimajor axis in the first pair.

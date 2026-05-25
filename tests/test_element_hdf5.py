@@ -81,10 +81,10 @@ def _roundtrip(est):
 
 def _assert_els_allclose(loaded, original, rtol=1e-10):
     """Assert all element fields match after a round-trip."""
-    for name in original.els.dtype.names:
+    for name in original.elements.dtype.names:
         np.testing.assert_allclose(
-            loaded.els[name].si.value,
-            original.els[name].si.value,
+            loaded.elements[name].si.value,
+            original.elements[name].si.value,
             rtol=rtol,
             err_msg=f"field '{name}' does not match after round-trip")
 
@@ -108,7 +108,7 @@ class TestElementSetTHdf5:
     def test_roundtrip_epoch_preserved(self):
         est = _leo1_est()
         loaded = _roundtrip(est)
-        assert loaded.t == est.t
+        assert loaded.time == est.time
 
     def test_roundtrip_leo1_all_fields(self):
         est = _leo1_est()
@@ -119,8 +119,8 @@ class TestElementSetTHdf5:
         est = _geo1_est()
         loaded = _roundtrip(est)
         np.testing.assert_allclose(
-            loaded.els['sma'].to(u.km).value,
-            est.els['sma'].to(u.km).value,
+            loaded.elements['sma'].to(u.km).value,
+            est.elements['sma'].to(u.km).value,
             rtol=1e-10)
 
     def test_roundtrip_geo1_all_fields(self):
@@ -141,16 +141,16 @@ class TestElementSetTHdf5:
         """The structured dtype field names must survive the round-trip."""
         est = _leo1_est()
         loaded = _roundtrip(est)
-        assert loaded.els.dtype.names == est.els.dtype.names
+        assert loaded.elements.dtype.names == est.elements.dtype.names
 
     def test_roundtrip_units_preserved(self):
         """Each field's unit must survive the round-trip."""
         est = _leo1_est()
         loaded = _roundtrip(est)
-        for name in est.els.dtype.names:
-            assert loaded.els[name].unit.is_equivalent(est.els[name].unit), \
+        for name in est.elements.dtype.names:
+            assert loaded.elements[name].unit.is_equivalent(est.elements[name].unit), \
                 f"unit for field '{name}' changed: " \
-                f"{loaded.els[name].unit} vs {est.els[name].unit}"
+                f"{loaded.elements[name].unit} vs {est.elements[name].unit}"
 
     def test_roundtrip_pvt_unchanged(self):
         """The PVT derived from the loaded element set should match the original."""

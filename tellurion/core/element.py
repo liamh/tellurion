@@ -53,42 +53,32 @@ class ElementSetT:
 
     Parameters
     ----------
-    els : `~astropy.units.Quantity`
+    elements : `~astropy.units.Quantity`
         Structured Quantity array of orbital elements (e.g. sma, ecc, inc, …).
-    t : `~astropy.time.Time`
+    time : `~astropy.time.Time`
         The epoch associated with the element set.
     """
 
-    def __init__(self, els, t):
-        if not isinstance(t, Time):
-            raise TypeError(f"t must be an astropy Time, got {type(t)}")
-        self.els = els
-        self.t = t
-
-    # ------------------------------------------------------------------ #
-    #  Equality / repr helpers that the old namedtuple provided for free   #
-    # ------------------------------------------------------------------ #
+    def __init__(self, elements, time):
+        if not isinstance(time, Time):
+            raise TypeError(f"time must be an astropy Time, got {type(time)}")
+        self.elements = elements
+        self.time = time
 
     def __repr__(self):
-        return f"ElementSetT(els={self.els!r}, t={self.t!r})"
+        return f"ElementSetT(elements={self.elements!r}, time={self.time!r})"
 
     def __eq__(self, other):
         if not isinstance(other, ElementSetT):
             return NotImplemented
-        return (np.all(self.els == other.els) and self.t == other.t)
-
-    # ------------------------------------------------------------------ #
-    #  Iteration / unpacking — keeps backward compatibility with code     #
-    #  that did  `els, t = element_set_t_instance`                        #
-    # ------------------------------------------------------------------ #
+        return (np.all(self.elements == other.elements) and self.time == other.time)
 
     def __iter__(self):
-        yield self.els
-        yield self.t
+        yield self.elements
+        yield self.time
 
     def __getitem__(self, idx):
-        return (self.els, self.t)[idx]
-
+        return (self.elements, self.time)[idx]
 
 # kep1 = kepler({"ecc":0.1, "sma":8000.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25})
 # kep2 = kepler({"zper":250.0, "zapo":350.0, "inc":22.0, "argper":66.0, "raan":68.0, "ma":7.25})
@@ -109,16 +99,89 @@ def kepler(oes, dttm=None, unitlookup=tunits.prefunits):
     if dttm is None:
         return kepsqn
     else:
-        return ElementSetT(kepsqn, dttm)
+        return ElementSetT(elements=kepsqn, time=dttm)
 
 def iskepels(obj, est=True):
-    """The argument is a Kepler element set or (kepels, epoch); if
-    `est` is `True`, then it is a properly constructed `ElementSetT`,
-    and if `False`, it is element values only, without an epoch time."""
     if type(obj) is ElementSetT and est:
-        return iskepels(obj.els, False) and type(obj.t) is Time
+        return iskepels(obj.elements, False) and type(obj.time) is Time
     else:
         return type(obj) is u.Quantity \
             and obj.dtype.names is not None \
             and (not(set(kepeltma_names) - set(obj.dtype.names)) \
                  or not(set(kepeltta_names) - set(obj.dtype.names)))
+
+# --- Equinoctial elements ---
+# a, ex=e·cos(ω+Ω), ey=e·sin(ω+Ω), hx=tan(i/2)·cos(Ω), hy=tan(i/2)·sin(Ω), λ
+equeltma_names = ["sma", "ex", "ey", "hx", "hy", "ml"]   # mean longitude
+equeltta_names = ["sma", "ex", "ey", "hx", "hy", "tl"]   # true longitude
+equtimeelements = ['ml', 'tl']
+
+# --- Circular elements ---
+# a, ex=e·cos(αω), ey=e·sin(αω), i, Ω, u (latitude argument)
+circeltma_names = ["sma", "cex", "cey", "inc", "raan", "mla"]  # mean latitude arg
+circeltta_names = ["sma", "cex", "cey", "inc", "raan", "tla"]  # true latitude arg
+circtimeelements = ['mla', 'tla']
+
+_equpt = {
+    "sma":  'length',
+    "ex":   'dimensionless', "ey":   'dimensionless',
+    "hx":   'dimensionless', "hy":   'dimensionless',
+    "ml":   'angle',         "tl":   'angle',
+}
+
+_circpt = {
+    "sma":  'length',
+    "cex":  'dimensionless', "cey":  'dimensionless',
+    "inc":  'angle',
+    "raan": 'angle',
+    "mla":  'angle',         "tla":  'angle',
+}
+
+
+def equinoctial(oes, dttm=None, unitlookup=tunits.prefunits):
+    """Make an equinoctial orbital element set.
+
+    Parameters
+    ----------
+    oes : dict or structured Quantity
+        Keys: sma, ex, ey, hx, hy, and one of ml (mean longitude) or tl
+        (true longitude).
+    dttm : `~astropy.time.Time`, optional
+        Epoch; if supplied, returns an ``ElementSetT``.
+    """
+    isscalar = not hasattr(dttm, 'isscalar') or dttm.isscalar
+    eqsq = quant.make_quantity(oes, _equpt, isscalar, unitlookup)
+    eqsqn = tunits.normalizeangle(eqsq, u.rev / 2, equtimeelements)
+    return ElementSetT(elements=eqsqn, time=dttm) if dttm is not None else eqsqn
+
+def isequels(obj, est=True):
+    if type(obj) is ElementSetT and est:
+        return isequels(obj.elements, False) and type(obj.time) is Time
+    return (type(obj) is u.Quantity
+            and obj.dtype.names is not None
+            and (not set(equeltma_names) - set(obj.dtype.names)
+                 or not set(equeltta_names) - set(obj.dtype.names)))
+
+def circular(oes, dttm=None, unitlookup=tunits.prefunits):
+    """Make a circular orbital element set.
+
+    Parameters
+    ----------
+    oes : dict or structured Quantity
+        Keys: sma, cex, cey, inc, raan, and one of mla (mean latitude
+        argument) or tla (true latitude argument).
+    dttm : `~astropy.time.Time`, optional
+        Epoch; if supplied, returns an ``ElementSetT``.
+    """
+    isscalar = not hasattr(dttm, 'isscalar') or dttm.isscalar
+    csq = quant.make_quantity(oes, _circpt, isscalar, unitlookup)
+    csqn = tunits.normalizeangle(csq, u.rev / 2, circtimeelements)
+    return ElementSetT(elements=csqn, time=dttm) if dttm is not None else csqn
+
+def iscircels(obj, est=True):
+    if type(obj) is ElementSetT and est:
+        return iscircels(obj.elements, False) and type(obj.time) is Time
+    return (type(obj) is u.Quantity
+            and obj.dtype.names is not None
+            and (not set(circeltma_names) - set(obj.dtype.names)
+                 or not set(circeltta_names) - set(obj.dtype.names)))

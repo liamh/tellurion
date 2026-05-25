@@ -14,6 +14,7 @@ built on AstroPy.
    structured_quantities
    astropy_extensions
    posvel
+   element
    hdf5_serialization
    examples
 

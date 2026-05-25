@@ -42,16 +42,16 @@ def _element_set_t_to_hdf5(self, hdf5_handle):
     hdf5_handle['type_tag'] = 'tellurion.core.element.ElementSetT'
 
     # Serialize the epoch Time using the astropy-hdf5io Time serializer
-    to_hdf5(self.t, hdf5_handle.create_group('t'))
+    to_hdf5(self.time, hdf5_handle.create_group('t'))
 
     # Serialize the structured Quantity field-by-field
     els_grp = hdf5_handle.create_group('els')
-    field_names = list(self.els.dtype.names)
+    field_names = list(self.elements.dtype.names)
     # Store field order so the structured dtype is rebuilt identically on load
     els_grp.attrs['field_names'] = field_names
     for name in field_names:
         fld_grp = els_grp.create_group(name)
-        fld = self.els[name]
+        fld = self.elements[name]
         # Extract the plain Python/numpy scalar and the unit string
         fld_grp['value'] = float(fld.value)
         fld_grp.attrs['unit'] = str(fld.unit)
