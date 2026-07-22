@@ -1,28 +1,30 @@
-import collections
+"""Orbital elements user interface."""
+
 import numpy as np
 import astropy.units as u
-import astropy.constants # astropy.constants.R_earth
 from astropy.time import Time
-from astropy.timeseries import TimeSeries
 
 from tellurion.astro import quantity_utils as quant
 from tellurion.astro import units as tunits
-from tellurion.core import posvel
 
-###############################
-#### State function values ####
-###############################
+# ----------------------------
+# State function values
+# ----------------------------
 
-def statefnval (orbstate, quantname, sfdict, constants=None):
+
+def statefnval(orbstate, quantname, sfdict, constants=None):
     """
-    Compute value(s) given by function(s) of the orbital state
+    Compute value(s) given by function(s) of the orbital state.
+
     Arguments
       orbstate:   Representation of orbital state in any form
       quantname:  Name(s) of quantity; may be a list, e.g. ["sma", "ecc"]
       constants:  Quantities independent of the orbital state
+
     """
     if isinstance(quantname, list):
-        return [statefnval(orbstate, itm, sfdict, constants) for itm in quantname]
+        return [statefnval(orbstate, itm, sfdict, constants)
+                for itm in quantname]
     else:
         lookup = sfdict[quantname]
         getter = lookup["getter"]
@@ -33,18 +35,22 @@ def statefnval (orbstate, quantname, sfdict, constants=None):
         orkunit = lookup["orkunit"]
         return u.Quantity(orkval, orkunit).to(tunits.prefunits[lookup["phystype"]])
 
-def sfdict(sfvbl):
-    """Make a state function dictionary of the state function variables"""
-    keys = ["name", "description", "phystype", "orkunit", "getter"]
-    return dict(zip([ev[0] for ev in sfvbl], [dict(zip(keys,ev)) for ev in sfvbl]))
 
-##############################
-####  Element sets        ####
-##############################
+def sfdict(sfvbl):
+    """Make a state function dictionary of the state function variables."""
+    keys = ["name", "description", "phystype", "orkunit", "getter"]
+    return dict(zip([ev[0] for ev in sfvbl],
+                    [dict(zip(keys, ev)) for ev in sfvbl]))
+
+
+# ----------------------------
+#  Element sets
+# ----------------------------
+
 
 kepeltma_names = ["ecc", "sma", "inc", "argper", "raan", "ma"]
 kepeltta_names = ["ecc", "sma", "inc", "argper", "raan", "ta"]
-timeelements=['ta', 'ma']
+timeelements = ['ta', 'ma']
 
 
 class ElementSetT:

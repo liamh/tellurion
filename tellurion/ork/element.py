@@ -5,7 +5,8 @@ Orbital elements in Orekit
 import numpy as np
 import astropy.units as u
 from astropy.timeseries import TimeSeries
-from org.orekit.orbits import Orbit, CartesianOrbit, OrbitType, CircularOrbit, KeplerianOrbit, PositionAngleType
+from org.orekit.orbits import CartesianOrbit, OrbitType, \
+    CircularOrbit, KeplerianOrbit, PositionAngleType
 from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
 
 from tellurion.core import units

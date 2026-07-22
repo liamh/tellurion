@@ -1,4 +1,4 @@
-""" Demonstration of state, element, propagation
+"""Demonstration of state, element, propagation.
 
 See
 demoa.keys()
@@ -12,18 +12,19 @@ from munch import Munch
 
 import tellurion as tell
 
-################ General
+# --------- General --------------
 
 newyear = tell.abstime('2025-01-01T00:00:00')
-prop5m1h = np.linspace(5.0*u.minute, 60.0*u.minute, 12) # Step every 5 minutes for an hour
+prop5m1h = np.linspace(5.0*u.minute, 60.0*u.minute, 12)  # Step every 5 minutes for an hour
 
-################ State and elements
+# --------- State and elements --------------
 
 demoa = Munch()
 demoa.init = Munch()
 demoa.init.check = Munch()
 
-demoa.init.pv = np.array([5740.13268349, 3314.06715, 0., -2.75082684, 4.76457184, 5.50165367])
+demoa.init.pv = np.array([5740.13268349, 3314.06715, 0.,
+                          -2.75082684, 4.76457184, 5.50165367])
 demoa.init.pvt = tell.pvtcart(demoa.init.pv, newyear)
 # Cartesian or Kepler transformation
 demoa.init.altper = tell.elementval(demoa.init.pvt, 'altper')  # Altitude of perigee for the initial state
@@ -31,14 +32,14 @@ demoa.init.kep = demoa.init.pvt.kepler()  # Convert PVT to Kepler elements
 demoa.init.seekep = demoa.init.kep.elements.to_dict()  # Easier to read Kepler elements
 demoa.init.cart = tell.pvt(demoa.init.kep)  # Convert back to Cartesian, same as demoa.init.pvt
 
-################ Propagation two-body
+# --------- Propagation two-body --------------
 
 demoa.propn = Munch()
 demoa.propn.check = Munch()
 
 ### Numerical
 # The generator
-demoa.propn.gen = tell.prepare(demoa.init.pvt, 1*u.day) # Use generator for any propagation up to 1 day
+demoa.propn.gen = tell.prepare(demoa.init.pvt, 1*u.day)  # Use generator for any propagation up to 1 day
 # Ephemeris
 demoa.propn.ephem = tell.propagate(demoa.propn.gen, prop5m1h, True)  # Propagate to each step, and include the initial state
 demoa.propn.pvt = tell.propagate(demoa.propn.gen, prop5m1h, True, output='pvt') # As PVT
@@ -140,11 +141,14 @@ demoa.props.finstm4x4hpB01 = demoa.props.gen4x4hpB01['final']['stm'] # STM of fi
 demoa.propp.ss4x4hpB01 = tell.propagate(demoa.propp.gen4x4hpB01, prop5m1h, True, output='ss')
 demoa.propp.ss4x4 = tell.propagate(demoa.propp.gen4x4, prop5m1h, True, output='ss')
 demoa.propp.ntw_4x4hpB01_to_4x4 = tell.ntw(demoa.propp.ss4x4hpB01, demoa.propp.ss4x4, tell.siunits)
-demoa.propp.rsw_4x4hpB01_to_4x4 = tell.lvlh(demoa.propp.ss4x4hpB01, demoa.propp.ss4x4, tell.siunits)
+demoa.propp.rsw_4x4hpB01_to_4x4 = tell.lvlh(demoa.propp.ss4x4hpB01,
+                                            demoa.propp.ss4x4, tell.siunits)
 
-# Lifetime - need a very low orbit to avoid a long integration, but don't go below 100km altitude, HP will fail
+# Lifetime - need a very low orbit to avoid a long integration, but
+# don't go below 100km altitude, HP will fail
 democ = Munch()
-democ.kep = tell.kepler({"sma":6600.0, "ecc":0.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25}, newyear)
+democ.kep = tell.kepler({"sma": 6600.0, "ecc": 0.0, "inc": 42.0,
+                         "argper": 66.0, "raan": 217.4, "ma": 7.25}, newyear)
 democ.pvt = tell.pvt(democ.kep) # Convert Kepler elements to PVT
 democ.gen = tell.prepare(democ.pvt, 10*u.day, forceenv=demoa.propp.fe4x4hpB01) # Ask for 10 days, but it only lasts about 6
 democ.tspan = tell.timerange(democ.gen) # <Quantity 518050.233819 s> ; time until altitude threshold is hit

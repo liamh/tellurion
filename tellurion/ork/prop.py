@@ -28,24 +28,19 @@ and `_statechar()` to generate a character indicating each state.
 
 """
 
-import numpy as np
 import astropy.units as u
 from org.orekit.orbits import CartesianOrbit, OrbitType
 from org.orekit.propagation.numerical import NumericalPropagator
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import Propagator, BoundedPropagator, SpacecraftState, EphemerisGenerator
 from org.orekit.propagation.analytical.tle import TLE, TLEPropagator
-from org.orekit.propagation.analytical import KeplerianPropagator
+from org.orekit.propagation.analytical import KeplerianPropagator, BrouwerLyddanePropagator
 from org.orekit.utils import AbsolutePVCoordinates, TimeStampedPVCoordinates, PVCoordinatesProvider
 import org.orekit.forces.gravity as okgrav
 
 import tellurion.astro.time as atime
-from ..core import posvel
-from ..core.posvel import PVT
-from ..core import element
 from ..core.spacetrack import MeanElementSetT
 from . import force
-from . import element as oelement
 from . import convert
 from . import jacobian
 from .event import prop as event
@@ -57,15 +52,63 @@ defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': [], 'stm': False}
 # sentprep = tork.SGP4prep(isssent['SENTINEL 3A'], 1*u.day, {'altitude': 125.0*u.km, 'eclipse': [True, True], 'visibility': []})
 # tork.propagate(sentprep, np.linspace(5.0*u.minute, 60.0*u.minute, 12), True)
 
+
 def prepare(initstate, proptime, events=defev, forceenv=force.deffe, \
-            reftime='epoch', occluder='earth', output='et'):
-    if type(initstate)==MeanElementSetT:
-        return SGP4prep(initstate, proptime, events, forceenv, reftime, occluder, output)
-    elif type(initstate)==PVT:
-        if forceenv.get('gravity-degree-order'):
-            return niprep(initstate, proptime, events, forceenv, reftime, occluder, output)
-        else:
-            return kaprep(initstate, proptime, events, forceenv, reftime, occluder, output)
+            reftime='epoch', occluder='earth', output='et', propagator='auto'):
+    """
+    Prepare a propagation
+
+    Parameters
+    ----------
+    initstate  : initial state, must be in a form acceptable to the propagator
+                 chosen
+    proptime   : time of propagation
+    events     : dict
+    forceenv   : dict
+    reftime    : reference time used to fill the relevant column of the ephemeris table
+    occluder   : string
+        Celestial body for computing eclipses
+    output     : string
+        'et' - ephemeris table
+        'ss' - Orekit SpacecraftState
+    propagator : str
+        'auto' - automatically select based on initstate and forceenv
+        'keplerian' - two-body analytic
+        'brouwer-lyddane' - J2 perturbations analytic
+        'numerical' - numerical integration
+        'sgp4' - SGP4 mean elements (requires MeanElementSetT)
+    """
+    if propagator == 'auto':
+        propagator = _select_propagator(initstate, forceenv)
+
+    propagator_func = {
+        'sgp4': SGP4prep,
+        'keplerian': kaprep,
+        'brouwer-lyddane': blprep,
+        'numerical': niprep,
+    }.get(propagator)
+
+    if not propagator_func:
+        raise ValueError(f"Unknown propagator: {propagator}")
+
+    # Validate compatibility
+    if propagator == 'sgp4' and not isinstance(initstate, MeanElementSetT):
+        raise ValueError("SGP4 requires MeanElementSetT initial state")
+    if isinstance(initstate, MeanElementSetT) and propagator != 'sgp4':
+        raise ValueError("MeanElementSetT requires SGP4 propagator")
+
+    return propagator_func(initstate, proptime, events, forceenv, reftime, occluder, output)
+
+
+def _select_propagator(initstate, forceenv):
+    '''Auto-select propagator based on state type and force environment'''
+    if isinstance(initstate, MeanElementSetT):
+        return 'sgp4'
+    elif forceenv.get('gravity-degree-order'):
+        return 'numerical'
+    else:
+        return 'keplerian'
+
 
 def SGP4prep(meanels, proptime, events, forceenv, reftime, occluder, output):
     '''Propagate mean elements using SGP4'''
@@ -73,12 +116,24 @@ def SGP4prep(meanels, proptime, events, forceenv, reftime, occluder, output):
         tle = TLE(*meanels.tle)
         propagator = TLEPropagator.selectExtrapolator(tle)
         generator = _make_generator(tle, lambda propto: \
-                                propagator.getPVCoordinates(propto, forceenv['celestialframe']))
+                    propagator.getPVCoordinates(propto, forceenv['celestialframe']))
         generator['pvt0'] = convert._pvt(generator['propfn'](generator['epoch']))
         _additional(events, propagator, generator, proptime, forceenv, reftime, output)
         return generator
-    else:
-        raise ValueError("Can only propagate SGP4 mean elements with SGP4")
+    raise ValueError("Can only propagate SGP4 mean elements with SGP4")
+
+
+def blprep(initstate, proptime, events, forceenv, reftime, occluder, output):
+    '''Prepare the Brouwer-Lyddane analytic propagator (J2 perturbations)'''
+    ork0 = CartesianOrbit(convert._tspvc(initstate),
+                          forceenv['celestialframe'], forceenv['earthmu'].si.value)
+    propagator = BrouwerLyddanePropagator(ork0, forceenv['earthmu'].si.value,
+                    forceenv['earthframe'], forceenv['gravity-degree-order'])
+    generator = _make_generator(ork0, lambda propto: propagator.propagate(propto))
+    generator['pvt0'] = convert._pvt(generator['propfn'](generator['epoch']))
+    _additional(events, propagator, generator, proptime, forceenv, reftime, output)
+    return generator
+
 
 def kaprep(initstate, proptime, events, forceenv, reftime, occluder, output):
     '''Prepare the Keplerian (two-body) analytic propagator'''
@@ -90,11 +145,13 @@ def kaprep(initstate, proptime, events, forceenv, reftime, occluder, output):
     _additional(events, propagator, generator, proptime, forceenv, reftime, output)
     return generator
 
+
 def _additional(events, propagator, generator, proptime, forceenv, reftime, output):
     '''Additional calculations when propagating initially'''
     detlogs = event._add_pre(events, propagator, forceenv)
     generator['propfn'](generator['epoch'].shiftedBy(atime.timesec(proptime)))
     event._add_post(detlogs, events, generator, reftime, output)
+
 
 def niprep(initstate, proptime, events, forceenv, reftime, occluder, output):
     """Make a generator for an ephemeris, optionally include eclipse
@@ -112,7 +169,8 @@ def niprep(initstate, proptime, events, forceenv, reftime, occluder, output):
       Forces to use; output of force.setgravity()
 
     stopalt:   float
-      Stop propagation if altitude above spherical earth (m) drops below this threshold
+      Stop propagation if altitude above spherical earth (m) drops below
+    this threshold
 
     Returns
     -------
