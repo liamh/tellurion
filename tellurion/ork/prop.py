@@ -40,7 +40,8 @@ import org.orekit.forces.gravity as okgrav
 
 import tellurion.astro.time as atime
 import tellurion.core.element as element
-from ..core.spacetrack import MeanElementSetT
+from tellurion.core import PositionVelocityT
+from tellurion.core import MeanElementSetT
 from . import force
 from . import convert
 from . import jacobian
@@ -125,28 +126,37 @@ def SGP4prep(meanels, proptime, events, forceenv, reftime, occluder, output):
     raise ValueError("Can only propagate SGP4 mean elements with SGP4")
 
 
+def _convert_to_orbit(state, forceenv):
+    '''Convert the ElementSetT or PositionVelocityT state to an Orekit Orbit'''
+    if isinstance(state, element.ElementSetT):
+        conv = _keporb_from_components(state.elements, state.time)
+    elif isinstance(state, PositionVelocityT):
+        conv = CartesianOrbit(convert._tspvc(state),
+                forceenv['celestialframe'], forceenv['earthmu'].si.value)
+    else:
+        raise ValueError("Can only convert ElementSetT or PositionVelocityT objects")
+    return conv
+
+
 def blprep(initstate, proptime, events, forceenv, reftime, occluder, output):
     '''Prepare the Brouwer-Lyddane analytic propagator (J2 perturbations)'''
-    if isinstance(initstate, element.ElementSetT):
-        ork0 = _keporb_from_components(initstate.elements, initstate.time)
-        # M2, which is along-track acceleration primarily caused by
-        # atmospheric drag, like the B* term in SGP4. Here we set this
-        # to zero.
-        m2 = 0.0
-        propagator = BrouwerLyddanePropagator(ork0, float(forceenv['earthmu'].si.value),
-                                              forceenv['gravity-unnorm'], m2)
-        generator = _make_generator(ork0, lambda propto: propagator.propagate(propto))
-        generator['pvt0'] = convert._pvt(generator['propfn'](generator['epoch']))
-        _additional(events, propagator, generator, proptime, forceenv, reftime,
-                    output)
-        return generator
-    raise ValueError("Can only propagate with Brouwer-Lyddane from ElementSetT objects")
+    ork0 = _convert_to_orbit(initstate, forceenv)
+    # M2, which is along-track acceleration primarily caused by
+    # atmospheric drag, like the B* term in SGP4. Here we set this
+    # to zero.
+    m2 = 0.0
+    propagator = BrouwerLyddanePropagator(ork0, float(forceenv['earthmu'].si.value),
+                                          forceenv['gravity-unnorm'], m2)
+    generator = _make_generator(ork0, lambda propto: propagator.propagate(propto))
+    generator['pvt0'] = convert._pvt(generator['propfn'](generator['epoch']))
+    _additional(events, propagator, generator, proptime, forceenv, reftime,
+                output)
+    return generator
 
 
 def kaprep(initstate, proptime, events, forceenv, reftime, occluder, output):
     '''Prepare the Keplerian (two-body) analytic propagator'''
-    ork0 = CartesianOrbit(convert._tspvc(initstate), \
-                          forceenv['celestialframe'], forceenv['earthmu'].si.value)
+    ork0 = _convert_to_orbit(initstate, forceenv)
     propagator = KeplerianPropagator(ork0, forceenv['earthmu'].si.value)
     generator = _make_generator(ork0, lambda propto: propagator.propagate(propto))
     generator['pvt0'] = convert._pvt(generator['propfn'](generator['epoch']))
