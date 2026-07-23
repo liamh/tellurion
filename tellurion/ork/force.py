@@ -31,6 +31,7 @@ def celestial(force):
             'moon': OneAxisEllipsoid(Constants.MOON_EQUATORIAL_RADIUS, 0.0012, \
                                      CelestialBodyFactory.getMoon().getBodyOrientedFrame())}
 
+
 def setgravity(degree, order, mass = 100.0):
     """Set the environmental constants such as reference frame and
     planetary properties.  Arguments are the degree and order of the
@@ -38,12 +39,13 @@ def setgravity(degree, order, mass = 100.0):
     """
     eg = GravityFieldFactory.getNormalizedProvider(degree, order)
     force = {'gravity': eg,
+             'gravity-unnorm':  # For Brouwer-Lyddane
+             GravityFieldFactory.getUnnormalizedProvider(degree, order),
              'gravity-degree-order': [eg.getMaxDegree(), eg.getMaxOrder()],
              'earthrad': eg.getAe()*u.m,
              'earthmu': eg.getMu()*u.m**3/u.s**2,
-             'mass': mass} # Needed by several forces but not gravity
-    # Define spherical altitude for convience, not specifically force related, but uses the definitions
-    return  celestial(force) | force
+             'mass': mass}  # Needed by several forces but not gravity
+    return celestial(force) | force
 
 
 def kepleranalytic():

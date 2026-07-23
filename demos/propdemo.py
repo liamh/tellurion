@@ -105,6 +105,12 @@ demob.eph = tell.propagate(demob.gen, prop5m1h, True)  # Propagate to each step,
 
 demob.kep20m_pvt = demob.eph[4]      # PVT at 20 minutes from ephemeris
 
+# Brouwer-Lyddane through J5
+demob.blgen = tell.prepare(demob.kep, 1*u.day,
+                           forceenv=tell.setgravity(5, 0),
+                           propagator='brouwer-lyddane')
+demob.bleph = tell.propagate(demob.blgen, prop5m1h, True)
+
 ################ Time series selection and manipulation
 
 demoa.tssel = Munch()

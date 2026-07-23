@@ -39,10 +39,12 @@ from org.orekit.utils import AbsolutePVCoordinates, TimeStampedPVCoordinates, PV
 import org.orekit.forces.gravity as okgrav
 
 import tellurion.astro.time as atime
+import tellurion.core.element as element
 from ..core.spacetrack import MeanElementSetT
 from . import force
 from . import convert
 from . import jacobian
+from tellurion.ork.element import _keporb_from_components
 from .event import prop as event
 
 defev = {'altitude': 125.0*u.km, 'eclipse': [], 'visibility': [], 'stm': False}
@@ -125,14 +127,20 @@ def SGP4prep(meanels, proptime, events, forceenv, reftime, occluder, output):
 
 def blprep(initstate, proptime, events, forceenv, reftime, occluder, output):
     '''Prepare the Brouwer-Lyddane analytic propagator (J2 perturbations)'''
-    ork0 = CartesianOrbit(convert._tspvc(initstate),
-                          forceenv['celestialframe'], forceenv['earthmu'].si.value)
-    propagator = BrouwerLyddanePropagator(ork0, forceenv['earthmu'].si.value,
-                    forceenv['earthframe'], forceenv['gravity-degree-order'])
-    generator = _make_generator(ork0, lambda propto: propagator.propagate(propto))
-    generator['pvt0'] = convert._pvt(generator['propfn'](generator['epoch']))
-    _additional(events, propagator, generator, proptime, forceenv, reftime, output)
-    return generator
+    if isinstance(initstate, element.ElementSetT):
+        ork0 = _keporb_from_components(initstate.elements, initstate.time)
+        # M2, which is along-track acceleration primarily caused by
+        # atmospheric drag, like the B* term in SGP4. Here we set this
+        # to zero.
+        m2 = 0.0
+        propagator = BrouwerLyddanePropagator(ork0, float(forceenv['earthmu'].si.value),
+                                              forceenv['gravity-unnorm'], m2)
+        generator = _make_generator(ork0, lambda propto: propagator.propagate(propto))
+        generator['pvt0'] = convert._pvt(generator['propfn'](generator['epoch']))
+        _additional(events, propagator, generator, proptime, forceenv, reftime,
+                    output)
+        return generator
+    raise ValueError("Can only propagate with Brouwer-Lyddane from ElementSetT objects")
 
 
 def kaprep(initstate, proptime, events, forceenv, reftime, occluder, output):
