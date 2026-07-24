@@ -6,32 +6,26 @@ and thus begins with `_`.
 """
 
 import collections.abc
-import numpy as np
-import pandas as pd
-import astropy.units as u
-import astropy.time
 import datetime
 
+import astropy.time
+import astropy.units as u
+import numpy as np
 import orekit_jpype.pyhelpers as pyhelp
-import org.orekit.time
-from org.orekit.propagation import SpacecraftState
-from org.orekit.utils import PVCoordinates, TimeStampedPVCoordinates
+import pandas as pd
 from org.hipparchus.geometry.euclidean.threed import Vector3D
+from org.orekit.utils import TimeStampedPVCoordinates
 
-from tellurion.core import units as tunits
-from tellurion.astro import quantity_utils as quant
 import tellurion.astro.time as atime
-from tellurion.core import element
-from tellurion.core import posvel
-from tellurion.core import pvhelper
-from tellurion.ork import force
-from tellurion.ork import element as oelement
+from tellurion.astro import quantity_utils as quant
+from tellurion.core import posvel, pvhelper
+from tellurion.core import units as tunits
 
 posvelsiu = u.StructuredUnit((u.meter, u.meter/u.second))
 
-###############################
-####  Cartesian posvel     ####
-###############################
+# ------------------------------
+#    Cartesian posvel
+# ------------------------------
 
 # Convert to and from Orekit representations of position and velocity,
 # or position, velocity and time.

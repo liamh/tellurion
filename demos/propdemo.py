@@ -81,7 +81,10 @@ demoa.propa.andiff = tell.magdiff(demoa.propa.cartephem['position'], demoa.propn
 demoa.propa.eclipse = Munch()
 demoa.propa.eclipse.events = {'altitude': 125.0*u.km, 'eclipse': [True, True], 'visibility': []}
 demoa.propa.gen = tell.prepare(demoa.init.pvt, 1*u.day, )
-demoa.propa.eclipse.genevpvt = tell.prepare(demoa.init.pvt, 8*u.hour, demoa.propa.eclipse.events,forceenv=tell.kepleranalytic(), output='pvt')
+demoa.propa.eclipse.genevpvt = tell.prepare(demoa.init.pvt, 8*u.hour,
+                                            demoa.propa.eclipse.events,
+                                            propagator='keplerian',
+                                            output='pvt')
 demoa.propa.eclipse.suntrans = demoa.propa.eclipse.genevpvt['sun transition'].ephemeris()
 demoa.propa.eclipse.ephempvt = tell.propagate(demoa.propa.eclipse.genevpvt, np.linspace(0.25*u.hour, 8*u.hour, 32), output='pvt')
 demoa.propa.eclipse.ephem = demoa.propa.eclipse.ephempvt.ephemeris()

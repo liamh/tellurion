@@ -15,6 +15,7 @@ built on AstroPy.
    astropy_extensions
    posvel
    element
+   prop
    hdf5_serialization
    examples
 
