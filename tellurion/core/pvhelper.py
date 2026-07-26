@@ -28,34 +28,35 @@ _vel_format = '10.6f'
 ##################################################
 
 def _cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunits):
-    """Create a u.Quantity position or position-velocity scalar or
-    array. Inputs `posvel` may be a tuple of (position, velocity) or
-    (position), with values that are u.Quantity, np.array with final
-    dimension at least 6 (for position and velocity) or 3 or 4 (for position)."""
+    """Create a u.Quantity position or position-velocity scalar or array."""
     scalar = isscalar
     pvunit = _posvel_pt
+    
     if type(posvel) is tuple:
         scalar = len(posvel[0].shape)==1
         if len(posvel) == 2:
             pv = {_eph_pos: posvel[0], _eph_vel: posvel[1]}
         else:
             pv = {_eph_pos: posvel[0]}
-    elif type(posvel) is np.ndarray:
-        width = posvel.shape[posvel.ndim-1]
+    else:
+        # Convert to numpy array (handles list, ndarray, and other sequences)
+        arr = np.asarray(posvel)
+        width = arr.shape[-1] if arr.ndim > 0 else 0
+        
         if width >= 6:
-            if posvel.ndim == 2:
-                pv = {_eph_pos: posvel[:,0:3], _eph_vel: posvel[:,3:6]}
+            if arr.ndim == 2:
+                pv = {_eph_pos: arr[:,0:3], _eph_vel: arr[:,3:6]}
                 scalar = False
             else:
-                pv = {_eph_pos: posvel[0:3], _eph_vel: posvel[3:6]}
+                pv = {_eph_pos: arr[0:3], _eph_vel: arr[3:6]}
                 scalar = True
         elif width == 3 or width == 4:
             pvunit = _posvel_pt[_eph_pos]
-            pv = {_eph_pos: posvel}
-            scalar = posvel.ndim == 1
-    else:
-        pv = posvel
+            pv = {_eph_pos: arr}
+            scalar = arr.ndim == 1
+    
     return quant.change_units(quant.make_quantity(pv, pvunit, scalar, given), convert)
+
 
 def _sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distance'], unitlookup=units.prefunits):
     """Make a spherical coordinate set for position and velocity

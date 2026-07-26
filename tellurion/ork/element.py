@@ -308,12 +308,17 @@ def _equinoctialorbit(oes, forceenv=force.deffe):
             forceenv["celestialframe"],
             forceenv["earthmu"].si.value,
         )
-        return OrbitType.EQUINOCTIAL.convertType(co)
+        eo = OrbitType.EQUINOCTIAL.convertType(co)
+        # Keep co alive to prevent GC while eo is being used
+        eo._cartesian_orbit = co
+        return eo
     else:
         # Try converting via Keplerian as intermediate
-        return OrbitType.EQUINOCTIAL.convertType(
-            _keplerianorbit(oes, forceenv=forceenv)
-        )
+        ko = _keplerianorbit(oes, forceenv=forceenv)
+        eo = OrbitType.EQUINOCTIAL.convertType(ko)
+        # Keep ko alive
+        eo._keplerian_orbit = ko
+        return eo
 
 
 def _eqorb_from_components(oes, epoch, fe=force.deffe):
@@ -366,9 +371,14 @@ def _circularorbit(oes, forceenv=force.deffe):
             forceenv["celestialframe"],
             forceenv["earthmu"].si.value,
         )
-        return OrbitType.CIRCULAR.convertType(co)
+        circ = OrbitType.CIRCULAR.convertType(co)
+        circ._cartesian_orbit = co
+        return circ
     else:
-        return OrbitType.CIRCULAR.convertType(_keplerianorbit(oes, forceenv=forceenv))
+        ko = _keplerianorbit(oes, forceenv=forceenv)
+        circ = OrbitType.CIRCULAR.convertType(ko)
+        circ._keplerian_orbit = ko
+        return circ
 
 
 def _circorb_from_components(oes, epoch, fe=force.deffe):

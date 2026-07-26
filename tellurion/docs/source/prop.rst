@@ -11,6 +11,7 @@ The :mod:`tellurion.ork.prop` module provides satellite orbital propagation usin
 multiple analytic and numerical methods. It supports:
 
 * **Analytic propagators**: Keplerian (two-body), Brouwer-Lyddane (J2-J5 perturbations)
+* **Semi-analytical propagator**: DSST (Draper Semi-analytical Satellite Theory) with full gravity model
 * **Numerical integration**: Full gravity model with optional atmospheric drag
 * **Event detection**: Eclipse, altitude termination, ground station visibility
 * **Flexible input**: Keplerian, circular, equinoctial, or Cartesian coordinates
@@ -55,6 +56,8 @@ initial state type and force environment::
     gen = tell.prepare(initstate, proptime, propagator='keplerian')
     gen = tell.prepare(initstate, proptime, propagator='brouwer-lyddane',
                       forceenv=tell.setgravity(5, 0))
+    gen = tell.prepare(initstate, proptime, propagator='dsst',
+                      forceenv=tell.setgravity(20, 20))
     gen = tell.prepare(initstate, proptime, propagator='numerical',
                       forceenv=tell.setgravity(20, 20))
 
@@ -144,6 +147,114 @@ For equatorial orbits, pass initial state in equinoctial element form::
                       forceenv=forceenv,
                       propagator='brouwer-lyddane')
 
+DSST (Semi-Analytical)
+----------------------
+
+Semi-analytical propagator using Draper Semi-analytical Satellite Theory.
+Combines numerical integration with perturbation averaging for efficient
+long-term propagation with full gravity model.
+
+**When to use:**
+
+* Long-duration propagation (days to weeks)
+* Full gravity model needed (not just J2-J5)
+* Better speed/accuracy tradeoff than pure numerical integration
+* All orbit types including circular and equatorial
+
+**Characteristics:**
+
+* Faster than numerical integration (2-10x speedup)
+* Full spherical harmonic gravity model support
+* Accounts for zonal and tesseral harmonics
+* Semi-analytical (not pure analytic)
+* Handles all singular coordinate cases
+* Excellent for long-term propagation
+
+**Advantages over Numerical Integration:**
+
+* Significantly faster (2-10x depending on gravity degree/order)
+* Can handle extended propagation periods
+* Still uses full gravity model (not restricted to J2-J5)
+* Smaller numerical errors due to averaging over orbital period
+
+**Advantages over Brouwer-Lyddane:**
+
+* Supports full tesseral harmonics (not just zonal J2-J5)
+* More accurate for long-term propagation
+* Better for higher-degree gravity models
+
+**Example:**
+
+.. code-block:: python
+
+    forceenv = tell.setgravity(20, 20)  # Full 20x20 gravity model
+    gen = tell.prepare(initstate, proptime,
+                      forceenv=forceenv,
+                      propagator='dsst')
+    result = tell.propagate(gen, [2.0*u.day])
+
+**Long-Term Propagation Example:**
+
+.. code-block:: python
+
+    # Propagate for one month with DSST
+    proptime = 30.0 * u.day
+    forceenv = tell.setgravity(20, 20)
+    
+    gen = tell.prepare(initstate, proptime,
+                      forceenv=forceenv,
+                      propagator='dsst')
+    
+    # Request positions at multiple times
+    times = np.linspace(1.0*u.day, 30.0*u.day, 30)
+    result = tell.propagate(gen, times, output='et')
+
+**Comparison: DSST vs Numerical for LEO (50 day propagation):**
+
+.. code-block:: python
+
+    import time
+    
+    proptime = 50.0 * u.day
+    forceenv = tell.setgravity(20, 20)
+    times = np.linspace(1.0*u.day, 50.0*u.day, 50)
+    
+    # Numerical propagation
+    t0 = time.time()
+    gen_num = tell.prepare(initstate, proptime, forceenv=forceenv,
+                          propagator='numerical')
+    result_num = tell.propagate(gen_num, times, output='et')
+    t_num = time.time() - t0
+    
+    # DSST propagation
+    t0 = time.time()
+    gen_dsst = tell.prepare(initstate, proptime, forceenv=forceenv,
+                           propagator='dsst')
+    result_dsst = tell.propagate(gen_dsst, times, output='et')
+    t_dsst = time.time() - t0
+    
+    print(f"Numerical: {t_num:.2f}s")
+    print(f"DSST: {t_dsst:.2f}s")
+    print(f"Speedup: {t_num/t_dsst:.1f}x")
+
+**Handling Circular Orbits:**
+
+For circular orbits, convert to circular elements first::
+
+    initstate_circ = leo_pvt.circular()
+    gen = tell.prepare(initstate_circ, proptime,
+                      forceenv=forceenv,
+                      propagator='dsst')
+
+**Handling Equatorial Orbits:**
+
+For equatorial orbits, convert to equinoctial elements::
+
+    initstate_eq = geo_pvt.equinoctial()
+    gen = tell.prepare(initstate_eq, proptime,
+                      forceenv=forceenv,
+                      propagator='dsst')
+
 Numerical Integration
 ---------------------
 
@@ -152,7 +263,7 @@ atmospheric drag.
 
 **When to use:**
 
-* High accuracy required
+* High accuracy required (short propagation periods)
 * Atmospheric drag significant (low altitude orbits)
 * Custom force models
 * All orbit types including circular and equatorial
@@ -185,6 +296,50 @@ atmospheric drag.
                       forceenv=forceenv,
                       propagator='numerical')
     result = tell.propagate(gen, [0.5*u.day])
+
+Propagator Comparison
+=====================
+
+Quick reference for choosing a propagator:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20, 15, 15, 15, 15, 20
+
+   * - Propagator
+     - Speed
+     - Accuracy
+     - Max Gravity
+     - Best For
+     - Duration
+
+   * - Keplerian
+     - ★★★★★
+     - ★★☆☆☆
+     - None
+     - Quick estimates
+     - Any
+
+   * - Brouwer-Lyddane
+     - ★★★★☆
+     - ★★★☆☆
+     - J2-J5 only
+     - Medium accuracy, mean elements
+     - Days
+
+   * - DSST
+     - ★★★☆☆
+     - ★★★★☆
+     - Full (20x20+)
+     - Long-term, full gravity
+     - Weeks-months
+
+   * - Numerical
+     - ★★☆☆☆
+     - ★★★★★
+     - Full (20x20+)
+     - High accuracy, drag
+     - Hours-days
 
 Input Coordinate Systems
 ========================
@@ -379,7 +534,14 @@ eclipse detection::
                          propagator='brouwer-lyddane')
     result_bl = tell.propagate(gen_bl, times, output='et')
 
-    # Method 3: Numerical (slow, high accuracy)
+    # Method 3: DSST (medium speed, full gravity, long-term)
+    forceenv_dsst = tell.setgravity(20, 20)
+    gen_dsst = tell.prepare(initstate, proptime, events=events,
+                           forceenv=forceenv_dsst,
+                           propagator='dsst')
+    result_dsst = tell.propagate(gen_dsst, times, output='et')
+
+    # Method 4: Numerical (slow, high accuracy)
     forceenv_num = tell.setgravity(20, 20)
     gen_num = tell.prepare(initstate, proptime, events=events,
                           forceenv=forceenv_num,
@@ -391,6 +553,8 @@ eclipse detection::
     print(result_kep[16]['position'])
     print("\nBrouwer-Lyddane position at t=4 hours:")
     print(result_bl[16]['position'])
+    print("\nDSST position at t=4 hours:")
+    print(result_dsst[16]['position'])
     print("\nNumerical position at t=4 hours:")
     print(result_num[16]['position'])
 

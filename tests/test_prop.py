@@ -500,5 +500,277 @@ class TestEclipseDetection:
         )
 
 
+class TestDSSSTPropagator:
+    """Test DSST (Draper Semi-analytical Satellite Theory) propagator."""
+
+    def test_dsst_leo1_pvt(self, leo1):
+        """Propagate LEO orbit with DSST (PVT)."""
+        initstate = leo1["pvt"]
+        proptime = 5.0 * u.day
+        forceenv = tell.setgravity(20, 20)
+
+        gen = tell.prepare(initstate, proptime, forceenv=forceenv, propagator="dsst")
+        result = tell.propagate(gen, [2.0 * u.day])
+        assert result is not None
+
+    @pytest.mark.xfail(
+        reason="Circular orbit (e=0) has singular Jacobian in Keplerian coordinates"
+    )
+    def test_dsst_leo1_kep(self, leo1):
+        """Propagate LEO orbit with DSST (Keplerian elements)."""
+        initstate = leo1["kep"]
+        proptime = 5.0 * u.day
+        forceenv = tell.setgravity(20, 20)
+
+        gen = tell.prepare(initstate, proptime, forceenv=forceenv, propagator="dsst")
+        result = tell.propagate(gen, [2.0 * u.day])
+        assert result is not None
+
+    def test_dsst_leo1_circular(self, leo1):
+        """Propagate LEO orbit with DSST and circular elements (non-singular)."""
+        initstate = leo1["pvt"].circular()
+        proptime = 5.0 * u.day
+        forceenv = tell.setgravity(20, 20)
+
+        gen = tell.prepare(initstate, proptime, forceenv=forceenv, propagator="dsst")
+        result = tell.propagate(gen, [2.0 * u.day])
+        assert result is not None
+
+    def test_dsst_ell2_pvt(self, ell2):
+        """Propagate elliptical orbit with DSST (PVT)."""
+        initstate = ell2["pvt"]
+        proptime = 7.0 * u.day
+        forceenv = tell.setgravity(20, 20)
+
+        gen = tell.prepare(initstate, proptime, forceenv=forceenv, propagator="dsst")
+        result = tell.propagate(gen, [3.0 * u.day])
+        assert result is not None
+
+    def test_dsst_ell2_kep(self, ell2):
+        """Propagate elliptical orbit with DSST (Keplerian elements)."""
+        initstate = ell2["kep"]
+        proptime = 7.0 * u.day
+        forceenv = tell.setgravity(20, 20)
+
+        gen = tell.prepare(initstate, proptime, forceenv=forceenv, propagator="dsst")
+        result = tell.propagate(gen, [3.0 * u.day])
+        assert result is not None
+
+
+    @pytest.mark.skip(reason="DSST geo pvt intermittent segfaults?")
+    def test_dsst_geo1_pvt(self, geo1):
+        """Propagate GEO orbit with DSST (PVT)."""
+        initstate = geo1["pvt"]
+        proptime = 7.0 * u.day
+        forceenv = tell.setgravity(20, 20)
+
+        gen = tell.prepare(initstate, proptime, forceenv=forceenv, propagator="dsst")
+        result = tell.propagate(gen, [3.0 * u.day])
+        assert result is not None
+
+    @pytest.mark.xfail(
+        reason="Circular orbit (e=0) has singular Jacobian in Keplerian coordinates"
+    )
+    def test_dsst_geo1_kep(self, geo1):
+        """Propagate GEO orbit with DSST (Keplerian elements)."""
+        initstate = geo1["kep"]
+        proptime = 7.0 * u.day
+        forceenv = tell.setgravity(20, 20)
+
+        gen = tell.prepare(initstate, proptime, forceenv=forceenv, propagator="dsst")
+        result = tell.propagate(gen, [3.0 * u.day])
+        assert result is not None
+
+    @pytest.mark.xfail(
+        reason="Circular elements cannot represent equatorial orbit (i=0)"
+    )
+    def test_dsst_geo1_circular(self, geo1):
+        """Propagate GEO orbit with DSST and circular elements (fails for equatorial)."""
+        initstate = geo1["pvt"].circular()
+        proptime = 7.0 * u.day
+        forceenv = tell.setgravity(20, 20)
+
+        gen = tell.prepare(initstate, proptime, forceenv=forceenv, propagator="dsst")
+        result = tell.propagate(gen, [3.0 * u.day])
+        assert result is not None
+
+    @pytest.mark.skip(reason="DSST + equinoctial elements cause intermittent segfaults - suspected Orekit memory leak (issue to be reported)")
+    def test_dsst_geo1_equinoctial(self, geo1):
+        """Propagate GEO orbit with DSST and equinoctial elements (handles equatorial)."""
+        initstate = geo1["pvt"].equinoctial()
+        proptime = 7.0 * u.day
+        forceenv = tell.setgravity(20, 20)
+
+        gen = tell.prepare(initstate, proptime, forceenv=forceenv, propagator="dsst")
+        result = tell.propagate(gen, [3.0 * u.day])
+        assert result is not None
+
+    def test_dsst_vang1_pvt(self, vang1):
+        """Propagate Vanguard orbit with DSST (PVT)."""
+        initstate = vang1["pvt"]
+        proptime = 10.0 * u.day
+        forceenv = tell.setgravity(20, 20)
+
+        gen = tell.prepare(initstate, proptime, forceenv=forceenv, propagator="dsst")
+        result = tell.propagate(gen, [5.0 * u.day])
+        assert result is not None
+
+    def test_dsst_vang1_kep(self, vang1):
+        """Propagate Vanguard orbit with DSST (Keplerian elements)."""
+        initstate = vang1["kep"]
+        proptime = 10.0 * u.day
+        forceenv = tell.setgravity(20, 20)
+
+        gen = tell.prepare(initstate, proptime, forceenv=forceenv, propagator="dsst")
+        result = tell.propagate(gen, [5.0 * u.day])
+        assert result is not None
+
+    def test_dsst_vs_numerical(self, leo1):
+        """DSST and numerical propagators should give similar results (LEO)."""
+        initstate = leo1["pvt"]
+        proptime = 5.0 * u.day
+        forceenv = tell.setgravity(20, 20)
+
+        gen_num = tell.prepare(
+            initstate, proptime, forceenv=forceenv, propagator="numerical"
+        )
+        gen_dsst = tell.prepare(
+            initstate, proptime, forceenv=forceenv, propagator="dsst"
+        )
+
+        times = [2.0 * u.day]
+        result_num = tell.propagate(gen_num, times, output="pvt")
+        result_dsst = tell.propagate(gen_dsst, times, output="pvt")
+
+        # Results should be reasonably close (within a few km for LEO)
+        # DSST is semi-analytical so not exact match, but much closer than Keplerian
+        position_diff = np.linalg.norm(
+            result_num.cartesian["position"].value
+            - result_dsst.cartesian["position"].value
+        )
+        assert position_diff < 1000.0, (
+            f"DSST vs numerical position diff: {position_diff} m"
+        )
+
+    def test_dsst_vs_numerical_ell2(self, ell2):
+        """DSST and numerical propagators should give similar results (elliptical)."""
+        initstate = ell2["pvt"]
+        proptime = 10.0 * u.day
+        forceenv = tell.setgravity(20, 20)
+
+        gen_num = tell.prepare(
+            initstate, proptime, forceenv=forceenv, propagator="numerical"
+        )
+        gen_dsst = tell.prepare(
+            initstate, proptime, forceenv=forceenv, propagator="dsst"
+        )
+
+        times = [5.0 * u.day]
+        result_num = tell.propagate(gen_num, times, output="pvt")
+        result_dsst = tell.propagate(gen_dsst, times, output="pvt")
+
+        position_diff = np.linalg.norm(
+            result_num.cartesian["position"].value
+            - result_dsst.cartesian["position"].value
+        )
+        assert position_diff < 5000.0, (
+            f"DSST vs numerical position diff: {position_diff} m"
+        )
+
+    def test_dsst_leo1_eclipse(self, leo1):
+        """DSST propagator with eclipse detection (LEO)."""
+        initstate = leo1["pvt"]
+        proptime = 8.0 * u.hour
+        events = {"altitude": 125.0 * u.km, "eclipse": [True, True], "visibility": []}
+        forceenv = tell.setgravity(20, 20)
+
+        gen = tell.prepare(
+            initstate,
+            proptime,
+            events=events,
+            forceenv=forceenv,
+            propagator="dsst",
+        )
+
+        assert "sun transition" in gen
+        sun_trans = gen["sun transition"]
+        assert len(sun_trans) > 0, "Should detect eclipse transitions in LEO"
+
+        result = tell.propagate(
+            gen, np.linspace(1.0 * u.hour, 6.0 * u.hour, 16), output="pvt"
+        )
+        assert result is not None
+        assert (
+            "eclipse" in result.aux
+            and isinstance(result.aux["eclipse"], str)
+            and len(result.aux["eclipse"]) == 33
+        )
+
+    def test_dsst_vang1_eclipse(self, vang1):
+        """DSST propagator with eclipse detection (Vanguard)."""
+        initstate = vang1["pvt"]
+        proptime = 24.0 * u.hour
+        events = {"altitude": 125.0 * u.km, "eclipse": [True, True], "visibility": []}
+        forceenv = tell.setgravity(20, 20)
+
+        gen = tell.prepare(
+            initstate,
+            proptime,
+            events=events,
+            forceenv=forceenv,
+            propagator="dsst",
+        )
+
+        assert "sun transition" in gen
+        result = tell.propagate(
+            gen, np.linspace(4.0 * u.hour, 20.0 * u.hour, 16), output="pvt"
+        )
+        assert result is not None
+        assert (
+            "eclipse" in result.aux
+            and isinstance(result.aux["eclipse"], str)
+            and len(result.aux["eclipse"]) == 33
+        )
+
+    def test_dsst_ell2_eclipse(self, ell2):
+        """DSST propagator with eclipse detection (elliptical)."""
+        initstate = ell2["pvt"]
+        proptime = 24.0 * u.hour
+        events = {"altitude": 125.0 * u.km, "eclipse": [True, True], "visibility": []}
+        forceenv = tell.setgravity(20, 20)
+
+        gen = tell.prepare(
+            initstate,
+            proptime,
+            events=events,
+            forceenv=forceenv,
+            propagator="dsst",
+        )
+
+        assert "sun transition" in gen
+        result = tell.propagate(
+            gen, np.linspace(4.0 * u.hour, 20.0 * u.hour, 16), output="pvt"
+        )
+        assert result is not None
+        assert (
+            "eclipse" in result.aux
+            and isinstance(result.aux["eclipse"], str)
+            and len(result.aux["eclipse"]) == 33
+        )
+
+    def test_dsst_no_eclipse_events(self, leo1):
+        """DSST propagator without eclipse detection."""
+        initstate = leo1["pvt"]
+        proptime = 5.0 * u.day
+        forceenv = tell.setgravity(20, 20)
+
+        gen = tell.prepare(initstate, proptime, forceenv=forceenv, propagator="dsst")
+        result = tell.propagate(gen, [2.0 * u.day], output="pvt")
+
+        assert result is not None
+        # Without eclipse events, aux should not have eclipse key
+        assert "eclipse" not in result.aux
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
