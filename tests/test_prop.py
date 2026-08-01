@@ -85,6 +85,32 @@ class TestBrouwerLyddanePropagator:
         result = tell.propagate(gen, [3.0 * u.day])
         assert result is not None
 
+    @pytest.mark.xfail(reason="Orekit BrouwerLyddanePropagator convergence failure on leo2 for unknown reasons")
+    def test_bl_leo2_from_kep(self, leo2):
+        """Propagate moderately elliptical orbit (Keplerian elements)."""
+        initstate = leo2["kep"]
+        proptime = 7.0 * u.day
+        forceenv = tell.setgravity(5, 0)
+
+        gen = tell.prepare(
+            initstate, proptime, forceenv=forceenv, propagator="brouwer-lyddane"
+        )
+        result = tell.propagate(gen, [3.0 * u.day])
+        assert result is not None
+
+    @pytest.mark.xfail(reason="Orekit BrouwerLyddanePropagator convergence failure on leo2 for unknown reasons")
+    def test_bl_leo2_from_pvt(self, leo2):
+        """Propagate moderately elliptical orbit (PVT)."""
+        initstate = leo2["pvt"]
+        proptime = 7.0 * u.day
+        forceenv = tell.setgravity(5, 0)
+
+        gen = tell.prepare(
+            initstate, proptime, forceenv=forceenv, propagator="brouwer-lyddane"
+        )
+        result = tell.propagate(gen, [3.0 * u.day])
+        assert result is not None
+
     def test_bl_ell1_from_kep(self, ell1):
         """Propagate highly elliptical orbit (Keplerian elements)."""
         initstate = ell1["kep"]

@@ -1180,9 +1180,16 @@ def pvtcart(pv, time, specunits=units.prefunits):
     PositionVelocityT : Position with velocity
     """
     if isinstance(pv, list):
-        cart = quant.vstack([pvhelper._cartesianpv(pv1, True, specunits, units.prefunits) \
-                             for pv1 in pv])
-        is_single_state = False
+        # Check if it's a list of lists/arrays (multiple states) or a flat list (single state)
+        if pv and hasattr(pv[0], '__len__') and not isinstance(pv[0], str):
+            # List of states - recursively process each
+            cart = quant.vstack([pvhelper._cartesianpv(pv1, True, specunits, units.prefunits) \
+                                 for pv1 in pv])
+            is_single_state = False
+        else:
+            # Flat list of numbers - treat as single state vector
+            cart = pvhelper._cartesianpv(pv, True, specunits, units.prefunits)
+            is_single_state = True
     else:
         is_single_state = False
         if isinstance(pv, np.ndarray):
