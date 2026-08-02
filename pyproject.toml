@@ -74,3 +74,29 @@ addopts = "-v --tb=short"
 markers = [
     "hdf5: tests requiring astropy-hdf5io (deselect with '-m not hdf5')",
 ]
+
+# Check/fix formatting and style for a single file
+#  ruff check --fix tellurion/ork/prop.py && ruff format tellurion/ork/prop.py
+# For all files
+#  ruff check --fix --unsafe-fixes . && ruff format .
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+  "E",    # pycodestyle errors
+  "F",    # Pyflakes
+  "W291", # Trailing whitespace
+  "W293", # Blank line whitespace
+  "D300", # Enforce PEP 257 triple-double quotes (""")
+  "I",    # isort (automatically formats import lines)
+]
+
+# Pass rule codes as an array (sequence) rather than a table/map
+extend-safe-fixes = ["W293", "W291"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.ruff.format]
+docstring-code-format = true

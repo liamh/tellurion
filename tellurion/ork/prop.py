@@ -1,36 +1,57 @@
-"""Propagate a state in two steps: `prepare()` and `propagate()`
+"""
+Propagate orbit states in two steps: `prepare()` and `propagate()`.
 
-There are four propagators possible
- 1) Kepler analytic, specified with kepleranalytic()
-    when initial state is a PositionVelocityT
- 2) Brouwer-Lyddane (J2 perturbations), specified with setgravity()
-    when initial state is a PositionVelocityT
- 3) DSST (semi-analytical with multiple perturbations), specified with
-    setgravity() and optional dragforce()/srpmodel(), when initial state
-    is a PositionVelocityT. Good for long-term propagation.
- 4) Numerical integration, specified by setgravity(),
-    with optional addition of atmospheric drag using dragforce(),
-    when initial state is a PositionVelocityT
- 5) SGP4 mean element (analytic) propagation, this is automatically
-    used if the initial state is a MeanElementSetT
+Overview of Propagators
+-----------------------
+1. **Kepler Analytic**: Specified with ``kepleranalytic()`` when initial
+   state is a ``PositionVelocityT``.
+2. **Brouwer-Lyddane (J2 perturbations)**: Specified with ``setgravity()``
+   when initial state is a ``PositionVelocityT``.
+3. **DSST (semi-analytical)**: Specified with ``setgravity()`` and optional
+   ``dragforce()`` / ``srpmodel()`` when initial state is a
+   ``PositionVelocityT``. Ideal for long-term propagation.
+4. **Numerical Integration**: Specified by ``setgravity()`` with optional
+   atmospheric drag using ``dragforce()`` when initial state is a
+   ``PositionVelocityT``.
+5. **SGP4 Mean Element Propagation**: Automatically used if the initial
+   state is a ``MeanElementSetT``.
 
-There are three events possible to specify.
- 1) Terminate the propagation when the altitude drops below a specified altitude
- 2) Eclipsing
- 3) Visibility from one or more earth locations
-These are specified in the `events` dictionary, with keys
-`'altitude'`, `'eclipse'`, and `'visibility'` respectively.  In
-addition, the final state transition matrix, the Jacobian matrix of
-final state with respect to initial state, may be obtained by setting
-`'stm'` to be `True`; if so set, the STM will be in
-`gen['final']['stm']` where `gen` is the output of `prepare()`.
+Examples
+--------
+.. code-block:: python
 
-Orekit has many more kinds of events; to add new kinds of events other
-than these three requires some alteration of the code. Each new kind
-of event should supply three functions `_mkdetlog()` to add the event
-detector(s)/logger(s), `_gentrans` to generate the event transitions,
-and `_statechar()` to generate a character indicating each state.
+    import astropy.units as u
+    import numpy as np
 
+    isssent = tell.spacetrack_latest(stclient, [25544, 41335])
+    sentprep = tork.SGP4prep(
+        isssent["SENTINEL 3A"],
+        1 * u.day,
+        {
+            "altitude": 125.0 * u.km,
+            "eclipse": [True, True],
+            "visibility": [],
+        },
+    )
+    tork.propagate(sentprep, np.linspace(5.0 * u.minute, 60.0 * u.minute, 12), True)
+
+Notes
+-----
+**Supported Events**
+
+Events are configured in the ``events`` dictionary using the following keys:
+
+- ``'altitude'``: Terminate propagation when altitude drops below threshold.
+- ``'eclipse'``: Track eclipsing events.
+- ``'visibility'``: Calculate visibility from earth locations.
+
+Setting ``'stm'`` to ``True`` in ``events`` requests the final state
+transition matrix, which will be stored under ``gen['final']['stm']``.
+
+**Custom Orekit Events**
+
+Adding new event detectors requires defining three support functions:
+``_mkdetlog()``, ``_gentrans()``, and ``_statechar()``.
 """
 
 import astropy.units as u
@@ -61,11 +82,6 @@ from . import convert, force, jacobian
 from .event import prop as event
 
 defev = {"altitude": 125.0 * u.km, "eclipse": [], "visibility": [], "stm": False}
-
-# import astropy.units as u
-# isssent = tell.spacetrack_latest(stclient, [25544, 41335])
-# sentprep = tork.SGP4prep(isssent['SENTINEL 3A'], 1*u.day, {'altitude': 125.0*u.km, 'eclipse': [True, True], 'visibility': []})
-# tork.propagate(sentprep, np.linspace(5.0*u.minute, 60.0*u.minute, 12), True)
 
 
 def prepare(
@@ -174,7 +190,8 @@ def _convert_to_orbit(state, forceenv):
         )
     else:
         raise TypeError(
-            "Can only convert Keplerian, Equinoctial, or Circular ElementSetT, or PositionVelocityT objects"
+            "Can only convert Keplerian, Equinoctial, or Circular "
+            "ElementSetT, or PositionVelocityT objects"
         )
     return conv
 
@@ -189,7 +206,8 @@ def kaprep(initstate, proptime, events, forceenv, reftime, output):
     return generator
 
 
-def blprep(initstate, proptime, events, forceenv, reftime, output):
+# Prepare Brouwer-Lyddane with defaults
+def blprep_def(initstate, proptime, events, forceenv, reftime, output):
     """Prepare the Brouwer-Lyddane analytic propagator (J2 perturbations)"""
     ork0 = _convert_to_orbit(initstate, forceenv)
     # M2 is along-track acceleration primarily caused by atmospheric
@@ -199,6 +217,35 @@ def blprep(initstate, proptime, events, forceenv, reftime, output):
         ork0, float(forceenv["earthmu"].si.value), forceenv["gravity-unnorm"], m2
     )
     generator = _make_generator(ork0, lambda propto: propagator.propagate(propto))
+    generator["pvt0"] = convert._pvt(generator["propfn"](generator["epoch"]))
+    _additional(events, propagator, generator, proptime, forceenv, reftime, output)
+    return generator
+
+
+def blprep(initstate, proptime, events, forceenv, reftime, output):
+    """Prepare the Brouwer-Lyddane analytic propagator (J2 perturbations)"""
+
+    ork0 = _convert_to_orbit(initstate, forceenv)
+    m2 = 0.0
+    epsilon = 1e-5  # Reduced tolerance for near-circular orbit convergence
+    max_iterations = 500
+
+    provider = forceenv["gravity-unnorm"]
+    harmonics = provider.onDate(ork0.getDate())
+
+    # Use computeMeanOrbit with epsilon to convert osculating to mean orbit
+    mean_orbit = BrouwerLyddanePropagator.computeMeanOrbit(
+        ork0, provider, harmonics, m2, epsilon, max_iterations
+    )
+
+    # Now create the propagator with the mean orbit
+    propagator = BrouwerLyddanePropagator(
+        mean_orbit,
+        1.0,  # default mass
+        provider,
+        m2,
+    )
+    generator = _make_generator(mean_orbit, lambda propto: propagator.propagate(propto))
     generator["pvt0"] = convert._pvt(generator["propfn"](generator["epoch"]))
     _additional(events, propagator, generator, proptime, forceenv, reftime, output)
     return generator
@@ -380,7 +427,7 @@ def timerange(object):
 
 def _to_spacecraft_state(tspvc, forceenv=force.deffe):
     """From the TimeStampedPVCoordinates, create a SpacecraftState"""
-    if type(tspvc) == TimeStampedPVCoordinates:
+    if isinstance(tspvc, TimeStampedPVCoordinates):
         apvc = AbsolutePVCoordinates(forceenv["celestialframe"], tspvc)
         return SpacecraftState(apvc)
     else:

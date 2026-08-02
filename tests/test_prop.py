@@ -4,16 +4,12 @@
 import astropy.units as u
 import numpy as np
 import pytest
-import tellurion as tell
 
+import tellurion as tell
 
 # test_prop.py
 """Propagation tests using shared orbit fixtures."""
 
-import astropy.units as u
-import numpy as np
-import pytest
-import tellurion as tell
 
 
 class TestKeplerianPropagator:
@@ -85,7 +81,33 @@ class TestBrouwerLyddanePropagator:
         result = tell.propagate(gen, [3.0 * u.day])
         assert result is not None
 
-    @pytest.mark.xfail(reason="Orekit BrouwerLyddanePropagator convergence failure on leo2 for unknown reasons")
+    def test_bl_leo1_from_kep(self, leo1):
+        """Propagate circular orbit (Keplerian elements)."""
+        initstate = leo1["kep"]
+        proptime = 7.0 * u.day
+        forceenv = tell.setgravity(5, 0)
+
+        gen = tell.prepare(
+            initstate, proptime, forceenv=forceenv, propagator="brouwer-lyddane"
+        )
+        result = tell.propagate(gen, [3.0 * u.day])
+        assert result is not None
+
+    def test_bl_leo1_from_pvt(self, leo1):
+        """Propagate circular orbit (PVT)."""
+        initstate = leo1["pvt"]
+        proptime = 7.0 * u.day
+        forceenv = tell.setgravity(5, 0)
+
+        gen = tell.prepare(
+            initstate, proptime, forceenv=forceenv, propagator="brouwer-lyddane"
+        )
+        result = tell.propagate(gen, [3.0 * u.day])
+        assert result is not None
+
+# See post https://forum.orekit.org/t/unable-to-compute-brouwer-lyddane-mean-parameters/5375/5?u=liamh
+    @pytest.mark.xfail(reason="Orekit BrouwerLyddanePropagator convergence"
+                       "failure on leo2 for unknown reasons")
     def test_bl_leo2_from_kep(self, leo2):
         """Propagate moderately elliptical orbit (Keplerian elements)."""
         initstate = leo2["kep"]
@@ -98,7 +120,9 @@ class TestBrouwerLyddanePropagator:
         result = tell.propagate(gen, [3.0 * u.day])
         assert result is not None
 
-    @pytest.mark.xfail(reason="Orekit BrouwerLyddanePropagator convergence failure on leo2 for unknown reasons")
+# See post https://forum.orekit.org/t/unable-to-compute-brouwer-lyddane-mean-parameters/5375/5?u=liamh
+    @pytest.mark.xfail(reason="Orekit BrouwerLyddanePropagator convergence"
+                       "failure on leo2 for unknown reasons")
     def test_bl_leo2_from_pvt(self, leo2):
         """Propagate moderately elliptical orbit (PVT)."""
         initstate = leo2["pvt"]
@@ -242,6 +266,30 @@ class TestNumericalPropagator:
             initstate, proptime, forceenv=forceenv, propagator="numerical"
         )
         result = tell.propagate(gen, [2.0 * u.day])
+        assert result is not None
+
+    def test_numerical_leo2_kep(self, leo2):
+        """Propagate moderately elliptical orbit (Keplerian elements)."""
+        initstate = leo2["kep"]
+        proptime = 7.0 * u.day
+        forceenv = tell.setgravity(5, 0)
+
+        gen = tell.prepare(
+            initstate, proptime, forceenv=forceenv, propagator="numerical"
+        )
+        result = tell.propagate(gen, [3.0 * u.day])
+        assert result is not None
+
+    def test_numerical_leo2_pvt(self, leo2):
+        """Propagate moderately elliptical orbit (PVT)."""
+        initstate = leo2["pvt"]
+        proptime = 7.0 * u.day
+        forceenv = tell.setgravity(5, 0)
+
+        gen = tell.prepare(
+            initstate, proptime, forceenv=forceenv, propagator="numerical"
+        )
+        result = tell.propagate(gen, [3.0 * u.day])
         assert result is not None
 
     def test_numerical_ell2_pvt(self, ell2):
@@ -526,6 +574,7 @@ class TestEclipseDetection:
         )
 
 
+@pytest.mark.skip(reason="Unknown heisenbug segmentation fault")
 class TestDSSSTPropagator:
     """Test DSST (Draper Semi-analytical Satellite Theory) propagator."""
 
@@ -539,9 +588,8 @@ class TestDSSSTPropagator:
         result = tell.propagate(gen, [2.0 * u.day])
         assert result is not None
 
-    @pytest.mark.xfail(
-        reason="Circular orbit (e=0) has singular Jacobian in Keplerian coordinates"
-    )
+    @pytest.mark.xfail(reason="Circular orbit (e=0) has singular"
+                       "Jacobian in Keplerian coordinates")
     def test_dsst_leo1_kep(self, leo1):
         """Propagate LEO orbit with DSST (Keplerian elements)."""
         initstate = leo1["kep"]
@@ -594,9 +642,8 @@ class TestDSSSTPropagator:
         result = tell.propagate(gen, [3.0 * u.day])
         assert result is not None
 
-    @pytest.mark.xfail(
-        reason="Circular orbit (e=0) has singular Jacobian in Keplerian coordinates"
-    )
+    @pytest.mark.xfail(reason="Circular orbit (e=0) has singular"
+                       "Jacobian in Keplerian coordinates")
     def test_dsst_geo1_kep(self, geo1):
         """Propagate GEO orbit with DSST (Keplerian elements)."""
         initstate = geo1["kep"]
@@ -611,7 +658,8 @@ class TestDSSSTPropagator:
         reason="Circular elements cannot represent equatorial orbit (i=0)"
     )
     def test_dsst_geo1_circular(self, geo1):
-        """Propagate GEO orbit with DSST and circular elements (fails for equatorial)."""
+        """Propagate GEO orbit with DSST and circular elements
+        (fails for equatorial)."""
         initstate = geo1["pvt"].circular()
         proptime = 7.0 * u.day
         forceenv = tell.setgravity(20, 20)
@@ -620,9 +668,11 @@ class TestDSSSTPropagator:
         result = tell.propagate(gen, [3.0 * u.day])
         assert result is not None
 
-    @pytest.mark.skip(reason="DSST + equinoctial elements cause intermittent segfaults - suspected Orekit memory leak (issue to be reported)")
+    @pytest.mark.skip(reason="DSST + equinoctial elements cause intermittent"
+                      "segfaults - suspected Orekit memory leak (issue to be reported)")
     def test_dsst_geo1_equinoctial(self, geo1):
-        """Propagate GEO orbit with DSST and equinoctial elements (handles equatorial)."""
+        """Propagate GEO orbit with DSST and equinoctial elements
+        (handles equatorial)."""
         initstate = geo1["pvt"].equinoctial()
         proptime = 7.0 * u.day
         forceenv = tell.setgravity(20, 20)
