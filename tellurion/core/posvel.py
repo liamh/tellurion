@@ -269,6 +269,20 @@ class PositionBase(abc.ABC):
             return pvhelper._eph_vel in cart.dtype.names
         return False
 
+    @property
+    def velocity_vector(self):
+        """
+        Get the velocity 3-vector if present, otherwise None.
+
+        Returns
+        -------
+        astropy.units.Quantity or None
+            3-vector with velocity components, or None if velocity is not present.
+        """
+        if self.has_velocity:
+            return self.cartesian[pvhelper._eph_vel]
+        return None
+
     @abc.abstractmethod
     def _cartesian_to_spherical(self, cartesian):
         """

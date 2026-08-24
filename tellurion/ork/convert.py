@@ -1,6 +1,6 @@
 """Convert Cartesian state vectors to and from Orekit objects
 
-All function accept or return Orekit objects are for internal use
+All functions accept or return Orekit objects are for internal use
 and thus begins with `_`.
 
 """
@@ -62,7 +62,7 @@ def _pvt(object, additional=None):
         elif type(additional) is astropy.time.Time:
             tm=additional
         else:
-            raise ValueError("Cannot find time in Orekit object nor intrerpret `additional` as a time")
+            raise ValueError("Cannot find time in Orekit object nor interpret `additional` as a time")
         return tm
 
     if isinstance(object, collections.abc.Iterable):
@@ -98,10 +98,12 @@ def _pvt_from_coordinates(obj, time, frame):
 
 def _tspvc(pvt):
     """Convert tuple (posvel.pv(), astropy.time.Time) or ephemeris row to Orekit TimeStampedPVCoordinates or posvel.pv() to PVCoordinates"""
-    conv = pvt.cartesian.to(posvelsiu)
-    vecp = Vector3D(conv[pvhelper._eph_pos].value.tolist())
-    vecv = Vector3D(conv[pvhelper._eph_vel].value.tolist())
-    return TimeStampedPVCoordinates(_abstime_to_okad(pvt.time), vecp, vecv)
+    vecp = Vector3D(pvt.position_vector.si.value.tolist())
+    if pvt.has_velocity:
+        vecv = Vector3D(pvt.velocity_vector.si.value.tolist())
+        return TimeStampedPVCoordinates(_abstime_to_okad(pvt.time), vecp, vecv)
+    else:
+        return TimeStampedPVCoordinates(_abstime_to_okad(pvt.time), vecp, Vector3D.ZERO)
 
 def _abstime_from_okad(t):
     return atime.abstime(pyhelp.absolutedate_to_datetime(t))
