@@ -1,27 +1,25 @@
-import numbers
 import numpy as np
-import astropy.time
-from tellurion.astro import units
-from tellurion.astro import quantity_utils as quant
+
+from tellurion.astro import quantity_utils as quant, units
 
 ##################################################
 ####   Constants used to define field names   ####
 ##################################################
 
-_eph_time = 'time'
-_eph_pos = 'position'
-_eph_vel = 'velocity'
+_eph_time = "time"
+_eph_pos = "position"
+_eph_vel = "velocity"
 _ephemeris_columns = [_eph_time, _eph_pos, _eph_vel]
 _ephemeris_columns_pos_only = [_eph_time, _eph_pos]
-_posvel_pt = {_eph_pos: 'length', _eph_vel: 'speed'}
-_sphpospt = ['angle', 'angle', 'length']
-_sphvelpt = ['angular speed', 'angular speed', 'speed']
+_posvel_pt = {_eph_pos: "length", _eph_vel: "speed"}
+_sphpospt = ["angle", "angle", "length"]
+_sphvelpt = ["angular speed", "angular speed", "speed"]
 
 
 
 # These should be conditional on the units used
-_pos_format = '10.3f'
-_vel_format = '10.6f'
+_pos_format = "10.3f"
+_vel_format = "10.6f"
 
 ##################################################
 ####   Utility functions for coordinates      ####
@@ -31,7 +29,7 @@ def _cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunit
     """Create a u.Quantity position or position-velocity scalar or array."""
     scalar = isscalar
     pvunit = _posvel_pt
-    
+
     if type(posvel) is tuple:
         scalar = len(posvel[0].shape)==1
         if len(posvel) == 2:
@@ -42,7 +40,7 @@ def _cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunit
         # Convert to numpy array (handles list, ndarray, and other sequences)
         arr = np.asarray(posvel)
         width = arr.shape[-1] if arr.ndim > 0 else 0
-        
+
         if width >= 6:
             if arr.ndim == 2:
                 pv = {_eph_pos: arr[:,0:3], _eph_vel: arr[:,3:6]}
@@ -54,11 +52,12 @@ def _cartesianpv(posvel, isscalar, given=units.prefunits, convert=units.prefunit
             pvunit = _posvel_pt[_eph_pos]
             pv = {_eph_pos: arr}
             scalar = arr.ndim == 1
-    
+
     return quant.change_units(quant.make_quantity(pv, pvunit, scalar, given), convert)
 
 
-def _sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distance'], unitlookup=units.prefunits):
+def _sphericalpv(sph_position, sph_velocity=None, labels=["rtasc","decl","distance"],
+                 unitlookup=units.prefunits):
     """Make a spherical coordinate set for position and velocity
 
     Args:
@@ -73,11 +72,11 @@ def _sphericalpv(sph_position, sph_velocity=None, labels=['rtasc','decl','distan
     Returns:
         Structured quantity with spherical coordinates.
     """
-    isscalar = not(hasattr(sph_position[0], '__getitem__'))
+    isscalar = not(hasattr(sph_position[0], "__getitem__"))
     posdict = dict(zip(labels, sph_position))
     if sph_velocity:
         # Include velocity components
-        labels_r = [sym+'_r' for sym in labels]
+        labels_r = [sym+"_r" for sym in labels]
         veldict = dict(zip(labels_r, sph_velocity))
         unt = dict(zip(labels+labels_r, _sphpospt+_sphvelpt))
         return quant.make_quantity(posdict | veldict, unt, isscalar, unitlookup)

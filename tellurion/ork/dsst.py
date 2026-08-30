@@ -12,6 +12,7 @@ from org.orekit.utils import Constants
 
 from tellurion.ork.prop import _additional, _convert_to_orbit, _make_generator
 
+
 def dsstprep(initstate, proptime, events, forceenv, reftime, output):
     """Prepare the DSST propagator"""
     ork0 = _convert_to_orbit(initstate, forceenv)
@@ -65,7 +66,8 @@ def dsstprep(initstate, proptime, events, forceenv, reftime, output):
     # Get ephemeris generator BEFORE creating the main generator
     ephgen = propagator.getEphemerisGenerator()
 
-    # Create generator with lambda using generator["epoch"] (will be populated by _make_generator)
+    # Create generator with lambda using generator["epoch"] (will be
+    # populated by _make_generator)
     generator = _make_generator(
         ork0, lambda propto: propagator.propagate(generator["epoch"], propto)
     )
@@ -75,7 +77,7 @@ def dsstprep(initstate, proptime, events, forceenv, reftime, output):
 
     # NOW get the generated ephemeris (after _additional has run)
     gge = ephgen.getGeneratedEphemeris()
-    
+
     # Replace propfn to use interpolation for subsequent queries
     generator["propfn"] = lambda propto: gge.propagate(propto)
     generator["mindate"] = gge.getMinDate()

@@ -6,11 +6,12 @@ convert between unit systems, and stack quantities.
 
 """
 
-from typing import Any, Dict, List, Optional, Union, Sequence
+from typing import Any, Dict, Optional, Sequence, Union
+
+import astropy.coordinates as coord
+import astropy.units as u
 import numpy as np
 from numpy.lib import recfunctions as rfn
-import astropy.units as u
-import astropy.coordinates as coord
 
 __all__ = [
     'make_quantity',
@@ -125,7 +126,9 @@ def make_quantity(
     if unit_lookup is None:
         unit_lookup = {}
 
-    def _quantity_from_value(val: Any, unit_spec: Optional[Union[u.Unit, str]]) -> u.Quantity:
+    def _quantity_from_value(
+            val: Any, unit_spec: Optional[Union[u.Unit, str]]
+    ) -> u.Quantity:
         """Helper to create a Quantity from a value and unit specification."""
         # If already a Quantity-like object, convert to Quantity
         if isinstance(val, (u.Quantity, coord.Angle, coord.Longitude,

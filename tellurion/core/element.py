@@ -1,11 +1,10 @@
 """Orbital elements user interface."""
 
-import numpy as np
 import astropy.units as u
+import numpy as np
 from astropy.time import Time
 
-from tellurion.astro import quantity_utils as quant
-from tellurion.astro import units as tunits
+from tellurion.astro import quantity_utils as quant, units as tunits
 
 # ----------------------------
 # State function values
@@ -28,7 +27,7 @@ def statefnval(orbstate, quantname, sfdict, constants=None):
     else:
         lookup = sfdict[quantname]
         getter = lookup["getter"]
-        if '__code__' in dir(getter) and len(getter.__code__.co_varnames) > 1:
+        if "__code__" in dir(getter) and len(getter.__code__.co_varnames) > 1:
             orkval = getter(orbstate, constants)
         else:
             orkval = getter(orbstate)
@@ -50,7 +49,7 @@ def sfdict(sfvbl):
 
 kepeltma_names = ["ecc", "sma", "inc", "argper", "raan", "ma"]
 kepeltta_names = ["ecc", "sma", "inc", "argper", "raan", "ta"]
-timeelements = ['ta', 'ma']
+timeelements = ["ta", "ma"]
 
 
 class ElementSetT:
@@ -93,10 +92,10 @@ def kepler(oes, dttm=None, unitlookup=tunits.prefunits):
     anomaly as the time element. Units not specified default to those
     given in unitlookup."""
 
-    keppt = {"inc":'angle', "argper":'angle', "raan":'angle', "ma":'angle', "ta":'angle', \
-             "ecc":'dimensionless', "sma":'length', "memo":'angular speed', \
-             "radper":'length', "radapo":'length', "altper":'length', "altapo":'length'}
-    isscalar = not(hasattr(dttm, 'isscalar')) or dttm.isscalar
+    keppt = {"inc":"angle", "argper":"angle", "raan":"angle", "ma":"angle", "ta":"angle", \
+             "ecc":"dimensionless", "sma":"length", "memo":"angular speed", \
+             "radper":"length", "radapo":"length", "altper":"length", "altapo":"length"}
+    isscalar = not(hasattr(dttm, "isscalar")) or dttm.isscalar
     kepsq = quant.make_quantity(oes, keppt, isscalar, unitlookup)
     # Possibly check kepsq['inc'] is in upper halfplane with
     # .is_within_bounds('0d', '180d') on Angle instances
@@ -120,27 +119,27 @@ def iskepels(obj, est=True):
 # a, ex=e·cos(ω+Ω), ey=e·sin(ω+Ω), hx=tan(i/2)·cos(Ω), hy=tan(i/2)·sin(Ω), λ
 equeltma_names = ["sma", "ex", "ey", "hx", "hy", "ml"]   # mean longitude
 equeltta_names = ["sma", "ex", "ey", "hx", "hy", "tl"]   # true longitude
-equtimeelements = ['ml', 'tl']
+equtimeelements = ["ml", "tl"]
 
 # --- Circular elements ---
 # a, ex=e·cos(αω), ey=e·sin(αω), i, Ω, u (latitude argument)
 circeltma_names = ["sma", "cex", "cey", "inc", "raan", "mla"]  # mean latitude arg
 circeltta_names = ["sma", "cex", "cey", "inc", "raan", "tla"]  # true latitude arg
-circtimeelements = ['mla', 'tla']
+circtimeelements = ["mla", "tla"]
 
 _equpt = {
-    "sma":  'length',
-    "ex":   'dimensionless', "ey":   'dimensionless',
-    "hx":   'dimensionless', "hy":   'dimensionless',
-    "ml":   'angle',         "tl":   'angle',
+    "sma":  "length",
+    "ex":   "dimensionless", "ey":   "dimensionless",
+    "hx":   "dimensionless", "hy":   "dimensionless",
+    "ml":   "angle",         "tl":   "angle",
 }
 
 _circpt = {
-    "sma":  'length',
-    "cex":  'dimensionless', "cey":  'dimensionless',
-    "inc":  'angle',
-    "raan": 'angle',
-    "mla":  'angle',         "tla":  'angle',
+    "sma":  "length",
+    "cex":  "dimensionless", "cey":  "dimensionless",
+    "inc":  "angle",
+    "raan": "angle",
+    "mla":  "angle",         "tla":  "angle",
 }
 
 
@@ -155,7 +154,7 @@ def equinoctial(oes, dttm=None, unitlookup=tunits.prefunits):
     dttm : `~astropy.time.Time`, optional
         Epoch; if supplied, returns an ``ElementSetT``.
     """
-    isscalar = not hasattr(dttm, 'isscalar') or dttm.isscalar
+    isscalar = not hasattr(dttm, "isscalar") or dttm.isscalar
     eqsq = quant.make_quantity(oes, _equpt, isscalar, unitlookup)
     eqsqn = tunits.normalizeangle(eqsq, u.rev / 2, equtimeelements)
     return ElementSetT(elements=eqsqn, time=dttm) if dttm is not None else eqsqn
@@ -179,7 +178,7 @@ def circular(oes, dttm=None, unitlookup=tunits.prefunits):
     dttm : `~astropy.time.Time`, optional
         Epoch; if supplied, returns an ``ElementSetT``.
     """
-    isscalar = not hasattr(dttm, 'isscalar') or dttm.isscalar
+    isscalar = not hasattr(dttm, "isscalar") or dttm.isscalar
     csq = quant.make_quantity(oes, _circpt, isscalar, unitlookup)
     csqn = tunits.normalizeangle(csq, u.rev / 2, circtimeelements)
     return ElementSetT(elements=csqn, time=dttm) if dttm is not None else csqn

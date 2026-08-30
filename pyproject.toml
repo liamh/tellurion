@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Astrodynamics and satellite navigation using Orekit and AstroPy"
 authors = [{name = "Liam Healy"}]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 
 # Core package dependencies
@@ -86,6 +86,7 @@ line-length = 88
 select = [
   "E",    # pycodestyle errors
   "F",    # Pyflakes
+  "Q",    # Quote style
   "W291", # Trailing whitespace
   "W293", # Blank line whitespace
   "D300", # Enforce PEP 257 triple-double quotes (""")

@@ -150,7 +150,7 @@ def _select_propagator(initstate, forceenv):
         return "keplerian"
 
 
-def SGP4prep(meanels, proptime, events, forceenv, reftime, occluder, output):
+def SGP4prep(meanels, proptime, events, forceenv, reftime, output):
     """Propagate mean elements using SGP4"""
     if hasattr(meanels, "model") and meanels.model == "SGP4":
         tle = TLE(*meanels.tle)

@@ -1,15 +1,16 @@
 """Make and convert quantities"""
 
+import astropy.coordinates as coord
+import astropy.units as u
 import numpy as np
 from numpy.lib import recfunctions as rfn
-import astropy.units as u
-import astropy.coordinates as coord
 
 ####################################################################
 ##### Build quantities
 ####################################################################
 
-def make_quantity(value, unit=None, isscalar = False, unitlookup={}):
+
+def make_quantity(value, unit=None, isscalar=False, unitlookup={}):
     """Make an unstructured quantity given a value, a unit (which may
     be a physical type), and optionally a dictionary `unitlookup`
     which maps physical types to the names units.
@@ -22,27 +23,41 @@ def make_quantity(value, unit=None, isscalar = False, unitlookup={}):
     dict
 
     """
+
     def qv(value, sngun):
-        if type(value) in (u.Quantity, coord.Angle, coord.Longitude, coord.Latitude, coord.Distance):
+        if type(value) in (
+            u.Quantity,
+            coord.Angle,
+            coord.Longitude,
+            coord.Latitude,
+            coord.Distance,
+        ):
             q = u.Quantity(value)
         elif type(sngun) is str:
             unt = unitlookup.get(sngun) or sngun
             if unt:
-                q = value*u.Unit(unt)
+                q = value * u.Unit(unt)
             else:
-                q = value*u.Unit('1')
+                q = value * u.Unit("1")
         else:
             raise TypeError("Could not assign a unit to the value")
         return q
 
     if type(value) is dict:
         if type(unit) is dict:
-            quants = [_make_structured_quantity(qv(value[key], unit[key]), key, isscalar) for key in value]
+            quants = [
+                _make_structured_quantity(qv(value[key], unit[key]), key, isscalar)
+                for key in value
+            ]
         else:
-            quants = [_make_structured_quantity(qv(value[key], None), key, isscalar) for key in value]
+            quants = [
+                _make_structured_quantity(qv(value[key], None), key, isscalar)
+                for key in value
+            ]
         return hstack(tuple(quants))
     else:
         return qv(value, unit)
+
 
 def changeunits(qsq, unitlookup={}):
     """Change the units for the quantity or structured quantity to the
@@ -51,7 +66,9 @@ def changeunits(qsq, unitlookup={}):
 
     def getanypt(un):
         ptl = u.get_physical_type(un)._physical_type
-        return next((unitlookup.get(k) for k in ptl if unitlookup.get(k) is not None), None)
+        return next(
+            (unitlookup.get(k) for k in ptl if unitlookup.get(k) is not None), None
+        )
 
     if type(qsq.unit) is u.StructuredUnit:
         pt = [getanypt(un) for un in qsq.unit.values()]
@@ -67,12 +84,14 @@ def changeunits(qsq, unitlookup={}):
     else:
         raise ValueError("Unit physical type not found in `unitlookup`")
 
+
 ####################################################################
 ##### Build structured quantities
 ####################################################################
 
 # Make the scalar structured quantity a singleton vector
 u.Quantity.tovector = lambda self: u.Quantity([self]) if self.isscalar else self
+
 
 def _make_structured_quantity(q, name, scalar=False):
     """
@@ -98,27 +117,28 @@ def _make_structured_quantity(q, name, scalar=False):
     Examples
     --------
     # Scalar input
-    >>> make_structured_quantity(2*u.m, 'distance')
+    >>> make_structured_quantity(2 * u.m, "distance")
     # Creates single-element structured array
 
     # Vector input, scalar=False (default)
-    >>> make_structured_quantity([1, 2, 3]*u.m, 'distance', scalar=False)
+    >>> make_structured_quantity([1, 2, 3] * u.m, "distance", scalar=False)
     # Creates 3-element structured array, each element is a scalar
     # isscalar = False
 
     # Vector input, scalar=True
-    >>> make_structured_quantity([1, 2, 3]*u.m, 'my3vec', scalar=True)
+    >>> make_structured_quantity([1, 2, 3] * u.m, "my3vec", scalar=True)
     # Creates 1-element structured array, the element is a 3-vector
     # isscalar = True
 
     # 2D array input
-    >>> make_structured_quantity(np.ones((13, 3))*u.m, 'coords')
+    >>> make_structured_quantity(np.ones((13, 3)) * u.m, "coords")
     # Creates 13-element structured array, each element is a 3-vector
     # isscalar = False
     """
     if scalar or q.isscalar:
         # Treat entire input as a single structured element
-        # This handles both scalar inputs and vectors that should be kept as single elements
+        # This handles both scalar inputs and vectors that should be
+        # kept as single elements
         dtype = [(name, q.dtype, q.shape)]
         struct_array = np.empty(1, dtype=dtype)
         struct_array[name][0] = q.value
@@ -148,6 +168,7 @@ def _make_structured_quantity(q, name, scalar=False):
         struct_unit = u.StructuredUnit((q.unit,), names=(name,))
         return u.Quantity(struct_array, unit=struct_unit)
 
+
 def hstack(sqs):
     """Concatenate the quantities with different structure components
     and the same number of rows; sqs is a tuple or list of structured
@@ -157,9 +178,9 @@ def hstack(sqs):
     isscalars = [sq.isscalar for sq in sqs]
     if all(isscalars):
         compat = True
-    elif not(any(isscalars)):
+    elif not (any(isscalars)):
         lens = [len(sq) for sq in sqs]
-        compat = all(x==lens[0] for x in lens)
+        compat = all(x == lens[0] for x in lens)
     else:
         compat = False
     if compat:
@@ -171,13 +192,15 @@ def hstack(sqs):
     else:
         raise ValueError("All lengths must be the same")
 
+
 def vstack(sqs):
     """Concatenate rows the structured quantities with identical structure."""
     units = [sq.unit for sq in sqs]
-    if all(x==units[0] for x in units):
-        return rfn.stack_arrays([sq.tovector().value for sq in sqs])*units[0]
+    if all(x == units[0] for x in units):
+        return rfn.stack_arrays([sq.tovector().value for sq in sqs]) * units[0]
     else:
         raise ValueError("All units must be the same")
+
 
 ####################################################################
 ##### Convert structured and unstructured quantities
@@ -185,9 +208,15 @@ def vstack(sqs):
 
 # Make a dictionary by structure components, used to see what the SQ
 # contents because it's not clear in the default print form
-u.Quantity.to_dict = lambda self: {nm: self[nm] for nm in self.dtype.names} \
-    if isinstance(self.unit, u.StructuredUnit) else {'': self.value}
+u.Quantity.to_dict = lambda self: (
+    {nm: self[nm] for nm in self.dtype.names}
+    if isinstance(self.unit, u.StructuredUnit)
+    else {"": self.value}
+)
 
 # Extract value as np.array from quantities
-u.Quantity.to_array = lambda self: rfn.structured_to_unstructured(self.value) \
-    if isinstance(self.unit, u.StructuredUnit) else self.value
+u.Quantity.to_array = lambda self: (
+    rfn.structured_to_unstructured(self.value)
+    if isinstance(self.unit, u.StructuredUnit)
+    else self.value
+)

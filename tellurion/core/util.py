@@ -1,5 +1,5 @@
-import numpy as np
 import astropy.units as u
+import numpy as np
 
 ##################################################
 #### Compare vectors by their magnitudes      ####

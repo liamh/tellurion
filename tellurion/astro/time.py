@@ -2,16 +2,16 @@
 AstroPy definitions
 """
 
-from typing import Final
-import warnings
-import datetime
 import bisect
-import numpy as np
-import astropy.units as u
+import collections.abc
+import datetime
+import warnings
+
 import astropy.table
 import astropy.time
 import astropy.timeseries
-import collections.abc
+import astropy.units as u
+import numpy as np
 
 ################################################################################
 ## Time

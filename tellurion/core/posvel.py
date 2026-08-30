@@ -7,15 +7,17 @@ Cartesian and spherical coordinate systems.
 """
 import abc
 import dataclasses
+
+import astropy.table.row
+import astropy.time
+import astropy.units as u
 import funcy
 import numpy as np
-import astropy.units as u
-import astropy.time
+from astropy.coordinates import CartesianRepresentation, SphericalRepresentation
 from astropy.timeseries import TimeSeries
-import astropy.table.row
-from tellurion.astro import units
-from tellurion.astro import quantity_utils as quant
+
 import tellurion.astro.time as atime
+from tellurion.astro import quantity_utils as quant, units
 from tellurion.core import pvhelper
 
 # Make the scalar structured quantity a singleton vector
@@ -159,12 +161,14 @@ class PositionBase(abc.ABC):
         >>> subset = pvt[2:5]  # Get slice
         """
         if self.isscalar:
-            raise TypeError(f"'{type(self).__name__}' scalar object is not subscriptable")
+            raise TypeError(f"'{type(self).__name__}' scalar object "
+                            "is not subscriptable")
         else:
             return type(self)( # or equivalently self.__class__
                 time=self.time[index],
                 cartesian=self.cartesian[index],
-                aux={k: v.split(' ')[index] for k, v in self.aux.items()} if self.aux else {}
+                aux={k: v.split(" ")[index] for k, v in self.aux.items()}
+                if self.aux else {}
             )
 
     @property
@@ -240,7 +244,8 @@ class PositionBase(abc.ABC):
         """
         cart = self.cartesian
         # Check if it's a structured quantity with position/velocity fields
-        if hasattr(cart, 'dtype') and cart.dtype.names and pvhelper._eph_pos in cart.dtype.names:
+        if hasattr(cart, "dtype") and cart.dtype.names \
+           and pvhelper._eph_pos in cart.dtype.names:
             return cart[pvhelper._eph_pos]
         else:
             return cart
@@ -265,7 +270,8 @@ class PositionBase(abc.ABC):
         True
         """
         cart = self.cartesian
-        if hasattr(cart, 'dtype') and hasattr(cart.dtype, 'names') and cart.dtype.names is not None:
+        if hasattr(cart, "dtype") and hasattr(cart.dtype, "names") \
+           and cart.dtype.names is not None:
             return pvhelper._eph_vel in cart.dtype.names
         return False
 
@@ -448,8 +454,8 @@ class PositionBase(abc.ABC):
         else:
             # Use atime.abstime which handles Time concatenation properly
             self.time = atime.abstime([self.time, other.time])
-
-            self.aux = funcy.merge_with(' '.join, self.aux, other.aux) # Merge aux attributes
+            # Merge aux attributes
+            self.aux = funcy.merge_with(" ".join, self.aux, other.aux)
             self.isscalar = False
         return self
 
@@ -486,7 +492,8 @@ class PositionBase(abc.ABC):
         -------
         ndarray
             For `PositionT`: shape (N, 4) with columns [px, py, pz, time]
-            For `PositionVelocityT`: shape (N, 7) with columns [px, py, pz, vx, vy, vz, time]
+            For `PositionVelocityT`: shape (N, 7) with columns
+            [px, py, pz, vx, vy, vz, time]
             All physical quantities are in SI units (meters, meters/second).
 
         Notes
@@ -521,19 +528,22 @@ class PositionBase(abc.ABC):
                 pos_vals = pos.si.value.reshape(1, -1)
             else:
                 time_array = self.time.to_value(time_format).reshape(-1, 1)
-                pos_vals = pos.si.value.reshape(-1, 3) if pos.si.value.ndim == 1 else pos.si.value
+                pos_vals = pos.si.value.reshape(-1, 3) if pos.si.value.ndim == 1 \
+                    else pos.si.value
 
             if has_velocity:
                 vel = self.cartesian[pvhelper._eph_vel]
                 if self.time.shape == ():
                     vel_vals = vel.si.value.reshape(1, -1)
                 else:
-                    vel_vals = vel.si.value.reshape(-1, 3) if vel.si.value.ndim == 1 else vel.si.value
+                    vel_vals = vel.si.value.reshape(-1, 3) if vel.si.value.ndim == 1 \
+                        else vel.si.value
                 return np.hstack((pos_vals, vel_vals, time_array))
             else:
                 return np.hstack((pos_vals, time_array))
 
-    def ephemeris(self, elapsed=True, reftime='epoch', coordinate_type='cartesian', columnnames=None, components=False,
+    def ephemeris(self, elapsed=True, reftime="epoch", coordinate_type="cartesian",
+                  columnnames=None, components=False,
                   pvformats=(pvhelper._pos_format, pvhelper._vel_format)):
         """
         Create an AstroPy time series.
@@ -549,7 +559,8 @@ class PositionBase(abc.ABC):
         reftime : str, optional
             Reference time format (default: 'epoch')
         coordinate_type: str, optional
-            One of 'cartesian', 'spherical', or 'both' [not yet functional] (default: 'cartesian')
+            One of 'cartesian', 'spherical', or 'both' [not yet functional]
+            (default: 'cartesian')
         columnnames : list of str, optional
             Column names to use (default: ['position', 'velocity'])
         components : Split 3-vectors into scalar components
@@ -588,16 +599,16 @@ class PositionBase(abc.ABC):
                 # Position only
                 columnnames = pvhelper._ephemeris_columns_pos_only
         # Name the columns with the PVT name if available
-        if hasattr(self,'name'):
+        if hasattr(self,"name"):
             timenm = columnnames[0]
             columnnames = [self.name + " " + cn for cn in columnnames]
             columnnames[0]=timenm
 
-        # Get position data
-        pos_data = self.position_vector.tovector()
+        # Get position data - unused
+        # pos_data = self.position_vector.tovector()
 
         # Create time series with appropriate data
-        if coordinate_type=='cartesian':
+        if coordinate_type=="cartesian":
             # Cartesian coordinates
             if self.has_velocity:
                 ts = TimeSeries(time=self.time, data=self.cartesian)
@@ -605,7 +616,7 @@ class PositionBase(abc.ABC):
                 ts[names[0]].info.format = pvformats[0]
                 ts[names[1]].info.format = pvformats[1]
             else:
-                colnames=[columnnames[1]+'_x', columnnames[1]+'_y', columnnames[1]+'_z']
+                colnames=[columnnames[1]+"_x", columnnames[1]+"_y", columnnames[1]+"_z"]
                 ts = TimeSeries(time=self.time, data=self.cartesian, names=colnames)
                 ts[colnames[0]].info.format = pvformats[0]
                 ts[colnames[1]].info.format = pvformats[0]
@@ -620,13 +631,13 @@ class PositionBase(abc.ABC):
 
         # Add aux attributes if present
         for key in self.aux:
-            ts[key] = self.aux[key].split(' ')
+            ts[key] = self.aux[key].split(" ")
 
         # Add elapsed time column
         if elapsed:
             elapsed_times = [dt.quantity_str for dt in np.diff(self.time)]
-            elapsed_times.insert(0, '')
-            ts.add_column(elapsed_times, index=1, name='elapsed')
+            elapsed_times.insert(0, "")
+            ts.add_column(elapsed_times, index=1, name="elapsed")
 
         # Apply reference time formatting
         if reftime is not None:
@@ -721,7 +732,7 @@ class PositionT(PositionBase):
         `~astropy.units.Quantity`
             Spherical state vector using sph() format with structured dtype
         """
-        from astropy.coordinates import CartesianRepresentation, SphericalRepresentation
+        from astropy.coordinates import SphericalRepresentation
 
         pos = cartesian
         if self.isscalar:
@@ -738,7 +749,7 @@ class PositionT(PositionBase):
         # SphericalRepresentation uses (lon, lat, distance) format
         # which corresponds to (right ascension, declination, distance)
         sphrepr = [sph_repr.lon, sph_repr.lat, sph_repr.distance]
-        ret = pvhelper._sphericalpv(sphrepr, None, labels=['rtasc', 'decl', 'distance'])
+        ret = pvhelper._sphericalpv(sphrepr, None, labels=["rtasc", "decl", "distance"])
         return quant.change_units(ret, unit_lookup=units.prefunits)
 
 
@@ -756,12 +767,11 @@ class PositionT(PositionBase):
         `~astropy.units.Quantity`
             Cartesian position vector(s)
         """
-        from astropy.coordinates import CartesianRepresentation, SphericalRepresentation
 
         # Extract spherical position and velocity from the structured quantity
-        rtasc = spherical['rtasc']          # right ascension (longitude)
-        decl = spherical['decl']            # declination (latitude)
-        distance = spherical['distance']    # radial distance
+        rtasc = spherical["rtasc"]          # right ascension (longitude)
+        decl = spherical["decl"]            # declination (latitude)
+        distance = spherical["distance"]    # radial distance
 
         # Create SphericalRepresentation with position
         # Note: SphericalRepresentation expects (lon, lat, distance)
@@ -772,11 +782,11 @@ class PositionT(PositionBase):
         )
 
         # Convert to Cartesian representation (this handles both position and velocity)
-        cart_repr = sph_repr.represent_as(CartesianRepresentation)
+        # cart_repr = sph_repr.represent_as(CartesianRepresentation)
         raise ValueError("This has never been tested")
         # sq = pvhelper._cartesianpv(cart_repr.xyz, unit_lookup=units.prefunits)
         # Create the structured quantity
-        return sq
+        # return sq
 
     def copy(self):
         """
@@ -883,7 +893,8 @@ class PositionVelocityT(PositionBase):
 
     >>> states = np.array([
     ...     [5740132.6835, 3314067.15, 0.0, -2750.8268, 4764.5718, 5501.6537, 60676.0],
-    ...     [4581815.8086, 4512263.1753, 1616826.6336, -4891.449, 3141.5916, 5166.4227, 60676.0035]
+    ...     [4581815.8086, 4512263.1753, 1616826.6336, -4891.449, 3141.5916, 5166.4227,
+    60676.0035]
     ... ])
     >>> pvt_series = pvtcart(states, None)
     >>> ephemeris = pvt_series.ephemeris()
@@ -944,7 +955,8 @@ class PositionVelocityT(PositionBase):
         >>> pos.has_velocity
         False
         """
-        return PositionT(time=self.time, aux=self.aux.copy(), cartesian=self.position_vector)
+        return PositionT(time=self.time, aux=self.aux.copy(),
+                         cartesian=self.position_vector)
 
     def _cartesian_to_spherical(self, cartesian):
         """
@@ -960,8 +972,11 @@ class PositionVelocityT(PositionBase):
         `~astropy.units.Quantity`
             Spherical state vector using sph() format
         """
-        from astropy.coordinates import CartesianRepresentation, SphericalRepresentation
-        from astropy.coordinates import CartesianDifferential, SphericalDifferential
+        from astropy.coordinates import (
+            CartesianDifferential,
+            SphericalDifferential,
+            SphericalRepresentation,
+        )
 
         # Extract position and velocity from the structured quantity
         pos = cartesian[pvhelper._eph_pos]  # position 3-vector
@@ -975,7 +990,8 @@ class PositionVelocityT(PositionBase):
         elif pos.ndim == 2:
             # 2D array - multiple positions
             cart_repr = CartesianRepresentation(x=pos[:, 0], y=pos[:, 1], z=pos[:, 2])
-            cart_diff = CartesianDifferential(d_x=vel[:, 0], d_y=vel[:, 1], d_z=vel[:, 2])
+            cart_diff = CartesianDifferential(d_x=vel[:, 0], d_y=vel[:, 1],
+                                              d_z=vel[:, 2])
         else:
             # Fallback - assume scalar
             cart_repr = CartesianRepresentation(x=pos[0], y=pos[1], z=pos[2])
@@ -989,14 +1005,15 @@ class PositionVelocityT(PositionBase):
                                           differential_class=SphericalDifferential)
 
         # Extract the spherical differential
-        sph_diff = sph_repr.differentials['s']  # 's' is the time unit key
+        sph_diff = sph_repr.differentials["s"]  # 's' is the time unit key
 
         # Convert to the format expected by sph() function
         # SphericalRepresentation uses (lon, lat, distance) format
         # which corresponds to (right ascension, declination, distance)
         sphrepr = [sph_repr.lon, sph_repr.lat, sph_repr.distance]
         sphrate = [sph_diff.d_lon, sph_diff.d_lat, sph_diff.d_distance]
-        ret = pvhelper._sphericalpv(sphrepr, sphrate, labels=['rtasc', 'decl', 'distance'])
+        ret = pvhelper._sphericalpv(sphrepr, sphrate,
+                                    labels=["rtasc", "decl", "distance"])
         return quant.change_units(ret, unit_lookup=units.prefunits)
 
 
@@ -1014,16 +1031,19 @@ class PositionVelocityT(PositionBase):
         `~astropy.units.Quantity`
             Cartesian state vector with position and velocity components
         """
-        from astropy.coordinates import CartesianRepresentation, SphericalRepresentation
-        from astropy.coordinates import CartesianDifferential, SphericalDifferential
+        from astropy.coordinates import (
+            CartesianDifferential,
+            SphericalDifferential,
+            SphericalRepresentation,
+        )
 
         # Extract spherical position and velocity from the structured quantity
-        rtasc = spherical['rtasc']          # right ascension (longitude)
-        decl = spherical['decl']            # declination (latitude)
-        distance = spherical['distance']    # radial distance
-        rtasc_r = spherical['rtasc_r']      # d(right ascension)/dt
-        decl_r = spherical['decl_r']        # d(declination)/dt
-        distance_r = spherical['distance_r'] # d(distance)/dt
+        rtasc = spherical["rtasc"]          # right ascension (longitude)
+        decl = spherical["decl"]            # declination (latitude)
+        distance = spherical["distance"]    # radial distance
+        rtasc_r = spherical["rtasc_r"]      # d(right ascension)/dt
+        decl_r = spherical["decl_r"]        # d(declination)/dt
+        distance_r = spherical["distance_r"] # d(distance)/dt
 
         # Create SphericalRepresentation with position
         # Note: SphericalRepresentation expects (lon, lat, distance)
@@ -1048,7 +1068,7 @@ class PositionVelocityT(PositionBase):
                                           differential_class=CartesianDifferential)
 
         # Extract the Cartesian differential
-        cart_diff = cart_repr.differentials['s']  # 's' is the time unit key
+        cart_diff = cart_repr.differentials["s"]  # 's' is the time unit key
 
         raise ValueError("This has never been tested")
 
@@ -1074,7 +1094,8 @@ class PositionVelocityT(PositionBase):
         >>> pvt2 = pvt1.copy()
         >>> pvt2.aux['label'] = 'modified'  # doesn't affect pvt1
         """
-        # Only copy the attribute that's currently defined to avoid unnecessary computation
+        # Only copy the attribute that's currently defined to avoid
+        # unnecessary computation
         if self._cartesian is not None:
             return PositionVelocityT(
                 time=self.time.copy(),
@@ -1172,7 +1193,8 @@ def pvtcart(pv, time, specunits=units.prefunits):
 
     >>> states = np.array([
     ...     [5740132.6835, 3314067.15, 0.0, -2750.8268, 4764.5718, 5501.6537, 60676.0],
-    ...     [4581815.8086, 4512263.1753, 1616826.6336, -4891.449, 3141.5916, 5166.4227, 60676.0035]
+    ...     [4581815.8086, 4512263.1753, 1616826.6336, -4891.449, 3141.5916, 5166.4227,
+             60676.0035]
     ... ])
     >>> pvt = pvtcart(states, None)
 
@@ -1185,7 +1207,8 @@ def pvtcart(pv, time, specunits=units.prefunits):
 
     Recreate from propagator output:
 
-    >>> prop = tell.propagate(demoa.propa.gen, prop5m1h, include_init=True, output='pvt')
+    >>> prop = tell.propagate(demoa.propa.gen, prop5m1h, include_init=True,
+               output='pvt')
     >>> new = pvtcart(prop.to_array(), None, tell.siunits)
 
     See Also
@@ -1194,10 +1217,12 @@ def pvtcart(pv, time, specunits=units.prefunits):
     PositionVelocityT : Position with velocity
     """
     if isinstance(pv, list):
-        # Check if it's a list of lists/arrays (multiple states) or a flat list (single state)
-        if pv and hasattr(pv[0], '__len__') and not isinstance(pv[0], str):
+        # Check if it's a list of lists/arrays (multiple states)
+        # or a flat list (single state)
+        if pv and hasattr(pv[0], "__len__") and not isinstance(pv[0], str):
             # List of states - recursively process each
-            cart = quant.vstack([pvhelper._cartesianpv(pv1, True, specunits, units.prefunits) \
+            cart = quant.vstack([pvhelper._cartesianpv(pv1, True, specunits,
+                                                       units.prefunits) \
                                  for pv1 in pv])
             is_single_state = False
         else:
@@ -1260,23 +1285,25 @@ def _pvtattr(object, isscalar):
     This function is used internally to monkey-patch `.pvt()` methods onto
     AstroPy's TimeSeries and Table Row classes.
     """
-    hasthing = lambda object, thing: hasattr(object,thing) or (hasattr(object,'colnames') and thing in object.colnames)
+
+    def hasthing (object, thing):
+        return hasattr(object,thing) or (hasattr(object,"colnames")
+                                         and thing in object.colnames)
+
     if hasthing(object,pvhelper._eph_time) and hasthing(object,pvhelper._eph_pos):
         if hasthing(object,pvhelper._eph_vel):
-            cart = pvhelper._cartesianpv((object[pvhelper._eph_pos], object[pvhelper._eph_vel]), isscalar)
+            cart = pvhelper._cartesianpv((object[pvhelper._eph_pos],
+                                          object[pvhelper._eph_vel]), isscalar)
             return PositionVelocityT(time=object[pvhelper._eph_time], cartesian=cart)
         else:
-            return PositionT(time=object[pvhelper._eph_time], cartesian=object[pvhelper._eph_pos])
+            return PositionT(time=object[pvhelper._eph_time],
+                             cartesian=object[pvhelper._eph_pos])
     else:
-        raise ValueError('Cannot make a PositionVelocityT or PositionT from this object')
+        raise ValueError("Cannot make a PositionVelocityT or PositionT from this object")
 
 # Monkey-patch .pvt() methods onto AstroPy classes
 astropy.timeseries.TimeSeries.pvt = lambda self: _pvtattr(self, False)
 astropy.table.row.Row.pvt = lambda self: _pvtattr(self, True)
-
-# def vstack(pvts):
-#     ret = posvel.PositionVelocityT(time=times, cartesian=\
-#                                    quant.vstack(tuple([pvt.cartesian for pvt in pvts])))
 
 ##################################################
 #### Legacy aliases for backward compatibility ####

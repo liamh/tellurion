@@ -7,8 +7,11 @@ from tellurion.ork import convert, force
 # Currently does not get long-period solutions
 # This should be possible in Orekit 14: https://forum.orekit.org/t/orekit-lambert-solver/4265/16
 
-# pt1 = tell.pvtcart(demoa.propa.cartephem[0]['position'], demoa.propa.cartephem[0]['time'])
-# pt2 = tell.pvtcart(demoa.propa.cartephem[-1]['position'], demoa.propa.cartephem[-1]['time'])
+# pt1 = tell.pvtcart(demoa.propa.cartephem[0]['position'],
+# demoa.propa.cartephem[0]['time']) pt2 =
+# tell.pvtcart(demoa.propa.cartephem[-1]['position'],
+# demoa.propa.cartephem[-1]['time'])
+
 
 def lambert(
     p1: posvel.PositionT,
@@ -51,8 +54,10 @@ def lambert(
 
     See Also
     --------
-    tellurion.ork.convert._tspvc : Convert PositionT/PositionVelocityT to Orekit coordinates.
+    tellurion.ork.convert._tspvc : Convert PositionT/PositionVelocityT
+    to Orekit coordinates.
     tellurion.ork.convert._pvt : Convert Orekit Orbit objects to PositionVelocityT.
+
     """
     # Convert inputs to Orekit TimeStampedPVCoordinates
     tspvc1 = convert._tspvc(p1)

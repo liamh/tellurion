@@ -4,42 +4,40 @@ AstroPy does the same computation (see ../geog.py), unless the
 specific earth frame used for Orekit is needed to high accuracy.
 
 """
-import numpy as np
-import astropy.units as u
-import astropy.coordinates as coord
-from astropy.timeseries import TimeSeries
 
+import astropy.coordinates as coord
+import astropy.units as u
+import numpy as np
+from org.hipparchus.geometry.euclidean.threed import Vector3D
 from org.orekit.bodies import GeodeticPoint
 from org.orekit.frames import TopocentricFrame
-import org.orekit.models.earth as oearth
-from org.hipparchus.geometry.euclidean.threed import Vector3D
 
 import tellurion.astro.time as atime
-from tellurion.astro import units
-from tellurion.astro import quantity_utils as quant
-from tellurion.core import posvel
-from tellurion.core import geog
+from tellurion.astro import quantity_utils as quant, units
 from tellurion.core import obs
-from tellurion.ork import force
-from tellurion.ork import convert
+from tellurion.ork import convert, force
 
-def siderealtime(time = None, location = None, forceenv=force.deffe):
+
+def siderealtime(time=None, location=None, forceenv=force.deffe):
     """The Greenwich or local sidereal time(s). Default `time` is the
     current time, default `location` is the prime meridian (i.e.,
     Greenwich sidereal time).
     """
     if not time:
         time = atime.abstime(0)
+
     def gst(time):
         if time.isscalar:
-            vs = forceenv['gmst'].value(convert._abstime_to_okad(time))
+            vs = forceenv["gmst"].value(convert._abstime_to_okad(time))
         else:
             vs = [gst(tm) for tm in time]
         return coord.Longitude(vs, u.radian).to(u.deg)
-    if hasattr(location, 'lon'):
+
+    if hasattr(location, "lon"):
         return coord.Longitude(gst(time) - location.lon)
     else:
         return gst(time)
+
 
 def geodpt(earthloc):
     """Create the Orekit GeodeticPoint from an AstroPy EarthLocation"""
@@ -49,16 +47,21 @@ def geodpt(earthloc):
     altitude_m = float(geod.height.si.value)
     return GeodeticPoint(lat_rdn, lon_rdn, altitude_m)
 
-def _topoframe(loc, name="", forceenv=force.deffe):
-    return TopocentricFrame(forceenv['earth'], geodpt(loc), name)
 
-def sitevec(loc, times, name="sitevec", unitlookup=units.prefunits, forceenv=force.deffe):
+def _topoframe(loc, name="", forceenv=force.deffe):
+    return TopocentricFrame(forceenv["earth"], geodpt(loc), name)
+
+
+def sitevec(
+    loc, times, name="sitevec", unitlookup=units.prefunits, forceenv=force.deffe
+):
     """The site vector for an earth location at the specified times."""
     tf = _topoframe(loc, name, forceenv)
-    ret = convert._pvt_from_coordinates(tf, times, forceenv['celestialframe'])
+    ret = convert._pvt_from_coordinates(tf, times, forceenv["celestialframe"])
     if name:
         ret.name = name
     return ret
+
 
 def eciaer(observation, name="", unitlookup=units.prefunits, forceenv=force.deffe):
     """Find the ECI position and time of the az-el-range observations
@@ -67,20 +70,27 @@ def eciaer(observation, name="", unitlookup=units.prefunits, forceenv=force.deff
     """
     tf = _topoframe(observation.loc, name, forceenv)
     aerork = quant.change_units(observation.obs, units.orkunits)
-    tf = TopocentricFrame(forceenv['earth'], \
-                          tf.pointAtDistance(
-                              float(aerork['azim'].value), \
-                              float(aerork['elev'].value), \
-                              float(aerork['range'].value)), \
-                          name)
-    tspvc = tf.getPVCoordinates(convert._abstime_to_okad(observation.time), forceenv['celestialframe'])
+    tf = TopocentricFrame(
+        forceenv["earth"],
+        tf.pointAtDistance(
+            float(aerork["azim"].value),
+            float(aerork["elev"].value),
+            float(aerork["range"].value),
+        ),
+        name,
+    )
+    tspvc = tf.getPVCoordinates(
+        convert._abstime_to_okad(observation.time), forceenv["celestialframe"]
+    )
     pvt = convert._pvt(tspvc)
     return pvt.position
+
 
 def aereci(postime, location, forceenv=force.deffe):
     """The EarthObservation (az-el-range) for a PositionT from an observer location"""
     tf = _topoframe(location, "local frame", forceenv)
-    cf = forceenv['celestialframe']
+    cf = forceenv["celestialframe"]
+
     def aer(postime):
         if postime.isscalar:
             pt = Vector3D(postime.cartesian.value.tolist())
@@ -91,13 +101,14 @@ def aereci(postime, location, forceenv=force.deffe):
             return [azm, elv, rng]
         else:
             return [aer(pt) for pt in postime]
+
     data = np.array(aer(postime))
     if data.ndim == 1:
         azm = coord.Angle(data[0], u.radian)
         elv = coord.Angle(data[1], u.radian)
-        rng = data[2]*u.m
+        rng = data[2] * u.m
     else:
-        azm = coord.Angle(data[:,0], u.radian)
-        elv = coord.Angle(data[:,1], u.radian)
-        rng = data[:,2]*u.m
+        azm = coord.Angle(data[:, 0], u.radian)
+        elv = coord.Angle(data[:, 1], u.radian)
+        rng = data[:, 2] * u.m
     return obs.azelrange(azm, elv, rng, location, postime.time)

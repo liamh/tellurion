@@ -4,13 +4,14 @@ consistency.
 
 """
 
-from astropy.timeseries import TimeSeries
 from astropy.time import Time
+from astropy.timeseries import TimeSeries
+
 
 def eciobs(loc, observation=None, name='eci obs'):
-    '''Find the ECI position and time of the observations made from
+    """Find the ECI position and time of the observations made from
     the location. If observation is a Time or multiple times, find the site
-    vector(s). Uses AstroPy.'''
+    vector(s). Uses AstroPy."""
     if observation==None:
         observation = astro.abstime(0)
     if type(observation) is Time:
@@ -32,20 +33,20 @@ def eciobs(loc, observation=None, name='eci obs'):
         return None
 
 def azelrange(az, el, rang, obsloc, obstime):
-    '''Create an azimuth, elevation, and range observation'''
+    """Create an azimuth, elevation, and range observation"""
     return coord.SkyCoord(coord.AltAz(az=az, alt=el, distance=rang, location=obsloc, obstime=obstime))
 
 def radecrange(ra, dec, rang, obsloc, obstime, frame='gcrs'):
-    '''Create an right ascension, declination, and range observation'''
+    """Create an right ascension, declination, and range observation"""
     # This doesn't seem to offset the origin to the observer location
     return coord.SkyCoord(ra=ra, dec=dec, distance=rang, obstime=obstime, frame=frame, \
                           obsgeoloc=makepos(obsloc))
 
 def siderealtime(time = None, location = nullisland):
-    '''
+    """
     The sidereal time of the location; `time=None` (default) gives
     the current time, default `location` gives GST
-    '''
+    """
     if time==None:
         time = astro.abstime(0)
     obstm = Time(time, location = location)
@@ -56,7 +57,7 @@ def siderealtime(time = None, location = nullisland):
 ##################################################
 
 def makepos(pos, unit=units.prefunits['length']):
-    '''Create a position vector or convert units'''
+    """Create a position vector or convert units"""
     if type(pos) is coord.representation.cartesian.CartesianRepresentation:
         return makepos(pos.xyz, unit)
     if type(pos) is tuple:

@@ -1,7 +1,7 @@
 # Import all contents from each module
-from tellurion.astro.units import *
-from tellurion.astro.time import *
 from tellurion.astro.quantity_utils import *
+from tellurion.astro.time import *
+from tellurion.astro.units import *
 
 # from .quantity_utils import (
 #     make_quantity,
