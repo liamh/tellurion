@@ -1,6 +1,8 @@
 """Lazy Orekit/JVM initialization and symbol loading for tellurion.ork."""
 
+import ast
 from importlib import import_module
+from pathlib import Path
 from threading import Lock
 
 __all__ = ["init_orekit", "ensure_orekit_initialized", "orekit_available"]
@@ -9,7 +11,7 @@ _INIT_LOCK = Lock()
 _VM_INITIALIZED = False
 _INIT_ERROR = None
 
-_OREKIT_SUBMODULES = (
+_OREKIT_TOPLEVEL_SUBMODULES = (
     "convert",
     "dsst",
     "element",
@@ -20,23 +22,29 @@ _OREKIT_SUBMODULES = (
     "obs",
     "prop",
     "relative",
+    "event",
+)
+_OREKIT_SCAN_MODULES = _OREKIT_TOPLEVEL_SUBMODULES + (
     "event.eclipse",
     "event.prop",
     "event.util",
     "event.visibility",
 )
+_OREKIT_SYMBOL_TO_MODULES = None
 
 
 def init_orekit():
     """Initialize JVM + Orekit data once, explicitly or on first Orekit use."""
     global _VM_INITIALIZED, _INIT_ERROR
+    if _VM_INITIALIZED:
+        return
     with _INIT_LOCK:
         if _VM_INITIALIZED:
             return
         if _INIT_ERROR is not None:
             raise RuntimeError(
                 "Orekit initialization previously failed. "
-                "Call `tellurion.ork.init_orekit()` after fixing your Java/Orekit setup."
+                "Restart your Python session after fixing your Java/Orekit setup."
             ) from _INIT_ERROR
         try:
             import orekit_jpype as orekit
@@ -50,7 +58,8 @@ def init_orekit():
             _INIT_ERROR = exc
             raise RuntimeError(
                 "Failed to initialize Orekit JVM/data. "
-                "Install/configure Java + orekit-jpype, then call `tellurion.ork.init_orekit()`."
+                "Install/configure Java + orekit-jpype, then call "
+                "`tellurion.ork.init_orekit()`."
             ) from exc
 
 
@@ -74,13 +83,41 @@ def _import_ork_submodule(name):
     return module
 
 
+def _discover_exportable_symbols():
+    exportable = {}
+    base_dir = Path(__file__).resolve().parent
+    for module_name in _OREKIT_SCAN_MODULES:
+        module_path = base_dir / (module_name.replace(".", "/") + ".py")
+        if not module_path.exists():
+            continue
+        tree = ast.parse(module_path.read_text(encoding="utf-8"))
+        for node in tree.body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                if not node.name.startswith("_"):
+                    exportable.setdefault(node.name, []).append(module_name)
+            elif isinstance(node, ast.Assign):
+                for target in node.targets:
+                    if isinstance(target, ast.Name) and not target.id.startswith("_"):
+                        exportable.setdefault(target.id, []).append(module_name)
+    return exportable
+
+
 def __getattr__(name):
-    if name in _OREKIT_SUBMODULES:
+    global _OREKIT_SYMBOL_TO_MODULES
+
+    if name in _OREKIT_TOPLEVEL_SUBMODULES:
         ensure_orekit_initialized()
         return _import_ork_submodule(name)
 
+    if _OREKIT_SYMBOL_TO_MODULES is None:
+        _OREKIT_SYMBOL_TO_MODULES = _discover_exportable_symbols()
+
+    module_names = _OREKIT_SYMBOL_TO_MODULES.get(name)
+    if module_names is None:
+        raise AttributeError(f"module 'tellurion.ork' has no attribute '{name}'")
+
     ensure_orekit_initialized()
-    for module_name in _OREKIT_SUBMODULES:
+    for module_name in module_names:
         module = _import_ork_submodule(module_name)
         if hasattr(module, name):
             value = getattr(module, name)
