@@ -136,6 +136,20 @@ To verify the installation worked:
    import tellurion
    print(tellurion.__version__)
 
+Orekit/JVM Initialization
+-------------------------
+
+Tellurion now initializes Java/Orekit lazily:
+
+* ``import tellurion`` does **not** start the JVM
+* the JVM starts automatically on first use of Orekit-backed functionality
+* you can also initialize explicitly:
+
+.. code-block:: python
+
+   from tellurion import init_orekit
+   init_orekit()
+
 To verify HDF5 support is available:
 
 .. code-block:: python

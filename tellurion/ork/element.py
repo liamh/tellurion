@@ -5,6 +5,11 @@ Orbital elements in Orekit
 import astropy.units as u
 import numpy as np
 from astropy.timeseries import TimeSeries
+
+from tellurion.ork import ensure_orekit_initialized
+
+ensure_orekit_initialized()
+
 from org.orekit.orbits import (
     CartesianOrbit,
     CircularOrbit,

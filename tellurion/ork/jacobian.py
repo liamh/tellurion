@@ -1,4 +1,9 @@
 import numpy as np
+
+from tellurion.ork import ensure_orekit_initialized
+
+ensure_orekit_initialized()
+
 from org.hipparchus.linear import MatrixUtils
 
 # setupMatricesComputation https://www.orekit.org/static/apidocs/org/orekit/propagation/AbstractPropagator.html#setupMatricesComputation(java.lang.String,org.hipparchus.linear.RealMatrix,org.orekit.utils.DoubleArrayDictionary)

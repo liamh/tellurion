@@ -13,6 +13,11 @@ import astropy.units as u
 import numpy as np
 import orekit_jpype.pyhelpers as pyhelp
 import pandas as pd
+
+from tellurion.ork import ensure_orekit_initialized
+
+ensure_orekit_initialized()
+
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 from org.orekit.utils import TimeStampedPVCoordinates
 

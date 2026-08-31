@@ -55,6 +55,11 @@ Adding new event detectors requires defining three support functions:
 """
 
 import astropy.units as u
+
+from tellurion.ork import ensure_orekit_initialized
+
+ensure_orekit_initialized()
+
 import org.orekit.forces.gravity as okgrav
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.orbits import CartesianOrbit, OrbitType
