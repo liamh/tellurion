@@ -448,6 +448,41 @@ Detect visibility from one or more Earth locations::
     }
     gen = tell.prepare(initstate, proptime, events=events)
 
+State Transition Matrix (STM)
+-----------------------------
+
+Request the final state transition matrix by setting ``'stm': True`` in the
+``events`` dictionary::
+
+    events = {
+        'altitude': 125.0*u.km,
+        'eclipse': [],
+        'visibility': [],
+        'stm': True,
+    }
+    gen = tell.prepare(initstate, proptime, events=events,
+                       forceenv=tell.setgravity(20, 20),
+                       propagator='numerical')
+
+The resulting STM is available after ``prepare()``:
+
+.. code-block:: python
+
+    phi = gen['final']['stm']
+    print(phi.shape)  # Typically (6, 6)
+
+If drag-parameter partial derivatives are enabled in the force model, the
+final parameter Jacobian is also stored in:
+
+.. code-block:: python
+
+    pjac = gen['final']['parameters jacobian']
+
+Use the STM to estimate sensitivity of final Cartesian state to small changes
+in the initial Cartesian state.
+
+See :doc:`tutorials/stm1` for a step-by-step STM workflow.
+
 Propagation Output
 ==================
 
