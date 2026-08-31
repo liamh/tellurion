@@ -290,12 +290,60 @@ atmospheric drag.
 
 .. code-block:: python
 
-    forceenv = tell.setgravity(20, 20)
-    forceenv = tell.dragforce(forceenv, cd=2.2, area=1.0, mass=1000.0)
+    forceenv = tell.setgravity(20, 20, mass=1000.0)
+    forceenv = tell.dragforce(forceenv, dragcoef=2.2, dragarea=1.0)
     gen = tell.prepare(initstate, proptime,
                       forceenv=forceenv,
                       propagator='numerical')
     result = tell.propagate(gen, [0.5*u.day])
+
+Force Model Recipes
+===================
+
+Use these practical force-environment recipes as starting points.
+
+Two-Body Baseline (fastest)
+---------------------------
+
+Use analytic Keplerian propagation with no perturbation model::
+
+    gen = tell.prepare(initstate, 1.0*u.day, propagator='keplerian')
+
+J2-J5 Analytic Screening
+------------------------
+
+Capture dominant zonal perturbations with Brouwer-Lyddane::
+
+    forceenv = tell.setgravity(5, 0)  # J2-J5 zonal terms
+    gen = tell.prepare(initstate, 2.0*u.day,
+                      forceenv=forceenv,
+                      propagator='brouwer-lyddane')
+
+DSST Long-Arc Tradeoff
+----------------------
+
+Use DSST for longer arcs with full gravity and better speed than full
+numerical integration::
+
+    forceenv = tell.setgravity(20, 20)
+    gen = tell.prepare(initstate, 15.0*u.day,
+                      forceenv=forceenv,
+                      propagator='dsst')
+
+Numerical + Drag (LEO)
+----------------------
+
+Use numerical propagation when atmospheric drag is mission-significant::
+
+    forceenv = tell.setgravity(20, 20, mass=1000.0)
+    forceenv = tell.dragforce(forceenv, atmdensname='hp',
+                             dragcoef=2.2, dragarea=1.0)
+    gen = tell.prepare(initstate, 1.0*u.day,
+                      forceenv=forceenv,
+                      propagator='numerical')
+
+``atmdensname`` can be ``'hp'`` (Harris-Priester), ``'dtm'`` (DTM2000), or
+``'msis'`` (NRLMSISE00).
 
 Propagator Comparison
 =====================
@@ -612,4 +660,4 @@ API Reference
 
    | :ref:`element` — orbital element representations
    | :ref:`posvel` — position-velocity-time objects
-   | :ref:`force` — force environment configuration
+   | :ref:`lambert` — Lambert transfer workflows
