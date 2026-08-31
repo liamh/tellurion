@@ -1,13 +1,13 @@
 .. _propagation:
 
 *************************************************************
-Orbital Propagation (`tellurion.ork.prop`)
+Orbital Propagation (`tell.prepare`, `tell.propagate`)
 *************************************************************
 
 Introduction
 ============
 
-The :mod:`tellurion.ork.prop` module provides satellite orbital propagation using
+The :mod:`tellurion` module provides satellite orbital propagation using
 multiple analytic and numerical methods. It supports:
 
 * **Analytic propagators**: Keplerian (two-body), Brouwer-Lyddane (J2-J5 perturbations)
@@ -565,8 +565,13 @@ eclipse detection::
 API Reference
 =============
 
-.. autoapi:: tellurion.core.prop
-   :noindex:
+.. autofunction:: tellurion.prepare
+
+.. autofunction:: tellurion.propagate
+
+.. autofunction:: tellurion.setgravity
+
+.. autofunction:: tellurion.dragforce
 
 .. seealso::
 

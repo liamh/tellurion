@@ -2,38 +2,25 @@
 AstroPy Extensions
 *********************
 
-Tellurion extends several AstroPy classes with convenience methods.
+Tellurion extends selected AstroPy classes with convenience methods after::
+
+   import tellurion as tell
 
 TimeSeries Extensions
 =====================
 
-These methods are dynamically added to ``astropy.timeseries.TimeSeries``.
+These methods are dynamically added to ``astropy.timeseries.TimeSeries``:
 
-fromtime()
-----------
-
-.. autofunction:: tellurion.astro.time._fromtime_method
-   :noindex:
-
-   Added as:  ``astropy.timeseries.TimeSeries.fromtime()``
-
-components()
-------------
-
-.. autofunction:: tellurion.astro.time._components_method
-   :noindex:
-
-   Added as: ``astropy.timeseries.TimeSeries.components()``
+* ``TimeSeries.fromtime()``
+* ``TimeSeries.components()``
 
 Time Extensions
 ===============
 
-These methods are dynamically added to ``astropy.time.Time``.
+These methods are dynamically added to ``astropy.time.Time``:
 
-to_array()
-----------
+* ``Time.to_array()``
 
-.. autofunction:: tellurion.astro.time.to_array
-   :noindex:
+Equivalent top-level function:
 
-   Added as: ``astropy.time.Time.to_array()``
+.. autofunction:: tellurion.to_array

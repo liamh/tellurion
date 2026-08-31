@@ -32,7 +32,7 @@ Quick Example
 
 .. code-block:: python
 
-   from demos.obsdemo import *
+   import tellurion as tell
 
 Indices and tables
 ==================

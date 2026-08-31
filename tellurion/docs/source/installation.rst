@@ -154,7 +154,8 @@ To verify HDF5 support is available:
 
 .. code-block:: python
 
-   from tellurion.core import posvel_hdf5
+   import tellurion as tell
+   from fsc.hdf5_io import save, load
    print("HDF5 serialization available")
 
 Platform-Specific Notes

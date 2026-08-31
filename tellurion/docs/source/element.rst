@@ -1,13 +1,13 @@
 .. _element:
 
 *******************************************************
-Orbital Elements (`tellurion.core.element`)
+Orbital Elements (`tell.*`)
 *******************************************************
 
 Introduction
 ============
 
-The :mod:`tellurion.core.element` module provides classes and functions for
+The :mod:`tellurion` module provides classes and functions for
 representing satellite orbits as sets of scalar orbital elements paired with
 an epoch time.  Three classical element types are supported:
 
@@ -18,7 +18,7 @@ an epoch time.  Three classical element types are supported:
 * **Circular** elements — a hybrid set that removes the singularity at zero
   eccentricity while retaining inclination and RAAN explicitly
 
-All three types share the same container class :class:`~tellurion.core.element.ElementSetT`
+All three types share the same container class :class:`~tellurion.ElementSetT`
 and follow the same construction, inspection, and conversion patterns.
 
 Getting Started
@@ -27,7 +27,7 @@ Getting Started
 Creating a Keplerian Element Set
 ---------------------------------
 
-The :func:`~tellurion.core.element.kepler` factory function accepts a
+The :func:`~tellurion.kepler` factory function accepts a
 dictionary of element values.  Any element whose value is not already an
 :class:`~astropy.units.Quantity` is given the default unit for its physical
 type (see :ref:`units`)::
@@ -41,11 +41,11 @@ type (see :ref:`units`)::
          "raan": 217.4*u.deg, "ma": 7.25*u.deg},
         tell.abstime('2023-09-14T08:30:00'))
 
-    print(kep)          # ElementSetT(els=..., t=...)
-    print(kep.els)      # structured Quantity
-    print(kep.t)        # astropy Time
+    print(kep)               # ElementSetT(elements=..., time=...)
+    print(kep.elements)      # structured Quantity
+    print(kep.time)          # astropy Time
 
-The epoch argument is optional.  Without it, :func:`~tellurion.core.element.kepler`
+The epoch argument is optional.  Without it, :func:`~tellurion.kepler`
 returns the structured :class:`~astropy.units.Quantity` alone::
 
     els_only = tell.kepler({"sma": 8000.0*u.km, "ecc": 0.1,
@@ -55,7 +55,7 @@ returns the structured :class:`~astropy.units.Quantity` alone::
 Defining Orbits by Altitude
 ----------------------------
 
-The :func:`~tellurion.ork.element.allplane` utility converts between the pairs
+The :func:`~tellurion.allplane` utility converts between the pairs
 ``(sma, ecc)``, ``(radper, radapo)``, and ``(altper, altapo)`` so that you can
 define an orbit in whatever form is most natural::
 
@@ -73,13 +73,13 @@ define an orbit in whatever form is most natural::
                        "raan": 0.0*u.deg, "ma": 0.0*u.deg}),
         tell.abstime('2026-01-01T20:30:00'))
 
-See :func:`~tellurion.ork.element.allplane` and :func:`~tellurion.ork.element.sma`
+See :func:`~tellurion.allplane` and :func:`~tellurion.sma`
 for the full list of accepted inputs.
 
 Element Set Container
 =====================
 
-All element types are stored in an :class:`~tellurion.core.element.ElementSetT`
+All element types are stored in an :class:`~tellurion.ElementSetT`
 instance — a lightweight class pairing a structured
 :class:`~astropy.units.Quantity` with an :class:`~astropy.time.Time` epoch.
 
@@ -92,10 +92,10 @@ Attributes
 
    * - Attribute
      - Description
-   * - ``els``
+   * - ``elements``
      - Structured :class:`~astropy.units.Quantity` whose field names are the
        element names (e.g. ``'sma'``, ``'ecc'``, ``'inc'``).
-   * - ``t``
+   * - ``time``
      - :class:`~astropy.time.Time` epoch associated with the element set.
 
 Accessing Individual Elements
@@ -103,9 +103,9 @@ Accessing Individual Elements
 
 Fields of the structured Quantity are accessed by name::
 
-    print(kep.els['sma'])    # <Quantity 8000. km>
-    print(kep.els['ecc'])    # <Quantity 0.1>
-    print(kep.els['inc'])    # <Quantity 42. deg>
+    print(kep.elements['sma'])    # <Quantity 8000. km>
+    print(kep.elements['ecc'])    # <Quantity 0.1>
+    print(kep.elements['inc'])    # <Quantity 42. deg>
 
 Unpacking
 ---------
@@ -165,7 +165,7 @@ of an orbit.
 
 Exactly one of ``ma`` or ``ta`` must be present.
 
-Derived quantities available via :func:`~tellurion.ork.element.elementval`:
+Derived quantities available via :func:`~tellurion.elementval`:
 
 .. list-table::
    :header-rows: 1
@@ -331,9 +331,9 @@ Between Element Sets and Cartesian State
 -----------------------------------------
 
 Convert from any element set to a Cartesian position-velocity-time object
-using :func:`~tellurion.ork.element.pvt`, and back again using the
+using :func:`~tellurion.pvt`, and back again using the
 ``.kepler()``, ``.equinoctial()``, and ``.circular()`` methods on
-:class:`~tellurion.core.posvel.PositionVelocityT`::
+:class:`~tellurion.PositionVelocityT`::
 
     # Keplerian → Cartesian → Keplerian
     pvt   = tell.pvt(kep)
@@ -353,15 +353,15 @@ using :func:`~tellurion.ork.element.pvt`, and back again using the
 
 .. note::
    The ``.kepler()``, ``.equinoctial()``, and ``.circular()`` methods are
-   added to :class:`~tellurion.core.posvel.PositionVelocityT` by
-   :mod:`tellurion.ork.element` when the Orekit interface is imported.  They
+   added to :class:`~tellurion.PositionVelocityT` by
+   :mod:`tellurion` when the Orekit interface is imported.  They
    accept an optional ``mean_time_element`` keyword (default ``True``) to
    select between mean and true angle variants.
 
 Reading Individual Element Values
 ----------------------------------
 
-:func:`~tellurion.ork.element.elementval` extracts one or more element values
+:func:`~tellurion.elementval` extracts one or more element values
 from any orbital state representation and returns them as
 :class:`~astropy.units.Quantity` in the preferred units::
 
@@ -380,7 +380,7 @@ from any orbital state representation and returns them as
 Time Series of Elements
 ------------------------
 
-:func:`~tellurion.ork.element.tselements` builds an AstroPy
+:func:`~tellurion.tselements` builds an AstroPy
 :class:`~astropy.timeseries.TimeSeries` of selected elements from a
 propagated ephemeris::
 
@@ -395,7 +395,7 @@ propagated ephemeris::
     # Circular components
     ts = tell.tselements(ephem, ["sma", "cex", "cey", "inc", "raan", "mla"])
 
-The dispatcher inside :func:`~tellurion.ork.element.tselements` selects the
+The dispatcher inside :func:`~tellurion.tselements` selects the
 correct element dictionary automatically based on the names requested.
 
 Example: Complete Workflow
@@ -460,7 +460,7 @@ Choosing an Element Type
 API Reference
 =============
 
-.. automodapi:: tellurion.core.element
+.. automodapi:: tellurion
    :no-inheritance-diagram:
 
 .. seealso::
