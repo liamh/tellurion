@@ -176,6 +176,36 @@ To verify the installation worked:
    import tellurion
    print(tellurion.__version__)
 
+Validate with Tests (Source/Dev Install)
+----------------------------------------
+
+If you installed from source (especially with ``-e ".[dev]"``), run the
+repository tests to validate your environment:
+
+.. code-block:: bash
+
+   pytest tests/
+
+If optional HDF5 dependencies are not installed, run the non-HDF5 subset:
+
+.. code-block:: bash
+
+   pytest tests/ -m "not hdf5"
+
+To run only HDF5 tests:
+
+.. code-block:: bash
+
+   pytest tests/ -m hdf5
+
+Expected outcome guidance:
+
+* A successful installation should complete with no unexpected failures.
+* ``skipped`` and ``xfailed`` tests can be normal, depending on optional
+  dependencies and platform-specific behavior.
+* Exact pass/skip/xfail counts can change over time, so use test status
+  (pass/fail) rather than fixed numbers as the primary signal.
+
 Orekit/JVM Initialization
 -------------------------
 
