@@ -34,6 +34,11 @@ Propagation and Force Models
 * :func:`tellurion.setgravity`
 * :func:`tellurion.dragforce`
 
+Lambert and Transfer Analysis
+=============================
+
+* :func:`tellurion.lambert`
+
 Structured Quantity Utilities
 =============================
 

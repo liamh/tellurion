@@ -59,6 +59,13 @@ Related Tutorial
 
 See :doc:`tutorials/lambert1` for a step-by-step notebook workflow.
 
+See Also
+========
+
+* :ref:`propagation` for force-model and propagator setup patterns used before
+  Lambert targeting workflows.
+* :doc:`tutorials/stm1` for sensitivity analysis using propagation Jacobians.
+
 API Reference
 =============
 

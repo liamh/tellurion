@@ -661,3 +661,5 @@ API Reference
    | :ref:`element` — orbital element representations
    | :ref:`posvel` — position-velocity-time objects
    | :ref:`lambert` — Lambert transfer workflows
+   | :doc:`tutorials/lambert1` — Lambert transfer tutorial notebook
+   | :doc:`tutorials/stm1` — state transition matrix tutorial notebook
