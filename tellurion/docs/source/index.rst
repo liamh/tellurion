@@ -16,6 +16,7 @@ built on AstroPy.
    posvel
    element
    prop
+   lambert
    hdf5_serialization
    examples
 
