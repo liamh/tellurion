@@ -20,17 +20,17 @@ Requirements
 Installing with pip
 -------------------
 
-.. warning::
-   Cannot install with pip yet; see below `Installing from Source`_.
-
 The easiest way to install is using pip:
 
 .. code-block:: bash
 
    pip install tellurion
 
-Installing required packages
-----------------------------
+Installing dependencies manually (optional)
+-------------------------------------------
+
+In most cases, ``pip install tellurion`` is sufficient. The commands below are
+only needed if you want to install dependencies individually:
 
 .. code-block:: bash
 
@@ -57,11 +57,11 @@ If you use conda/mamba:
 Installing from Source
 ----------------------
 
-For the latest development version:
+For the latest development version from source:
 
 .. code-block:: bash
 
-   git clone https://notavailable-see-liam
+   git clone https://github.com/liamh/tellurion.git
    cd tellurion
    pip install -e .
 
@@ -75,8 +75,8 @@ If you want to contribute or modify the code:
 
 .. code-block:: bash
 
-   git clone https://github.com/liamh/your-package.git
-   cd your-package
+   git clone https://github.com/liamh/tellurion.git
+   cd tellurion
    pip install -e ".[dev]"
 
 This installs additional development dependencies like pytest and sphinx.
@@ -99,7 +99,7 @@ To install Tellurion with HDF5 support:
 
    pip install -e ".[hdf5]"
 
-Or, if installing from PyPI when available:
+To install Tellurion with HDF5 support from PyPI:
 
 .. code-block:: bash
 
@@ -155,7 +155,7 @@ To verify HDF5 support is available:
 .. code-block:: python
 
    import tellurion as tell
-   from fsc.hdf5_io import save, load
+   _ = tell.posvel_hdf5
    print("HDF5 serialization available")
 
 Platform-Specific Notes
