@@ -68,6 +68,46 @@ For the latest development version from source:
 .. note::
    The ``-e`` flag installs in "editable" mode, useful for development.
 
+Quickstart (Fresh Install)
+--------------------------
+
+After a fresh install, run this minimal end-to-end check.
+
+1) Install Tellurion:
+
+.. code-block:: bash
+
+   python -m pip install --upgrade pip
+   python -m pip install tellurion
+
+2) Run a quick sanity script:
+
+.. code-block:: python
+
+   import astropy.units as u
+   import tellurion as tell
+
+   # Core sanity check (no JVM required)
+   t0 = tell.abstime("2025-01-01T00:00:00")
+   pvt0 = tell.pvtcart(
+       [5740.1326835, 3314.06715, 0.0, -2.7508268, 4.7645718, 5.5016537],
+       t0,
+   )
+   print("Core objects OK:", type(pvt0).__name__)
+
+   # Orekit-backed quickstart
+   if not tell.orekit_available():
+       raise RuntimeError(
+           "Orekit is not ready. Install/verify orekit-jpype and orekit data, then retry."
+       )
+
+   gen = tell.prepare(pvt0, 30.0 * u.minute, propagator="keplerian")
+   pvtf = tell.propagate(gen, [30.0 * u.minute], output="pvt")[-1]
+   print("Propagation OK; final position [m]:", pvtf.position_vector.si.value)
+
+This confirms both the core API and a first propagation run from a clean
+environment.
+
 Development Installation
 ------------------------
 
