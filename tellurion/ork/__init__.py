@@ -79,7 +79,8 @@ def orekit_available():
 
 def _import_ork_submodule(name):
     module = import_module(f"tellurion.ork.{name}")
-    globals()[name.rsplit(".", 1)[-1]] = module
+    if "." not in name:
+        globals()[name] = module
     return module
 
 
