@@ -19,7 +19,8 @@ from org.orekit.orbits import (
     PositionAngleType,
 )
 
-from tellurion.core import element, posvel, units
+from tellurion.astro import units
+from tellurion.core import element, posvel
 from tellurion.ork import convert, force
 
 ###########################################

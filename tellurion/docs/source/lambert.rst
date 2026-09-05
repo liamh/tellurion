@@ -29,10 +29,10 @@ objects with valid epochs::
     gen = tell.prepare(pvt0, tof, propagator="keplerian")
     pvtf = tell.propagate(gen, [tof], output="pvt")[-1]
 
-    pvt_lambert = tell.lambert(pvt0.position, pvtf.position)
+    pvt1_lambert, pvt2_lambert = tell.lambert(pvt0.position, pvtf.position)
 
-The returned object contains the transfer state at the initial and final
-epochs.
+The function returns two states: the transfer state at the initial epoch and
+the transfer state at the final epoch.
 
 Transfer Direction and Revolutions
 ==================================

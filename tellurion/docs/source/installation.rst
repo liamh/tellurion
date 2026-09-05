@@ -217,8 +217,8 @@ Tellurion now initializes Java/Orekit lazily:
 
 .. code-block:: python
 
-   from tellurion import init_orekit
-   init_orekit()
+   import tellurion as tell
+   tell.init_orekit()
 
 To verify HDF5 support is available:
 

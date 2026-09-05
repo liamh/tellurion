@@ -8,6 +8,7 @@ from threading import Lock
 __all__ = ["init_orekit", "ensure_orekit_initialized", "orekit_available"]
 
 _INIT_LOCK = Lock()
+_SYMBOL_LOCK = Lock()
 _VM_INITIALIZED = False
 _INIT_ERROR = None
 
@@ -22,7 +23,6 @@ _OREKIT_TOPLEVEL_SUBMODULES = (
     "obs",
     "prop",
     "relative",
-    "event",
 )
 _OREKIT_SCAN_MODULES = _OREKIT_TOPLEVEL_SUBMODULES + (
     "event.eclipse",
@@ -111,7 +111,9 @@ def __getattr__(name):
         return _import_ork_submodule(name)
 
     if _OREKIT_SYMBOL_TO_MODULES is None:
-        _OREKIT_SYMBOL_TO_MODULES = _discover_exportable_symbols()
+        with _SYMBOL_LOCK:
+            if _OREKIT_SYMBOL_TO_MODULES is None:
+                _OREKIT_SYMBOL_TO_MODULES = _discover_exportable_symbols()
 
     module_names = _OREKIT_SYMBOL_TO_MODULES.get(name)
     if module_names is None:

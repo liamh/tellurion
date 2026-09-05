@@ -23,7 +23,8 @@ from org.orekit.utils import TimeStampedPVCoordinates
 
 import tellurion.astro.time as atime
 from tellurion.astro import quantity_utils as quant
-from tellurion.core import posvel, units as tunits
+from tellurion.astro import units as tunits
+from tellurion.core import posvel
 
 posvelsiu = u.StructuredUnit((u.meter, u.meter / u.second))
 

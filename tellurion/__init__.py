@@ -64,7 +64,18 @@ _ORK_AVAILABLE = _importlib_util.find_spec("orekit_jpype") is not None
 
 def _ork_attr(name):
     """Fetch a lazy Orekit-backed symbol from tellurion.ork."""
-    return getattr(_import_module("tellurion.ork"), name)
+    if not _ORK_AVAILABLE:
+        raise RuntimeError(
+            "Orekit support is not available in this environment. "
+            "Install `orekit-jpype` and Orekit data to use Orekit-backed APIs."
+        )
+    try:
+        return getattr(_import_module("tellurion.ork"), name)
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "Orekit support is not available in this environment. "
+            "Install `orekit-jpype` and Orekit data to use Orekit-backed APIs."
+        ) from exc
 
 
 def init_orekit():
@@ -74,7 +85,12 @@ def init_orekit():
 
 def orekit_available():
     """Return True if Orekit initialization succeeds, otherwise False."""
-    return _ork_attr("orekit_available")()
+    if not _ORK_AVAILABLE:
+        return False
+    try:
+        return _ork_attr("orekit_available")()
+    except RuntimeError:
+        return False
 
 
 def prepare(*args, **kwargs):
@@ -139,6 +155,9 @@ def __getattr__(name):
             value = getattr(_core, name)
             globals()[name] = value
             return value
+        raise AttributeError(f"module 'tellurion' has no attribute '{name}'")
+
+    if not _ORK_AVAILABLE:
         raise AttributeError(f"module 'tellurion' has no attribute '{name}'")
 
     ork = _import_module("tellurion.ork")
