@@ -22,7 +22,15 @@ from tellurion.astro.time import (
     to_array,
     tq,
 )
-from tellurion.astro.units import gravconstunits, normalizeangle
+from tellurion.astro.units import (
+    gravconstunits,
+    normalizeangle,
+    orkunits,
+    prefunits,
+    rev,
+    revolution,
+    siunits,
+)
 
 __all__ = [
     "abstime",
@@ -34,9 +42,14 @@ __all__ = [
     "hstack",
     "make_quantity",
     "normalizeangle",
+    "orkunits",
+    "prefunits",
     "prefnumabstime",
     "quantity_to_array",
     "quantity_to_dict",
+    "rev",
+    "revolution",
+    "siunits",
     "sifloat",
     "striptime",
     "tc",
