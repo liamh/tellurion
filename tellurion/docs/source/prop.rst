@@ -511,8 +511,9 @@ Request the final state transition matrix by setting ``'stm': True`` in the
     gen = tell.prepare(initstate, proptime, events=events,
                        forceenv=tell.setgravity(20, 20),
                        propagator='numerical')
+    _ = tell.propagate(gen, [proptime], output='pvt')
 
-The resulting STM is available after ``prepare()``:
+After propagation, the final STM is available in ``gen['final']``:
 
 .. code-block:: python
 

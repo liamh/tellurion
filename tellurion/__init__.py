@@ -63,8 +63,20 @@ try:
 except PackageNotFoundError:
     __version__ = "0+unknown"
 
-# Whether Orekit dependency appears importable; does not initialize JVM.
-_ORK_AVAILABLE = _importlib_util.find_spec("orekit_jpype") is not None
+def _orekit_bridge_available():
+    """Return True when orekit-jpype bridge modules are importable."""
+    if _importlib_util.find_spec("orekit_jpype") is None:
+        return False
+    try:
+        _import_module("orekit_jpype")
+        _import_module("orekit_jpype.pyhelpers")
+    except Exception:
+        return False
+    return True
+
+
+# Whether Orekit bridge modules appear importable; does not initialize JVM.
+_ORK_AVAILABLE = _orekit_bridge_available()
 
 
 def _ork_attr(name):
@@ -72,14 +84,14 @@ def _ork_attr(name):
     if not _ORK_AVAILABLE:
         raise RuntimeError(
             "Orekit support is not available in this environment. "
-            "Install `orekit-jpype` and Orekit data to use Orekit-backed APIs."
+            "Install `orekit-jpype` to use Orekit-backed APIs."
         )
     try:
         return getattr(_import_module("tellurion.ork"), name)
-    except ModuleNotFoundError as exc:
+    except (ModuleNotFoundError, ImportError) as exc:
         raise RuntimeError(
             "Orekit support is not available in this environment. "
-            "Install `orekit-jpype` and Orekit data to use Orekit-backed APIs."
+            "Install `orekit-jpype` to use Orekit-backed APIs."
         ) from exc
 
 
@@ -93,8 +105,9 @@ def orekit_available():
     if not _ORK_AVAILABLE:
         return False
     try:
-        return _ork_attr("orekit_available")()
-    except RuntimeError:
+        ork = _import_module("tellurion.ork")
+        return bool(getattr(ork, "orekit_available")())
+    except Exception:
         return False
 
 

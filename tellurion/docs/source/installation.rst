@@ -98,7 +98,7 @@ After a fresh install, run this minimal end-to-end check.
    # Orekit-backed quickstart
    if not tell.orekit_available():
        raise RuntimeError(
-           "Orekit is not ready. Install/verify orekit-jpype and orekit data, then retry."
+           "Orekit is not ready. Verify your orekit-jpype installation, then retry."
        )
 
    gen = tell.prepare(pvt0, 30.0 * u.minute, propagator="keplerian")
@@ -219,6 +219,11 @@ Tellurion now initializes Java/Orekit lazily:
 
    import tellurion as tell
    tell.init_orekit()
+
+.. note::
+   ``tell.init_orekit()`` raises ``RuntimeError`` if Java/Orekit setup fails.
+   For non-raising checks, use ``tell.orekit_available()`` first or catch the
+   exception around initialization.
 
 To verify HDF5 support is available:
 
