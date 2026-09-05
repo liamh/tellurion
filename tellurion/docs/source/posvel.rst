@@ -247,9 +247,19 @@ Here's a complete example using the test data:
 API Reference
 =============
 
-.. automodapi:: tellurion
-   :no-inheritance-diagram:
-   :skip: TimeSeries
+.. autoclass:: tellurion.PositionBase
+   :members:
+
+.. autoclass:: tellurion.PositionT
+   :members:
+
+.. autoclass:: tellurion.PositionVelocityT
+   :members:
+
+.. autoclass:: tellurion.PVT
+   :members:
+
+.. autofunction:: tellurion.pvtcart
 
 .. seealso::
    :ref:`hdf5-serialization` — saving and loading ``PositionVelocityT`` objects.

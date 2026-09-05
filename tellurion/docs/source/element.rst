@@ -460,8 +460,22 @@ Choosing an Element Type
 API Reference
 =============
 
-.. automodapi:: tellurion
-   :no-inheritance-diagram:
+.. autoclass:: tellurion.ElementSetT
+   :members:
+
+.. autofunction:: tellurion.kepler
+
+.. autofunction:: tellurion.equinoctial
+
+.. autofunction:: tellurion.circular
+
+.. autofunction:: tellurion.allplane
+
+.. autofunction:: tellurion.sma
+
+.. autofunction:: tellurion.elementval
+
+.. autofunction:: tellurion.tselements
 
 .. seealso::
    :ref:`posvel` — position, velocity, and time representation.
