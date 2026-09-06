@@ -1,13 +1,13 @@
 .. _posvel:
 
 *******************************************************
-Position, Velocity, and Time (`tellurion`)
+Position, Velocity, and Time (`tell.*`)
 *******************************************************
 
 Introduction
 ============
 
-The :mod:`tellurion` module provides classes for representing satellite
+Tellurion (typically imported as ``import tellurion as tell``) provides classes for representing satellite
 orbital states with position, velocity, and time information. It supports:
 
 * Lazy conversion between Cartesian and spherical coordinate systems
@@ -247,6 +247,9 @@ Here's a complete example using the test data:
 API Reference
 =============
 
+Classes
+-------
+
 .. autoclass:: tellurion.PositionBase
    :members:
 
@@ -259,7 +262,19 @@ API Reference
 .. autoclass:: tellurion.PVT
    :members:
 
+Constructors
+------------
+
 .. autofunction:: tellurion.pvtcart
+
+Orekit Conversion Methods on ``PositionVelocityT``
+--------------------------------------------------
+
+.. automethod:: tellurion.PositionVelocityT.kepler
+
+.. automethod:: tellurion.PositionVelocityT.equinoctial
+
+.. automethod:: tellurion.PositionVelocityT.circular
 
 .. seealso::
    :ref:`hdf5-serialization` — saving and loading ``PositionVelocityT`` objects.

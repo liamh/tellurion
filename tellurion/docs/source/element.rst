@@ -7,7 +7,7 @@ Orbital Elements (`tell.*`)
 Introduction
 ============
 
-The :mod:`tellurion` module provides classes and functions for
+Tellurion (typically imported as ``import tellurion as tell``) provides classes and functions for
 representing satellite orbits as sets of scalar orbital elements paired with
 an epoch time.  Three classical element types are supported:
 
@@ -460,14 +460,23 @@ Choosing an Element Type
 API Reference
 =============
 
+Container Class
+---------------
+
 .. autoclass:: tellurion.ElementSetT
    :members:
+
+Constructors
+------------
 
 .. autofunction:: tellurion.kepler
 
 .. autofunction:: tellurion.equinoctial
 
 .. autofunction:: tellurion.circular
+
+Utilities
+---------
 
 .. autofunction:: tellurion.allplane
 
