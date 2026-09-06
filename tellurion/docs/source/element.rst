@@ -332,7 +332,9 @@ Between Element Sets and Cartesian State
 
 Convert from any element set to a Cartesian position-velocity-time object
 using :func:`~tellurion.pvt`, and back again using the
-``.kepler()``, ``.equinoctial()``, and ``.circular()`` methods on
+:meth:`~tellurion.PositionVelocityT.kepler`,
+:meth:`~tellurion.PositionVelocityT.equinoctial`, and
+:meth:`~tellurion.PositionVelocityT.circular` on
 :class:`~tellurion.PositionVelocityT`::
 
     # Keplerian → Cartesian → Keplerian
@@ -352,11 +354,14 @@ using :func:`~tellurion.pvt`, and back again using the
     pvt3  = tell.pvt(circ)
 
 .. note::
-   The ``.kepler()``, ``.equinoctial()``, and ``.circular()`` methods are
-   added to :class:`~tellurion.PositionVelocityT` by
-   :mod:`tellurion` when the Orekit interface is imported.  They
-   accept an optional ``mean_time_element`` keyword (default ``True``) to
-   select between mean and true angle variants.
+   The instance conversion methods
+   :meth:`~tellurion.PositionVelocityT.kepler`,
+   :meth:`~tellurion.PositionVelocityT.equinoctial`, and
+   :meth:`~tellurion.PositionVelocityT.circular` are distinct from the top-level
+   constructor functions :func:`~tellurion.kepler`,
+   :func:`~tellurion.equinoctial`, and :func:`~tellurion.circular`.
+   The instance methods accept an optional ``mean_time_element`` keyword
+   (default ``True``) to select between mean and true angle variants.
 
 Reading Individual Element Values
 ----------------------------------

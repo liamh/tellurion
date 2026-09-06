@@ -270,9 +270,29 @@ Constructors
 Orekit Conversion Methods on ``PositionVelocityT``
 --------------------------------------------------
 
+These instance methods are different from the top-level constructor functions:
+
+* :meth:`tellurion.PositionVelocityT.kepler` converts a Cartesian state to a
+  Keplerian element set.
+* :meth:`tellurion.PositionVelocityT.equinoctial` converts a Cartesian state to
+  an equinoctial element set.
+* :meth:`tellurion.PositionVelocityT.circular` converts a Cartesian state to a
+  circular element set.
+* Top-level :func:`tellurion.kepler`, :func:`tellurion.equinoctial`, and
+  :func:`tellurion.circular` construct element sets from element dictionaries.
+
+``PositionVelocityT.kepler``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. automethod:: tellurion.PositionVelocityT.kepler
 
+``PositionVelocityT.equinoctial``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. automethod:: tellurion.PositionVelocityT.equinoctial
+
+``PositionVelocityT.circular``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automethod:: tellurion.PositionVelocityT.circular
 
