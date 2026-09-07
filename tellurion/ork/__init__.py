@@ -100,6 +100,10 @@ def _discover_exportable_symbols():
                 for target in node.targets:
                     if isinstance(target, ast.Name) and not target.id.startswith("_"):
                         exportable.setdefault(target.id, []).append(module_name)
+            elif isinstance(node, ast.AnnAssign):
+                target = node.target
+                if isinstance(target, ast.Name) and not target.id.startswith("_"):
+                    exportable.setdefault(target.id, []).append(module_name)
     return exportable
 
 
@@ -122,8 +126,10 @@ def __getattr__(name):
     ensure_orekit_initialized()
     for module_name in module_names:
         module = _import_ork_submodule(module_name)
-        if hasattr(module, name):
+        try:
             value = getattr(module, name)
-            globals()[name] = value
-            return value
+        except AttributeError:
+            continue
+        globals()[name] = value
+        return value
     raise AttributeError(f"module 'tellurion.ork' has no attribute '{name}'")

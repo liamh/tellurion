@@ -102,8 +102,8 @@ html_theme = 'pydata_sphinx_theme' # or 'sphinx_rtd_theme', 'alabaster', 'sphinx
 # html_theme = 'sphinx_rtd_theme'  # Use Read the Docs theme
 html_static_path = ['_static']
 html_theme_options = dict(globals().get('html_theme_options', {}))
-html_theme_options['secondary_sidebar_items'] = ['page-toc']
-html_theme_options['show_toc_level'] = 3
+html_theme_options.setdefault('secondary_sidebar_items', ['page-toc'])
+html_theme_options['show_toc_level'] = 4
 
 autodoc_default_options = {
     'members': True,

@@ -79,6 +79,21 @@ def _orekit_bridge_available():
 _ORK_AVAILABLE = _orekit_bridge_available()
 
 
+def _is_missing_orekit_bridge_error(exc):
+    current = exc
+    seen = set()
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if isinstance(current, ModuleNotFoundError):
+            if (current.name or "").startswith("orekit_jpype"):
+                return True
+        elif isinstance(current, ImportError):
+            if (getattr(current, "name", "") or "").startswith("orekit_jpype"):
+                return True
+        current = current.__cause__ or current.__context__
+    return False
+
+
 def _ork_attr(name):
     """Fetch a lazy Orekit-backed symbol from tellurion.ork."""
     if not _ORK_AVAILABLE:
@@ -87,12 +102,27 @@ def _ork_attr(name):
             "Install `orekit-jpype` to use Orekit-backed APIs."
         )
     try:
-        return getattr(_import_module("tellurion.ork"), name)
-    except (ModuleNotFoundError, ImportError) as exc:
-        raise RuntimeError(
-            "Orekit support is not available in this environment. "
-            "Install `orekit-jpype` to use Orekit-backed APIs."
-        ) from exc
+        value = getattr(_import_module("tellurion.ork"), name)
+    except ModuleNotFoundError as exc:
+        if _is_missing_orekit_bridge_error(exc):
+            raise RuntimeError(
+                "Orekit support is not available in this environment. "
+                "Install `orekit-jpype` to use Orekit-backed APIs."
+            ) from exc
+        raise
+    if callable(value):
+        def _wrapped(*args, **kwargs):
+            try:
+                return value(*args, **kwargs)
+            except RuntimeError as exc:
+                if _is_missing_orekit_bridge_error(exc):
+                    raise RuntimeError(
+                        "Orekit support is not available in this environment. "
+                        "Install `orekit-jpype` to use Orekit-backed APIs."
+                    ) from exc
+                raise
+        return _wrapped
+    return value
 
 
 def init_orekit():

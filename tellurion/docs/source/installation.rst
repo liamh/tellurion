@@ -95,11 +95,8 @@ After a fresh install, run this minimal end-to-end check.
    )
    print("Core objects OK:", type(pvt0).__name__)
 
-   # Orekit-backed quickstart
-   if not tell.orekit_available():
-       raise RuntimeError(
-           "Orekit is not ready. Verify your orekit-jpype installation, then retry."
-       )
+   # Orekit-backed quickstart (explicitly starts JVM + Orekit data)
+   tell.init_orekit()
 
    gen = tell.prepare(pvt0, 30.0 * u.minute, propagator="keplerian")
    pvtf = tell.propagate(gen, [30.0 * u.minute], output="pvt")[-1]
@@ -211,8 +208,10 @@ Orekit/JVM Initialization
 
 Tellurion now initializes Java/Orekit lazily:
 
-* ``import tellurion`` does **not** start the JVM
+* ``import tellurion`` does **not** initialize the JVM
 * the JVM starts automatically on first use of Orekit-backed functionality
+  (including instance methods on an existing Cartesian state, e.g.
+  ``some_pvt.kepler()``)
 * you can also initialize explicitly:
 
 .. code-block:: python
@@ -222,8 +221,8 @@ Tellurion now initializes Java/Orekit lazily:
 
 .. note::
    ``tell.init_orekit()`` raises ``RuntimeError`` if Java/Orekit setup fails.
-   For non-raising checks, use ``tell.orekit_available()`` first or catch the
-   exception around initialization.
+   ``tell.orekit_available()`` is non-raising, but it may initialize Orekit/JVM
+   as part of its check.
 
 To verify HDF5 support is available:
 

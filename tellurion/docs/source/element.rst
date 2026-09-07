@@ -4,6 +4,10 @@
 Orbital Elements (`tell.*`)
 *******************************************************
 
+.. contents:: Section navigation
+   :local:
+   :depth: 4
+
 Introduction
 ============
 
