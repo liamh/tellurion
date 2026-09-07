@@ -4,10 +4,6 @@
 Position, Velocity, and Time (`tell.*`)
 *******************************************************
 
-.. contents:: Section navigation
-   :local:
-   :depth: 4
-
 Introduction
 ============
 
