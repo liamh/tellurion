@@ -1,13 +1,13 @@
 .. _posvel:
 
 *******************************************************
-Position, Velocity, and Time (`tellurion.core.posvel`)
+Position, Velocity, and Time (`tell.*`)
 *******************************************************
 
 Introduction
 ============
 
-The :mod:`tellurion.core.posvel` module provides classes for representing satellite
+Tellurion (typically imported as ``import tellurion as tell``) provides classes for representing satellite
 orbital states with position, velocity, and time information. It supports:
 
 * Lazy conversion between Cartesian and spherical coordinate systems
@@ -111,7 +111,7 @@ Creating Time Series
 
 Convert position-velocity states to AstroPy TimeSeries::
 
-    pvt = posvel.pvtcart(states, None)
+    pvt = tell.pvtcart(states, None)
     ts = pvt.ephemeris()
 
     # Access columns
@@ -142,7 +142,7 @@ Indexing and Slicing
 
 Access individual epochs or ranges::
 
-    pvt = posvel.pvtcart(states, None)
+    pvt = tell.pvtcart(states, None)
 
     # Get first epoch
     first = pvt[0]
@@ -159,8 +159,8 @@ Concatenation and Merging
 
 Combine data from multiple sources::
 
-    pvt1 = posvel.pvtcart(states1, None)
-    pvt2 = posvel.pvtcart(states2, None)
+    pvt1 = tell.pvtcart(states1, None)
+    pvt2 = tell.pvtcart(states2, None)
 
     # Concatenate (in-place)
     pvt1.concatenate(pvt2)
@@ -181,7 +181,7 @@ Auxiliary Attributes
 
 Store metadata with your states::
 
-    pvt = posvel.pvtcart(states, None)
+    pvt = tell.pvtcart(states, None)
     pvt.aux = {
         'satellite_id': 'sat1 sat2 sat3',
         'quality_flag': 'good good suspect'
@@ -202,7 +202,7 @@ Convert to/from numpy arrays::
     # Or: (N, 4) for position+time only
 
     # From array
-    pvt_new = posvel.pvtcart(arr, None)
+    pvt_new = tell.pvtcart(arr, None)
 
 Example: Complete Workflow
 ===========================
@@ -214,7 +214,7 @@ Here's a complete example using the test data:
 
    import numpy as np
    import matplotlib.pyplot as plt
-   from tellurion.core import posvel
+   import tellurion as tell
 
    # Satellite states (km, km/s, MJD)
    states = np.array([
@@ -228,7 +228,7 @@ Here's a complete example using the test data:
    ])
 
    # Create position-velocity-time object
-   pvt = posvel.pvtcart(states, None)
+   pvt = tell.pvtcart(states, None)
 
    # Extract positions
    pos = pvt.position_vector.to('km').value
@@ -247,9 +247,54 @@ Here's a complete example using the test data:
 API Reference
 =============
 
-.. automodapi:: tellurion.core.posvel
-   :no-inheritance-diagram:
-   :skip: TimeSeries
+Classes
+-------
+
+.. autoclass:: tellurion.PositionBase
+   :members:
+
+.. autoclass:: tellurion.PositionT
+   :members:
+
+.. autoclass:: tellurion.PositionVelocityT
+   :members:
+
+.. autoclass:: tellurion.PVT
+   :members:
+
+Constructors
+------------
+
+.. autofunction:: tellurion.pvtcart
+
+Orekit Conversion Methods on ``PositionVelocityT``
+--------------------------------------------------
+
+These instance methods are different from the top-level constructor functions:
+
+* :meth:`tellurion.PositionVelocityT.kepler` converts a Cartesian state to a
+  Keplerian element set.
+* :meth:`tellurion.PositionVelocityT.equinoctial` converts a Cartesian state to
+  an equinoctial element set.
+* :meth:`tellurion.PositionVelocityT.circular` converts a Cartesian state to a
+  circular element set.
+* Top-level :func:`tellurion.kepler`, :func:`tellurion.equinoctial`, and
+  :func:`tellurion.circular` construct element sets from element dictionaries.
+
+``PositionVelocityT.kepler``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automethod:: tellurion.PositionVelocityT.kepler
+
+``PositionVelocityT.equinoctial``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automethod:: tellurion.PositionVelocityT.equinoctial
+
+``PositionVelocityT.circular``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automethod:: tellurion.PositionVelocityT.circular
 
 .. seealso::
    :ref:`hdf5-serialization` — saving and loading ``PositionVelocityT`` objects.

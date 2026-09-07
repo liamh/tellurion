@@ -20,17 +20,17 @@ Requirements
 Installing with pip
 -------------------
 
-.. warning::
-   Cannot install with pip yet; see below `Installing from Source`_.
-
 The easiest way to install is using pip:
 
 .. code-block:: bash
 
    pip install tellurion
 
-Installing required packages
-----------------------------
+Installing dependencies manually (optional)
+-------------------------------------------
+
+In most cases, ``pip install tellurion`` is sufficient. The commands below are
+only needed if you want to install dependencies individually:
 
 .. code-block:: bash
 
@@ -57,16 +57,53 @@ If you use conda/mamba:
 Installing from Source
 ----------------------
 
-For the latest development version:
+For the latest development version from source:
 
 .. code-block:: bash
 
-   git clone https://notavailable-see-liam
+   git clone https://github.com/liamh/tellurion.git
    cd tellurion
    pip install -e .
 
 .. note::
    The ``-e`` flag installs in "editable" mode, useful for development.
+
+Quickstart (Fresh Install)
+--------------------------
+
+After a fresh install, run this minimal end-to-end check.
+
+1) Install Tellurion:
+
+.. code-block:: bash
+
+   python -m pip install --upgrade pip
+   python -m pip install tellurion
+
+2) Run a quick sanity script:
+
+.. code-block:: python
+
+   import astropy.units as u
+   import tellurion as tell
+
+   # Core sanity check (no JVM required)
+   t0 = tell.abstime("2025-01-01T00:00:00")
+   pvt0 = tell.pvtcart(
+       [5740.1326835, 3314.06715, 0.0, -2.7508268, 4.7645718, 5.5016537],
+       t0,
+   )
+   print("Core objects OK:", type(pvt0).__name__)
+
+   # Orekit-backed quickstart (explicitly starts JVM + Orekit data)
+   tell.init_orekit()
+
+   gen = tell.prepare(pvt0, 30.0 * u.minute, propagator="keplerian")
+   pvtf = tell.propagate(gen, [30.0 * u.minute], output="pvt")[-1]
+   print("Propagation OK; final position [m]:", pvtf.position_vector.si.value)
+
+This confirms both the core API and a first propagation run from a clean
+environment.
 
 Development Installation
 ------------------------
@@ -75,8 +112,8 @@ If you want to contribute or modify the code:
 
 .. code-block:: bash
 
-   git clone https://github.com/liamh/your-package.git
-   cd your-package
+   git clone https://github.com/liamh/tellurion.git
+   cd tellurion
    pip install -e ".[dev]"
 
 This installs additional development dependencies like pytest and sphinx.
@@ -99,7 +136,7 @@ To install Tellurion with HDF5 support:
 
    pip install -e ".[hdf5]"
 
-Or, if installing from PyPI when available:
+To install Tellurion with HDF5 support from PyPI:
 
 .. code-block:: bash
 
@@ -136,11 +173,64 @@ To verify the installation worked:
    import tellurion
    print(tellurion.__version__)
 
+Validate with Tests (Source/Dev Install)
+----------------------------------------
+
+If you installed from source (especially with ``-e ".[dev]"``), run the
+repository tests to validate your environment:
+
+.. code-block:: bash
+
+   pytest tests/
+
+If optional HDF5 dependencies are not installed, run the non-HDF5 subset:
+
+.. code-block:: bash
+
+   pytest tests/ -m "not hdf5"
+
+To run only HDF5 tests:
+
+.. code-block:: bash
+
+   pytest tests/ -m hdf5
+
+Expected outcome guidance:
+
+* A successful installation should complete with no unexpected failures.
+* ``skipped`` and ``xfailed`` tests can be normal, depending on optional
+  dependencies and platform-specific behavior.
+* Exact pass/skip/xfail counts can change over time, so use test status
+  (pass/fail) rather than fixed numbers as the primary signal.
+
+Orekit/JVM Initialization
+-------------------------
+
+Tellurion now initializes Java/Orekit lazily:
+
+* ``import tellurion`` does **not** initialize the JVM
+* the JVM starts automatically on first use of Orekit-backed functionality
+  (including Orekit-backed instance conversion methods on an existing Cartesian
+  state, e.g. ``some_pvt.kepler()``)
+* you can also initialize explicitly:
+
+.. code-block:: python
+
+   import tellurion as tell
+   tell.init_orekit()
+
+.. note::
+   ``tell.init_orekit()`` raises ``RuntimeError`` if Java/Orekit setup fails.
+   ``tell.orekit_available()`` is a non-invasive bridge-import check (it does
+   not initialize JVM/Orekit). Use ``tell.init_orekit()`` to force runtime
+   initialization and validate Java/Orekit setup.
+
 To verify HDF5 support is available:
 
 .. code-block:: python
 
-   from tellurion.core import posvel_hdf5
+   import tellurion as tell
+   _ = tell.posvel_hdf5
    print("HDF5 serialization available")
 
 Platform-Specific Notes

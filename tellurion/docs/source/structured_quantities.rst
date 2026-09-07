@@ -19,11 +19,11 @@ The simplest way to create a structured quantity is using :func:`make_quantity`
 with a dictionary::
 
     >>> from astropy import units as u
-    >>> from tellurion.astro import make_quantity
+    >>> import tellurion as tell
     >>>
     >>> # Create a structured quantity with multiple fields
     >>> data = {'ra': 45.0, 'dec': 30.0}
-    >>> coords = make_quantity(data, 'deg')
+    >>> coords = tell.make_quantity(data, 'deg')
     >>> coords
     <Quantity (45., 30.) deg>
     >>> coords['ra']
@@ -40,7 +40,7 @@ Single Field Structured Quantities
 You can create a structured quantity with a single field::
 
     >>> data = {'distance': 10.0}
-    >>> q = make_quantity(data, 'meter')
+    >>> q = tell.make_quantity(data, 'meter')
     >>> q
     <Quantity (10.,) m>
 
@@ -50,7 +50,7 @@ Multiple Fields with Same Units
 When all fields share the same unit, simply pass a single unit string::
 
     >>> data = {'x': 1.0, 'y': 2.0, 'z': 3.0}
-    >>> position = make_quantity(data, 'm')
+    >>> position = tell.make_quantity(data, 'm')
     >>> position
     <Quantity (1., 2., 3.) m>
 
@@ -61,7 +61,7 @@ For fields with different units, pass a dictionary mapping field names to units:
 
     >>> data = {'position': 100.0, 'velocity': 10.0, 'mass': 5.0}
     >>> units = {'position': 'm', 'velocity': 'm/s', 'mass': 'kg'}
-    >>> particle = make_quantity(data, units)
+    >>> particle = tell.make_quantity(data, units)
     >>> particle
     <Quantity (100., 10., 5.) (m, m / s, kg)>
     >>> particle['position']
@@ -81,7 +81,7 @@ By default, array values create array structured quantities where each element
 is a separate row::
 
     >>> data = {'x': [1, 2, 3], 'y': [4, 5, 6]}
-    >>> points = make_quantity(data, 'm')
+    >>> points = tell.make_quantity(data, 'm')
     >>> points
     <Quantity [(1., 4.), (2., 5.), (3., 6.)] m>
     >>> len(points)
@@ -97,7 +97,7 @@ Vector Fields as Single Elements
 To treat an array as a single field value (e.g., a 3D vector), use ``is_scalar=True``::
 
     >>> data = {'position': [1.0, 2.0, 3.0]}
-    >>> vector = make_quantity(data, 'm', is_scalar=True)
+    >>> vector = tell.make_quantity(data, 'm', is_scalar=True)
     >>> vector.isscalar
     True
     >>> vector['position']
@@ -108,7 +108,7 @@ This is useful for representing quantities where each "row" contains a vector::
     >>> # Multiple 3D positions
     >>> positions_array = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     >>> data = {'position': positions_array}
-    >>> positions = make_quantity(data, 'm')
+    >>> positions = tell.make_quantity(data, 'm')
     >>> positions
     <Quantity [([1., 2., 3.],), ([4., 5., 6.],), ([7., 8., 9.],)] m>
     >>> len(positions)  # 3 positions
@@ -127,14 +127,14 @@ Horizontally Stacking (Adding Fields)
 Use :func:`hstack` to combine structured quantities by adding their fields together.
 This is like adding columns to a table::
 
-    >>> from tellurion.astro import hstack
+    >>> import tellurion as tell
     >>>
     >>> # Create separate field groups
-    >>> positions = make_quantity({'x': [1, 2], 'y': [3, 4]}, 'm')
-    >>> velocities = make_quantity({'vx': [10, 20], 'vy': [30, 40]}, 'm/s')
+    >>> positions = tell.make_quantity({'x': [1, 2], 'y': [3, 4]}, 'm')
+    >>> velocities = tell.make_quantity({'vx': [10, 20], 'vy': [30, 40]}, 'm/s')
     >>>
     >>> # Combine into phase space
-    >>> phase_space = hstack([positions, velocities])
+    >>> phase_space = tell.hstack([positions, velocities])
     >>> phase_space
     <Quantity [(1., 3., 10., 30.), (2., 4., 20., 40.)] (m, m, m / s, m / s)>
     >>> phase_space.dtype.names
@@ -142,9 +142,9 @@ This is like adding columns to a table::
 
 All quantities must have the same length (number of rows)::
 
-    >>> q1 = make_quantity({'a': [1, 2]}, 'm')
-    >>> q2 = make_quantity({'b': [3, 4, 5]}, 'm')  # Different length!
-    >>> hstack([q1, q2])
+    >>> q1 = tell.make_quantity({'a': [1, 2]}, 'm')
+    >>> q2 = tell.make_quantity({'b': [3, 4, 5]}, 'm')  # Different length!
+    >>> tell.hstack([q1, q2])
     Traceback (most recent call last):
     ...
     ValueError: All structured quantities must have the same length or all be scalar.
@@ -155,15 +155,15 @@ Vertically Stacking (Adding Rows)
 Use :func:`vstack` to combine structured quantities by adding rows together.
 This is like adding rows to a table::
 
-    >>> from tellurion.astro import vstack
+    >>> import tellurion as tell
     >>>
     >>> # Create separate observations
-    >>> obs1 = make_quantity({'ra': 45.0, 'dec': 30.0}, 'deg')
-    >>> obs2 = make_quantity({'ra': 120.0, 'dec': -15.0}, 'deg')
-    >>> obs3 = make_quantity({'ra': 200.0, 'dec': 60.0}, 'deg')
+    >>> obs1 = tell.make_quantity({'ra': 45.0, 'dec': 30.0}, 'deg')
+    >>> obs2 = tell.make_quantity({'ra': 120.0, 'dec': -15.0}, 'deg')
+    >>> obs3 = tell.make_quantity({'ra': 200.0, 'dec': 60.0}, 'deg')
     >>>
     >>> # Combine into catalog
-    >>> catalog = vstack([obs1, obs2, obs3])
+    >>> catalog = tell.vstack([obs1, obs2, obs3])
     >>> catalog
     <Quantity [(45., 30.), (120., -15.), (200., 60.)] deg>
     >>> len(catalog)
@@ -173,9 +173,9 @@ This is like adding rows to a table::
 
 All quantities must have the same structure (same field names and units)::
 
-    >>> q1 = make_quantity({'x': 1, 'y': 2}, 'm')
-    >>> q2 = make_quantity({'x': 3, 'z': 4}, 'm')  # Different fields!
-    >>> vstack([q1, q2])
+    >>> q1 = tell.make_quantity({'x': 1, 'y': 2}, 'm')
+    >>> q2 = tell.make_quantity({'x': 3, 'z': 4}, 'm')  # Different fields!
+    >>> tell.vstack([q1, q2])
     Traceback (most recent call last):
     ...
     ValueError: All structured quantities must have the same unit structure.
@@ -190,18 +190,18 @@ The :func:`change_units` function converts quantities to a target unit system
 using physical type lookups. This is particularly useful when you want to
 ensure consistent units across your calculations::
 
-    >>> from tellurion.astro import change_units
+    >>> import tellurion as tell
     >>>
     >>> # Create quantity in mixed units
     >>> data = {'height': 100, 'width': 50, 'depth': 2.5}
     >>> units = {'height': 'cm', 'width': 'cm', 'depth': 'm'}
-    >>> box = make_quantity(data, units)
+    >>> box = tell.make_quantity(data, units)
     >>>
     >>> # Define target unit system (SI base units)
     >>> SI_UNITS = {'length': 'm', 'time': 's', 'mass': 'kg'}
     >>>
     >>> # Convert to SI
-    >>> box_si = change_units(box, SI_UNITS)
+    >>> box_si = tell.change_units(box, SI_UNITS)
     >>> box_si
     <Quantity (1., 0.5, 2.5) m>
 
@@ -220,9 +220,9 @@ A common pattern is to define a master unit dictionary and use subsets of it::
     ... }
     >>>
     >>> # Create different quantities using subsets
-    >>> position = make_quantity({'x': 1, 'y': 2, 'z': 3}, UNIT_SYSTEM)
-    >>> velocity = make_quantity({'vx': 10, 'vy': 20, 'vz': 30}, UNIT_SYSTEM)
-    >>> particle = make_quantity({'x': 5, 'mass': 2.5, 'energy': 100}, UNIT_SYSTEM)
+    >>> position = tell.make_quantity({'x': 1, 'y': 2, 'z': 3}, UNIT_SYSTEM)
+    >>> velocity = tell.make_quantity({'vx': 10, 'vy': 20, 'vz': 30}, UNIT_SYSTEM)
+    >>> particle = tell.make_quantity({'x': 5, 'mass': 2.5, 'energy': 100}, UNIT_SYSTEM)
 
 The unit dictionary can contain more keys than the value dictionary - extra
 keys are simply ignored. This allows you to maintain a single comprehensive
@@ -236,13 +236,13 @@ Converting to Dictionary
 
 Use :func:`quantity_to_dict` to extract fields as a dictionary::
 
-    >>> from tellurion.astro import quantity_to_dict
+    >>> import tellurion as tell
     >>>
     >>> data = {'ra': 45.0, 'dec': 30.0, 'distance': 100.0}
     >>> units = {'ra': 'deg', 'dec': 'deg', 'distance': 'pc'}
-    >>> observation = make_quantity(data, units)
+    >>> observation = tell.make_quantity(data, units)
     >>>
-    >>> obs_dict = quantity_to_dict(observation)
+    >>> obs_dict = tell.quantity_to_dict(observation)
     >>> obs_dict
     {'ra': <Quantity 45. deg>, 'dec': <Quantity 30. deg>, 'distance': <Quantity 100. pc>}
     >>> obs_dict['ra']
@@ -254,12 +254,12 @@ Converting to Array
 Use :func:`quantity_to_array` to extract numerical values as a numpy array,
 discarding unit information::
 
-    >>> from tellurion.astro import quantity_to_array
+    >>> import tellurion as tell
     >>>
     >>> data = {'x': [1, 2, 3], 'y': [4, 5, 6]}
-    >>> points = make_quantity(data, 'm')
+    >>> points = tell.make_quantity(data, 'm')
     >>>
-    >>> array = quantity_to_array(points)
+    >>> array = tell.quantity_to_array(points)
     >>> array
     array([[1., 4.],
            [2., 5.],
@@ -296,7 +296,7 @@ Creating a simple astronomical catalog with positions and magnitudes::
     ...     'vmag': ''  # dimensionless
     ... }
     >>>
-    >>> catalog = make_quantity(sources, units)
+    >>> catalog = tell.make_quantity(sources, units)
     >>> catalog['ra']
     <Quantity [10.68, 83.63, 201.3] deg>
     >>> catalog['distance']
@@ -312,24 +312,24 @@ Representing particles with positions, velocities, and masses::
     >>> n_particles = 100
     >>>
     >>> # Initial conditions
-    >>> positions = make_quantity({
+    >>> positions = tell.make_quantity({
     ...     'x': np.random.randn(n_particles),
     ...     'y': np.random.randn(n_particles),
     ...     'z': np.random.randn(n_particles)
     ... }, 'm')
     >>>
-    >>> velocities = make_quantity({
+    >>> velocities = tell.make_quantity({
     ...     'vx': np.random.randn(n_particles),
     ...     'vy': np.random.randn(n_particles),
     ...     'vz': np.random.randn(n_particles)
     ... }, 'm/s')
     >>>
-    >>> masses = make_quantity({
+    >>> masses = tell.make_quantity({
     ...     'mass': np.random.uniform(0.1, 10.0, n_particles)
     ... }, 'kg')
     >>>
     >>> # Combine into single phase space
-    >>> particles = hstack([positions, velocities, masses])
+    >>> particles = tell.hstack([positions, velocities, masses])
     >>>
     >>> # Access properties
     >>> particles['mass']  # All masses
@@ -349,7 +349,7 @@ Organizing time-series measurements::
     >>> pressure = 101.3 + 2 * np.cos(times) + np.random.randn(50) * 0.1
     >>>
     >>> # Create time series
-    >>> measurements = make_quantity({
+    >>> measurements = tell.make_quantity({
     ...     'time': times,
     ...     'temperature': temperature,
     ...     'pressure': pressure
@@ -383,9 +383,9 @@ manually constructing structured arrays::
 Using ``make_quantity`` is more concise and readable::
 
     >>> # Using make_quantity (concise)
-    >>> from tellurion.astro import make_quantity
+    >>> import tellurion as tell
     >>>
-    >>> modern = make_quantity({'x': 1.0, 'y': 2.0}, 'm')
+    >>> modern = tell.make_quantity({'x': 1.0, 'y': 2.0}, 'm')
 
 Both produce equivalent results, but ``make_quantity`` is:
 
@@ -397,17 +397,17 @@ Both produce equivalent results, but ``make_quantity`` is:
 Reference/API
 -------------
 
-.. autofunction:: tellurion.astro.make_quantity
+.. autofunction:: tellurion.make_quantity
 
-.. autofunction:: tellurion.astro.change_units
+.. autofunction:: tellurion.change_units
 
-.. autofunction:: tellurion.astro.hstack
+.. autofunction:: tellurion.hstack
 
-.. autofunction:: tellurion.astro.vstack
+.. autofunction:: tellurion.vstack
 
-.. autofunction:: tellurion.astro.quantity_to_dict
+.. autofunction:: tellurion.quantity_to_dict
 
-.. autofunction:: tellurion.astro.quantity_to_array
+.. autofunction:: tellurion.quantity_to_array
 
 See Also
 --------

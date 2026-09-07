@@ -8,6 +8,11 @@ specific earth frame used for Orekit is needed to high accuracy.
 import astropy.coordinates as coord
 import astropy.units as u
 import numpy as np
+
+from tellurion.ork import ensure_orekit_initialized
+
+ensure_orekit_initialized()
+
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 from org.orekit.bodies import GeodeticPoint
 from org.orekit.frames import TopocentricFrame

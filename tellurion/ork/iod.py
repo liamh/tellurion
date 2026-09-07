@@ -1,3 +1,7 @@
+from tellurion.ork import ensure_orekit_initialized
+
+ensure_orekit_initialized()
+
 from org.orekit.estimation.iod import IodLambert
 
 from tellurion.astro import quantity_utils as qu

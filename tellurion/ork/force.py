@@ -1,5 +1,10 @@
 import astropy.units as u
 import numpy as np
+
+from tellurion.ork import ensure_orekit_initialized
+
+ensure_orekit_initialized()
+
 from org.orekit.bodies import CelestialBodyFactory, OneAxisEllipsoid
 from org.orekit.forces.drag import DragForce, IsotropicDrag
 from org.orekit.forces.gravity.potential import GravityFieldFactory

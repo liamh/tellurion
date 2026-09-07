@@ -5,6 +5,11 @@ Orbital elements in Orekit
 import astropy.units as u
 import numpy as np
 from astropy.timeseries import TimeSeries
+
+from tellurion.ork import ensure_orekit_initialized
+
+ensure_orekit_initialized()
+
 from org.orekit.orbits import (
     CartesianOrbit,
     CircularOrbit,
@@ -14,7 +19,8 @@ from org.orekit.orbits import (
     PositionAngleType,
 )
 
-from tellurion.core import element, posvel, units
+from tellurion.astro import units
+from tellurion.core import element, posvel
 from tellurion.ork import convert, force
 
 ###########################################

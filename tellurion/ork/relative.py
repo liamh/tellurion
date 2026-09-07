@@ -1,5 +1,9 @@
 import collections.abc
 
+from tellurion.ork import ensure_orekit_initialized
+
+ensure_orekit_initialized()
+
 from org.orekit.attitudes import LofOffset
 from org.orekit.frames import LOFType
 from org.orekit.propagation import SpacecraftState

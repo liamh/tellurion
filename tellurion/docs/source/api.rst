@@ -4,27 +4,47 @@
 API Reference
 #############
 
-This page provides quick access to all API documentation.
+Tellurion is intended to be used from a single top-level import::
 
-Core Modules
-============
+   import tellurion as tell
 
-* :mod:`tellurion.core.posvel` - Position, Velocity, and Time classes (see :doc:`posvel`)
+The public interface is exposed on ``tell.*``.
 
-Other Core Modules
-==================
+Core State and Time
+===================
 
-* :mod:`tellurion.core.pvhelper` - Helper functions for position/velocity handling
+* :func:`tellurion.abstime`
+* :func:`tellurion.pvtcart`
+* :class:`tellurion.PositionT`
+* :class:`tellurion.PositionVelocityT`
 
-Astro Modules
-=============
+Orbital Elements
+================
 
-* :mod:`tellurion.astro.quantity_utils` - Quantity manipulation utilities
-* :mod:`tellurion.astro.time` - Time handling extensions
-* :mod:`tellurion.astro.units` - Unit definitions and conversions
+* :func:`tellurion.kepler`
+* :func:`tellurion.equinoctial`
+* :func:`tellurion.circular`
+* :func:`tellurion.elementval`
 
-Orekit Integration
-==================
+Propagation and Force Models
+=============================
 
-* :mod:`tellurion.ork.element` - Orbital elements
-* :mod:`tellurion.ork.force` - Force models
+* :func:`tellurion.prepare`
+* :func:`tellurion.propagate`
+* :func:`tellurion.setgravity`
+* :func:`tellurion.dragforce`
+
+Lambert and Transfer Analysis
+=============================
+
+* :func:`tellurion.lambert`
+
+Structured Quantity Utilities
+=============================
+
+* :func:`tellurion.make_quantity`
+* :func:`tellurion.change_units`
+* :func:`tellurion.hstack`
+* :func:`tellurion.vstack`
+* :func:`tellurion.quantity_to_dict`
+* :func:`tellurion.quantity_to_array`

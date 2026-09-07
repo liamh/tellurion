@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 import tellurion as tell
-from tellurion.ork.iod import lambert
 
 
 class TestLambertSolver:
@@ -23,7 +22,7 @@ class TestLambertSolver:
         p1 = pvt_init.position
         p2 = pvt_final.position
 
-        pvt1_sol, pvt2_sol = lambert(p1, p2)
+        pvt1_sol, pvt2_sol = tell.lambert(p1, p2)
 
         v_expected = pvt_init.velocity_vector.si.value
         v_solved = pvt1_sol.velocity_vector.si.value
@@ -41,7 +40,7 @@ class TestLambertSolver:
         p1 = pvt_init.position
         p2 = pvt_final.position
 
-        pvt1_sol, pvt2_sol = lambert(p1, p2)
+        pvt1_sol, pvt2_sol = tell.lambert(p1, p2)
 
         v_expected = pvt_init.velocity_vector.si.value
         v_solved = pvt1_sol.velocity_vector.si.value
@@ -60,7 +59,7 @@ class TestLambertSolver:
         p1 = pvt_init.position
         p2 = pvt_final.position
 
-        pvt1_sol, pvt2_sol = lambert(p1, p2)
+        pvt1_sol, pvt2_sol = tell.lambert(p1, p2)
 
         v_expected = pvt_init.velocity_vector.si.value
         v_solved = pvt1_sol.velocity_vector.si.value

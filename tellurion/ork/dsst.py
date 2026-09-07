@@ -1,3 +1,7 @@
+from tellurion.ork import ensure_orekit_initialized
+
+ensure_orekit_initialized()
+
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.propagation import SpacecraftState
 from org.orekit.propagation.numerical import NumericalPropagator

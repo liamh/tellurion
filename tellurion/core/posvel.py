@@ -1145,6 +1145,36 @@ class PositionVelocityT(PositionBase):
         """
         return self
 
+    def kepler(self, forceenv=None, mean_time_element=True):
+        """Convert this Cartesian state to a Keplerian element set."""
+        from importlib import import_module
+
+        ork_element = import_module("tellurion.ork.element")
+        kwargs = {"mean_time_element": mean_time_element}
+        if forceenv is not None:
+            kwargs["forceenv"] = forceenv
+        return ork_element._kepler(self, **kwargs)
+
+    def equinoctial(self, forceenv=None, mean_time_element=True):
+        """Convert this Cartesian state to an equinoctial element set."""
+        from importlib import import_module
+
+        ork_element = import_module("tellurion.ork.element")
+        kwargs = {"mean_time_element": mean_time_element}
+        if forceenv is not None:
+            kwargs["forceenv"] = forceenv
+        return ork_element._equinoctial(self, **kwargs)
+
+    def circular(self, forceenv=None, mean_time_element=True):
+        """Convert this Cartesian state to a circular element set."""
+        from importlib import import_module
+
+        ork_element = import_module("tellurion.ork.element")
+        kwargs = {"mean_time_element": mean_time_element}
+        if forceenv is not None:
+            kwargs["forceenv"] = forceenv
+        return ork_element._circular(self, **kwargs)
+
 # END class PositionVelocityT
 
 ##################################################

@@ -1,13 +1,13 @@
 .. _propagation:
 
 *************************************************************
-Orbital Propagation (`tellurion.ork.prop`)
+Orbital Propagation (`tell.prepare`, `tell.propagate`)
 *************************************************************
 
 Introduction
 ============
 
-The :mod:`tellurion.ork.prop` module provides satellite orbital propagation using
+The :mod:`tellurion` module provides satellite orbital propagation using
 multiple analytic and numerical methods. It supports:
 
 * **Analytic propagators**: Keplerian (two-body), Brouwer-Lyddane (J2-J5 perturbations)
@@ -290,12 +290,60 @@ atmospheric drag.
 
 .. code-block:: python
 
-    forceenv = tell.setgravity(20, 20)
-    forceenv = tell.dragforce(forceenv, cd=2.2, area=1.0, mass=1000.0)
+    forceenv = tell.setgravity(20, 20, mass=1000.0)
+    forceenv = tell.dragforce(forceenv, dragcoef=2.2, dragarea=1.0)
     gen = tell.prepare(initstate, proptime,
                       forceenv=forceenv,
                       propagator='numerical')
     result = tell.propagate(gen, [0.5*u.day])
+
+Force Model Recipes
+===================
+
+Use these practical force-environment recipes as starting points.
+
+Two-Body Baseline (fastest)
+---------------------------
+
+Use analytic Keplerian propagation with no perturbation model::
+
+    gen = tell.prepare(initstate, 1.0*u.day, propagator='keplerian')
+
+J2-J5 Analytic Screening
+------------------------
+
+Capture dominant zonal perturbations with Brouwer-Lyddane::
+
+    forceenv = tell.setgravity(5, 0)  # J2-J5 zonal terms
+    gen = tell.prepare(initstate, 2.0*u.day,
+                      forceenv=forceenv,
+                      propagator='brouwer-lyddane')
+
+DSST Long-Arc Tradeoff
+----------------------
+
+Use DSST for longer arcs with full gravity and better speed than full
+numerical integration::
+
+    forceenv = tell.setgravity(20, 20)
+    gen = tell.prepare(initstate, 15.0*u.day,
+                      forceenv=forceenv,
+                      propagator='dsst')
+
+Numerical + Drag (LEO)
+----------------------
+
+Use numerical propagation when atmospheric drag is mission-significant::
+
+    forceenv = tell.setgravity(20, 20, mass=1000.0)
+    forceenv = tell.dragforce(forceenv, atmdensname='hp',
+                             dragcoef=2.2, dragarea=1.0)
+    gen = tell.prepare(initstate, 1.0*u.day,
+                      forceenv=forceenv,
+                      propagator='numerical')
+
+``atmdensname`` can be ``'hp'`` (Harris-Priester), ``'dtm'`` (DTM2000), or
+``'msis'`` (NRLMSISE00).
 
 Propagator Comparison
 =====================
@@ -448,6 +496,42 @@ Detect visibility from one or more Earth locations::
     }
     gen = tell.prepare(initstate, proptime, events=events)
 
+State Transition Matrix (STM)
+-----------------------------
+
+Request the final state transition matrix by setting ``'stm': True`` in the
+``events`` dictionary::
+
+    events = {
+        'altitude': 125.0*u.km,
+        'eclipse': [],
+        'visibility': [],
+        'stm': True,
+    }
+    gen = tell.prepare(initstate, proptime, events=events,
+                       forceenv=tell.setgravity(20, 20),
+                       propagator='numerical')
+    _ = tell.propagate(gen, [proptime], output='pvt')
+
+After propagation, the final STM is available in ``gen['final']``:
+
+.. code-block:: python
+
+    phi = gen['final']['stm']
+    print(phi.shape)  # Typically (6, 6)
+
+If drag-parameter partial derivatives are enabled in the force model, the
+final parameter Jacobian is also stored in:
+
+.. code-block:: python
+
+    pjac = gen['final']['parameters jacobian']
+
+Use the STM to estimate sensitivity of final Cartesian state to small changes
+in the initial Cartesian state.
+
+See :doc:`tutorials/stm1` for a step-by-step STM workflow.
+
 Propagation Output
 ==================
 
@@ -565,11 +649,18 @@ eclipse detection::
 API Reference
 =============
 
-.. autoapi:: tellurion.core.prop
-   :noindex:
+.. autofunction:: tellurion.prepare
+
+.. autofunction:: tellurion.propagate
+
+.. autofunction:: tellurion.setgravity
+
+.. autofunction:: tellurion.dragforce
 
 .. seealso::
 
    | :ref:`element` — orbital element representations
    | :ref:`posvel` — position-velocity-time objects
-   | :ref:`force` — force environment configuration
+   | :ref:`lambert` — Lambert transfer workflows
+   | :doc:`tutorials/lambert1` — Lambert transfer tutorial notebook
+   | :doc:`tutorials/stm1` — state transition matrix tutorial notebook

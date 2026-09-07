@@ -1,3 +1,7 @@
+from tellurion.ork import ensure_orekit_initialized
+
+ensure_orekit_initialized()
+
 from org.orekit.frames import TopocentricFrame
 
 from tellurion.astro import units

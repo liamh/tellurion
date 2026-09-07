@@ -13,12 +13,18 @@ import astropy.units as u
 import numpy as np
 import orekit_jpype.pyhelpers as pyhelp
 import pandas as pd
+
+from tellurion.ork import ensure_orekit_initialized
+
+ensure_orekit_initialized()
+
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 from org.orekit.utils import TimeStampedPVCoordinates
 
 import tellurion.astro.time as atime
 from tellurion.astro import quantity_utils as quant
-from tellurion.core import posvel, units as tunits
+from tellurion.astro import units as tunits
+from tellurion.core import posvel
 
 posvelsiu = u.StructuredUnit((u.meter, u.meter / u.second))
 

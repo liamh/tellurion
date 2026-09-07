@@ -16,6 +16,7 @@ built on AstroPy.
    posvel
    element
    prop
+   lambert
    hdf5_serialization
    examples
 
@@ -32,7 +33,7 @@ Quick Example
 
 .. code-block:: python
 
-   from demos.obsdemo import *
+   import tellurion as tell
 
 Indices and tables
 ==================

@@ -13,3 +13,6 @@ the capabilities of the package.
    :caption: Tutorial Notebooks
 
    tutorials/cartprop1
+   tutorials/cartprop2
+   tutorials/lambert1
+   tutorials/stm1
