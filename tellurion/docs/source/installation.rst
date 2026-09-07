@@ -210,8 +210,8 @@ Tellurion now initializes Java/Orekit lazily:
 
 * ``import tellurion`` does **not** initialize the JVM
 * the JVM starts automatically on first use of Orekit-backed functionality
-  (including instance methods on an existing Cartesian state, e.g.
-  ``some_pvt.kepler()``)
+  (including Orekit-backed instance conversion methods on an existing Cartesian
+  state, e.g. ``some_pvt.kepler()``)
 * you can also initialize explicitly:
 
 .. code-block:: python
@@ -221,8 +221,9 @@ Tellurion now initializes Java/Orekit lazily:
 
 .. note::
    ``tell.init_orekit()`` raises ``RuntimeError`` if Java/Orekit setup fails.
-   ``tell.orekit_available()`` is non-raising, but it may initialize Orekit/JVM
-   as part of its check.
+   ``tell.orekit_available()`` returns ``False`` for setup/init failures and may
+   initialize Orekit/JVM as part of its check. After a failed initialization
+   attempt, restart the Python process after fixing setup before retrying.
 
 To verify HDF5 support is available:
 

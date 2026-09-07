@@ -43,17 +43,35 @@ from tellurion.core import (
     PositionVelocityT,
     azelrange,
     circular,
+    circeltma_names,
+    circeltta_names,
+    circtimeelements,
     earthloc,
+    elev,
+    equeltma_names,
+    equeltta_names,
     equinoctial,
+    equtimeelements,
+    gnuserid,
     iscircels,
     isequels,
     iskepels,
+    kepeltma_names,
+    kepeltta_names,
     kepler,
+    location,
     magdiff,
     nullisland,
+    obsdict1,
     observer_location,
     pvtcart,
+    satdata,
+    sfdict,
     spacetrack_latest,
+    statefnval,
+    stscdata,
+    timeelements,
+    userid,
 )
 
 np.set_printoptions(suppress=True, precision=4, linewidth=np.inf)
@@ -94,32 +112,42 @@ def _is_missing_orekit_bridge_error(exc):
     return False
 
 
+def _is_orekit_init_error(exc):
+    text = str(exc)
+    return (
+        "Failed to initialize Orekit JVM/data." in text
+        or "Orekit initialization previously failed." in text
+    )
+
+
+def _raise_orekit_runtime_error(exc):
+    raise RuntimeError(
+        "Orekit support is not available or failed to initialize. "
+        "Install/configure Java + orekit-jpype, then retry."
+    ) from exc
+
+
 def _ork_attr(name):
     """Fetch a lazy Orekit-backed symbol from tellurion.ork."""
     if not _ORK_AVAILABLE:
-        raise RuntimeError(
-            "Orekit support is not available in this environment. "
-            "Install `orekit-jpype` to use Orekit-backed APIs."
-        )
+        _raise_orekit_runtime_error(RuntimeError("orekit_jpype not available"))
     try:
         value = getattr(_import_module("tellurion.ork"), name)
+    except RuntimeError as exc:
+        if _is_missing_orekit_bridge_error(exc) or _is_orekit_init_error(exc):
+            _raise_orekit_runtime_error(exc)
+        raise
     except ModuleNotFoundError as exc:
         if _is_missing_orekit_bridge_error(exc):
-            raise RuntimeError(
-                "Orekit support is not available in this environment. "
-                "Install `orekit-jpype` to use Orekit-backed APIs."
-            ) from exc
+            _raise_orekit_runtime_error(exc)
         raise
     if callable(value):
         def _wrapped(*args, **kwargs):
             try:
                 return value(*args, **kwargs)
             except RuntimeError as exc:
-                if _is_missing_orekit_bridge_error(exc):
-                    raise RuntimeError(
-                        "Orekit support is not available in this environment. "
-                        "Install `orekit-jpype` to use Orekit-backed APIs."
-                    ) from exc
+                if _is_missing_orekit_bridge_error(exc) or _is_orekit_init_error(exc):
+                    _raise_orekit_runtime_error(exc)
                 raise
         return _wrapped
     return value
@@ -137,7 +165,7 @@ def orekit_available():
     try:
         ork = _import_module("tellurion.ork")
         return bool(getattr(ork, "orekit_available")())
-    except Exception:
+    except RuntimeError:
         return False
 
 
@@ -205,12 +233,8 @@ def __getattr__(name):
             return value
         raise AttributeError(f"module 'tellurion' has no attribute '{name}'")
 
-    if not _ORK_AVAILABLE:
-        raise AttributeError(f"module 'tellurion' has no attribute '{name}'")
-
-    ork = _import_module("tellurion.ork")
     try:
-        value = getattr(ork, name)
+        value = _ork_attr(name)
     except AttributeError as exc:
         raise AttributeError(f"module 'tellurion' has no attribute '{name}'") from exc
     globals()[name] = value
@@ -231,12 +255,20 @@ __all__ = [
     "azelrange",
     "change_units",
     "circular",
+    "circeltma_names",
+    "circeltta_names",
+    "circtimeelements",
     "dragforce",
     "earthloc",
+    "elev",
     "elementval",
+    "equeltma_names",
+    "equeltta_names",
     "equinoctial",
+    "equtimeelements",
     "from_array",
     "fromtime",
+    "gnuserid",
     "gravconstunits",
     "hcat",
     "hstack",
@@ -244,12 +276,16 @@ __all__ = [
     "iscircels",
     "isequels",
     "iskepels",
+    "kepeltma_names",
+    "kepeltta_names",
     "kepler",
     "kepleranalytic",
+    "location",
     "magdiff",
     "make_quantity",
     "normalizeangle",
     "orkunits",
+    "obsdict1",
     "prefunits",
     "nullisland",
     "observer_location",
@@ -265,17 +301,23 @@ __all__ = [
     "revolution",
     "setgravity",
     "siderealtime",
+    "satdata",
+    "sfdict",
     "siunits",
     "sifloat",
     "sma",
     "spacetrack_latest",
+    "statefnval",
+    "stscdata",
     "striptime",
     "tc",
+    "timeelements",
     "time_concat",
     "timesec",
     "to_array",
     "tselements",
     "tq",
+    "userid",
     "vstack",
 ]
 
