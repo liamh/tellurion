@@ -221,9 +221,9 @@ Tellurion now initializes Java/Orekit lazily:
 
 .. note::
    ``tell.init_orekit()`` raises ``RuntimeError`` if Java/Orekit setup fails.
-   ``tell.orekit_available()`` returns ``False`` for setup/init failures and may
-   initialize Orekit/JVM as part of its check. After a failed initialization
-   attempt, restart the Python process after fixing setup before retrying.
+   ``tell.orekit_available()`` is a non-invasive bridge-import check (it does
+   not initialize JVM/Orekit). Use ``tell.init_orekit()`` to force runtime
+   initialization and validate Java/Orekit setup.
 
 To verify HDF5 support is available:
 

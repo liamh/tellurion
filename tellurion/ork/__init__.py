@@ -1,7 +1,7 @@
 """Lazy Orekit/JVM initialization and symbol loading for tellurion.ork."""
 
 import ast
-from importlib import import_module
+from importlib import import_module, util as importlib_util
 from pathlib import Path
 from threading import Lock
 
@@ -69,12 +69,8 @@ def ensure_orekit_initialized():
 
 
 def orekit_available():
-    """Return True if Orekit initialization succeeds, otherwise False."""
-    try:
-        init_orekit()
-    except RuntimeError:
-        return False
-    return True
+    """Return True if orekit-jpype bridge module is importable."""
+    return importlib_util.find_spec("orekit_jpype") is not None
 
 
 def _import_ork_submodule(name):
@@ -111,7 +107,6 @@ def __getattr__(name):
     global _OREKIT_SYMBOL_TO_MODULES
 
     if name in _OREKIT_TOPLEVEL_SUBMODULES:
-        ensure_orekit_initialized()
         return _import_ork_submodule(name)
 
     if _OREKIT_SYMBOL_TO_MODULES is None:

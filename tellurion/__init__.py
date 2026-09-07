@@ -81,20 +81,8 @@ try:
 except PackageNotFoundError:
     __version__ = "0+unknown"
 
-def _orekit_bridge_available():
-    """Return True when orekit-jpype bridge modules are importable."""
-    if _importlib_util.find_spec("orekit_jpype") is None:
-        return False
-    try:
-        _import_module("orekit_jpype")
-        _import_module("orekit_jpype.pyhelpers")
-    except Exception:
-        return False
-    return True
-
-
-# Whether Orekit bridge modules appear importable; does not initialize JVM.
-_ORK_AVAILABLE = _orekit_bridge_available()
+# Whether Orekit bridge module appears importable; does not initialize JVM.
+_ORK_AVAILABLE = _importlib_util.find_spec("orekit_jpype") is not None
 
 
 def _is_missing_orekit_bridge_error(exc):
@@ -159,14 +147,12 @@ def init_orekit():
 
 
 def orekit_available():
-    """Return True if Orekit initialization succeeds, otherwise False."""
-    if not _ORK_AVAILABLE:
-        return False
+    """Return True if orekit-jpype bridge module is importable."""
     try:
         ork = _import_module("tellurion.ork")
         return bool(getattr(ork, "orekit_available")())
-    except RuntimeError:
-        return False
+    except Exception:
+        return bool(_importlib_util.find_spec("orekit_jpype") is not None)
 
 
 def prepare(*args, **kwargs):
