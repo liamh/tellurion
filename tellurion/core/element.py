@@ -86,7 +86,13 @@ class ElementSetT:
         return (self.elements, self.time)[idx]
 
     def pvt(self):
-        """Convert this element set to a Cartesian state."""
+        """Convert this element set to a Cartesian state.
+
+        Notes
+        -----
+        This is an Orekit-backed conversion. Calling it may trigger lazy
+        initialization of the JVM and Orekit data on first use.
+        """
         from importlib import import_module
 
         ork_element = import_module("tellurion.ork.element")
