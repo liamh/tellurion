@@ -436,10 +436,6 @@ def _kepler(object, forceenv=force.deffe, mean_time_element=True):  # Add prefun
     kepels = dict(zip(elnames, elementval(ko, elnames)))
     return element.kepler(kepels, dttm)
 
-
-posvel.PositionVelocityT.kepler = _kepler
-
-
 def _equinoctial(object, forceenv=force.deffe, mean_time_element=True):
     """The equinoctial element set from the Cartesian PVT or equivalent."""
     co = CartesianOrbit(
@@ -462,11 +458,6 @@ def _circular(object, forceenv=force.deffe, mean_time_element=True):
     dttm = object.time
     circs = dict(zip(elnames, elementval(circ, elnames)))
     return element.circular(circs, dttm)
-
-
-posvel.PositionVelocityT.equinoctial = _equinoctial
-posvel.PositionVelocityT.circular = _circular
-
 
 def pvt(object, dttm=None):
     if element.iskepels(object, True):

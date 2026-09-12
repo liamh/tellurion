@@ -30,7 +30,7 @@ demoa.init.pvt = tell.pvtcart(demoa.init.pv, newyear)
 demoa.init.altper = tell.elementval(demoa.init.pvt, 'altper')  # Altitude of perigee for the initial state
 demoa.init.kep = demoa.init.pvt.kepler()  # Convert PVT to Kepler elements
 demoa.init.seekep = demoa.init.kep.elements.to_dict()  # Easier to read Kepler elements
-demoa.init.cart = tell.pvt(demoa.init.kep)  # Convert back to Cartesian, same as demoa.init.pvt
+demoa.init.cart = demoa.init.kep.pvt()  # Convert back to Cartesian, same as demoa.init.pvt
 
 # --------- Propagation two-body --------------
 
@@ -99,7 +99,7 @@ demob = Munch()
 
 demob.kep = tell.kepler({"sma":8000.0, "ecc":0.1, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25},
                            tell.abstime('2023-09-14T08:30:00'))
-demob.pvt = tell.pvt(demob.kep) # Convert Kepler elements to PVT
+demob.pvt = demob.kep.pvt() # Convert Kepler elements to PVT
 demob.gen = tell.prepare(demob.pvt, 1*u.day)
 demob.eph = tell.propagate(demob.gen, prop5m1h, True)  # Propagate to each step, and include the initial state in the ephemeris table
 # tell.pvt(demob.eph, 35*u.min)
@@ -158,7 +158,7 @@ demoa.propp.rsw_4x4hpB01_to_4x4 = tell.lvlh(demoa.propp.ss4x4hpB01,
 democ = Munch()
 democ.kep = tell.kepler({"sma": 6600.0, "ecc": 0.0, "inc": 42.0,
                          "argper": 66.0, "raan": 217.4, "ma": 7.25}, newyear)
-democ.pvt = tell.pvt(democ.kep) # Convert Kepler elements to PVT
+democ.pvt = democ.kep.pvt() # Convert Kepler elements to PVT
 democ.gen = tell.prepare(democ.pvt, 10*u.day, forceenv=demoa.propp.fe4x4hpB01) # Ask for 10 days, but it only lasts about 6
 democ.tspan = tell.timerange(democ.gen) # <Quantity 518050.233819 s> ; time until altitude threshold is hit
 democ.tspan_dhms = tell.tc(democ.tspan) # '5d 23hr 54min 10.233s'

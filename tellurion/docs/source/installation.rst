@@ -210,8 +210,8 @@ Tellurion now initializes Java/Orekit lazily:
 
 * ``import tellurion`` does **not** initialize the JVM
 * the JVM starts automatically on first use of Orekit-backed functionality
-  (including Orekit-backed instance conversion methods on an existing Cartesian
-  state, e.g. ``some_pvt.kepler()``)
+  (including Orekit-backed instance conversion methods on an existing Tellurion
+  object, e.g. ``some_pvt.kepler()`` or ``some_est.pvt()``)
 * you can also initialize explicitly:
 
 .. code-block:: python

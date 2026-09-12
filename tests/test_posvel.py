@@ -3,16 +3,18 @@ Comprehensive test suite for posvel module.
 
 Tests position and velocity handling with AstroPy-style conventions.
 """
-import pytest
-import numpy as np
-import astropy.units as u
+import importlib
+from types import SimpleNamespace
+
 import astropy.time
+import astropy.units as u
+import numpy as np
+import pytest
 from astropy.timeseries import TimeSeries
-from numpy.testing import assert_allclose, assert_array_equal
+from numpy.testing import assert_allclose
 
 # Import the module to test
 from tellurion.core import posvel
-from tellurion.astro import units
 
 
 # Test data: satellite states (km, km/s, MJD)
@@ -318,6 +320,71 @@ class TestPositionVelocityT:
         pvt = posvel.pvtcart(state, None)
 
         assert pvt.pvt() is pvt
+
+    def test_kepler_method_delegates_to_ork_converter(self, monkeypatch):
+        """Test kepler() stays as the core wrapper and delegates lazily."""
+        pvt = posvel.pvtcart(SATELLITE_STATES[0], None)
+        sentinel = object()
+        calls = []
+
+        def fake_import(name):
+            calls.append(("import", name))
+            return SimpleNamespace(
+                _kepler=lambda arg, **kwargs: calls.append(("kepler", arg, kwargs))
+                or sentinel
+            )
+
+        monkeypatch.setattr(importlib, "import_module", fake_import)
+
+        assert pvt.kepler(mean_time_element=False) is sentinel
+        assert calls == [
+            ("import", "tellurion.ork.element"),
+            ("kepler", pvt, {"mean_time_element": False}),
+        ]
+
+    def test_equinoctial_method_delegates_to_ork_converter(self, monkeypatch):
+        """Test equinoctial() stays as the core wrapper and delegates lazily."""
+        pvt = posvel.pvtcart(SATELLITE_STATES[0], None)
+        sentinel = object()
+        calls = []
+
+        def fake_import(name):
+            calls.append(("import", name))
+            return SimpleNamespace(
+                _equinoctial=lambda arg, **kwargs: calls.append(
+                    ("equinoctial", arg, kwargs)
+                )
+                or sentinel
+            )
+
+        monkeypatch.setattr(importlib, "import_module", fake_import)
+
+        assert pvt.equinoctial(mean_time_element=False) is sentinel
+        assert calls == [
+            ("import", "tellurion.ork.element"),
+            ("equinoctial", pvt, {"mean_time_element": False}),
+        ]
+
+    def test_circular_method_delegates_to_ork_converter(self, monkeypatch):
+        """Test circular() stays as the core wrapper and delegates lazily."""
+        pvt = posvel.pvtcart(SATELLITE_STATES[0], None)
+        sentinel = object()
+        calls = []
+
+        def fake_import(name):
+            calls.append(("import", name))
+            return SimpleNamespace(
+                _circular=lambda arg, **kwargs: calls.append(("circular", arg, kwargs))
+                or sentinel
+            )
+
+        monkeypatch.setattr(importlib, "import_module", fake_import)
+
+        assert pvt.circular(mean_time_element=False) is sentinel
+        assert calls == [
+            ("import", "tellurion.ork.element"),
+            ("circular", pvt, {"mean_time_element": False}),
+        ]
 
 
 class TestPvtcartFunction:

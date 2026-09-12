@@ -3,17 +3,23 @@
 
 # Run with pytest -q test_element.py
 
-import numpy as np
 import astropy.units as u
-from astropy.time import Time
-import tellurion as tell
+import importlib
+from pathlib import Path
+from types import SimpleNamespace
+
+import numpy as np
 import pytest
+import tellurion as tell
+from astropy.time import Time
 from tellurion.core.element import (ElementSetT, iskepels,
                                     isequels, iscircels,
                                     equeltma_names, equeltta_names,
                                     circeltma_names, circeltta_names)
 
 # conftest.py is auto-discovered by pytest, so fixtures are available
+
+_OREKIT_DATA = Path(__file__).resolve().parents[1] / "orekit-data.zip"
 
 def _make_eq_from_pvt(pvtobj):
     """Equinoctial ElementSetT from a PVT via the monkey-patch."""
@@ -54,6 +60,56 @@ class TestElementSetT:
         est = leo1['kep']
         assert est[0] is est.elements
         assert est[1] is est.time
+
+    def test_pvt_method_delegates_to_ork_converter(self, monkeypatch):
+        est = tell.kepler(
+            {
+                "sma": 7000 * u.km,
+                "ecc": 0.01 * u.dimensionless_unscaled,
+                "inc": 30 * u.deg,
+                "argper": 40 * u.deg,
+                "raan": 50 * u.deg,
+                "ma": 60 * u.deg,
+            },
+            tell.abstime("2026-01-01 00:00:00"),
+        )
+        sentinel = object()
+        calls = []
+
+        def fake_import(name):
+            calls.append(("import", name))
+            return SimpleNamespace(pvt=lambda arg: calls.append(("pvt", arg)) or sentinel)
+
+        monkeypatch.setattr(
+            importlib,
+            "import_module",
+            fake_import,
+        )
+
+        assert est.pvt() is sentinel
+        assert calls == [("import", "tellurion.ork.element"), ("pvt", est)]
+
+    @pytest.mark.skipif(
+        not _OREKIT_DATA.exists(),
+        reason="Orekit data zip not available for integration conversion test.",
+    )
+    def test_pvt_method_integration(self, leo1):
+        est = leo1["kep"]
+        via_method = est.pvt()
+        via_fixture = leo1["pvt"]
+
+        assert isinstance(via_method, tell.PositionVelocityT)
+        assert via_method.time == via_fixture.time
+        np.testing.assert_allclose(
+            via_method.cartesian["position"].si.value,
+            via_fixture.cartesian["position"].si.value,
+            rtol=1e-10,
+        )
+        np.testing.assert_allclose(
+            via_method.cartesian["velocity"].si.value,
+            via_fixture.cartesian["velocity"].si.value,
+            rtol=1e-10,
+        )
 
     def test_iskepels_true_with_epoch(self, leo1):
         est = leo1['kep']
@@ -311,7 +367,7 @@ class TestEquinoctialRoundTrip:
     def test_pvt_to_equinoctial_to_pvt(self, leo1):
         """PVT → equinoctial ElementSetT → PVT should recover original."""
         eq_est = _make_eq_from_pvt(leo1['pvt'])
-        recovered = tell.pvt(eq_est)
+        recovered = eq_est.pvt()
         np.testing.assert_allclose(self._pvt_array(recovered),
                                    self._pvt_array(leo1['pvt']),
                                    rtol=1e-9)
@@ -457,7 +513,7 @@ class TestCircularRoundTrip:
 
     def test_pvt_to_circular_to_pvt(self, leo1):
         circ_est  = _make_circ_from_pvt(leo1['pvt'])
-        recovered = tell.pvt(circ_est)
+        recovered = circ_est.pvt()
         np.testing.assert_allclose(self._pvt_array(recovered),
                                    self._pvt_array(leo1['pvt']),
                                    rtol=1e-9)

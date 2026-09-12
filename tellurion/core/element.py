@@ -1,5 +1,7 @@
 """Orbital elements user interface."""
 
+import importlib
+
 import astropy.units as u
 import numpy as np
 from astropy.time import Time
@@ -84,6 +86,29 @@ class ElementSetT:
 
     def __getitem__(self, idx):
         return (self.elements, self.time)[idx]
+
+    def pvt(self):
+        """
+        Convert this element set to a Cartesian state.
+
+        Returns
+        -------
+        tellurion.core.posvel.PositionVelocityT
+            Cartesian state at the same epoch as this element set.
+
+        Notes
+        -----
+        This is the instance-method form of :func:`tellurion.pvt` for callers
+        who already have an :class:`ElementSetT`.
+        Unlike :class:`~tellurion.core.posvel.PositionVelocityT` conversion
+        methods, this method does not accept ``mean_time_element`` because the
+        element set already encodes whether it uses mean or true angular
+        elements.
+        This is an Orekit-backed conversion. Calling it may trigger lazy
+        initialization of the JVM and Orekit data on first use.
+        """
+        ork_element = importlib.import_module("tellurion.ork.element")
+        return ork_element.pvt(self)
 
 # kep1 = kepler({"ecc":0.1, "sma":8000.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25})
 # kep2 = kepler({"zper":250.0, "zapo":350.0, "inc":22.0, "argper":66.0, "raan":68.0, "ma":7.25})
