@@ -1,5 +1,7 @@
 """Orbital elements user interface."""
 
+import importlib
+
 import astropy.units as u
 import numpy as np
 from astropy.time import Time
@@ -105,9 +107,7 @@ class ElementSetT:
         This is an Orekit-backed conversion. Calling it may trigger lazy
         initialization of the JVM and Orekit data on first use.
         """
-        from importlib import import_module
-
-        ork_element = import_module("tellurion.ork.element")
+        ork_element = importlib.import_module("tellurion.ork.element")
         return ork_element.pvt(self)
 
 # kep1 = kepler({"ecc":0.1, "sma":8000.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25})
