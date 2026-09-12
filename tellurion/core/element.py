@@ -96,6 +96,8 @@ class ElementSetT:
 
         Notes
         -----
+        This is the instance-method form of :func:`tellurion.pvt` for callers
+        who already have an :class:`ElementSetT`.
         This is an Orekit-backed conversion. Calling it may trigger lazy
         initialization of the JVM and Orekit data on first use.
         """
