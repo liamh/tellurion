@@ -98,6 +98,10 @@ class ElementSetT:
         -----
         This is the instance-method form of :func:`tellurion.pvt` for callers
         who already have an :class:`ElementSetT`.
+        Unlike :class:`~tellurion.core.posvel.PositionVelocityT` conversion
+        methods, this method does not accept ``mean_time_element`` because the
+        element set already encodes whether it uses mean or true angular
+        elements.
         This is an Orekit-backed conversion. Calling it may trigger lazy
         initialization of the JVM and Orekit data on first use.
         """
