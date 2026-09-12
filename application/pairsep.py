@@ -22,7 +22,7 @@ def pairsep(initkep, delay1, dv1, fe1, delay2, dv2, fe2, proptoalt):
     one full orbit. The two satellites maneuver with an in-track delta-v after a delay
     from perigee. Returns the separation between the objects.
     """
-    initpvt = tell.cartesian(initkep) # Convert Kepler elements to PVT
+    initpvt = initkep.pvt() # Convert Kepler elements to PVT
     period = tell.elementval(initkep, 'period')
     gen = tell.generate(initpvt, 1.5*period, forceenv=fe1)
 
