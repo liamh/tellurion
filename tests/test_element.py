@@ -3,11 +3,14 @@
 
 # Run with pytest -q test_element.py
 
-import numpy as np
 import astropy.units as u
-from astropy.time import Time
-import tellurion as tell
+import importlib
+from types import SimpleNamespace
+
+import numpy as np
 import pytest
+import tellurion as tell
+from astropy.time import Time
 from tellurion.core.element import (ElementSetT, iskepels,
                                     isequels, iscircels,
                                     equeltma_names, equeltta_names,
@@ -55,16 +58,33 @@ class TestElementSetT:
         assert est[0] is est.elements
         assert est[1] is est.time
 
-    def test_pvt_method_matches_tell_pvt(self, leo1):
-        est = leo1['kep']
-        via_method = est.pvt()
-        via_function = tell.pvt(est)
-        np.testing.assert_allclose(via_method.cartesian['position'].si.value,
-                                   via_function.cartesian['position'].si.value,
-                                   rtol=1e-10)
-        np.testing.assert_allclose(via_method.cartesian['velocity'].si.value,
-                                   via_function.cartesian['velocity'].si.value,
-                                   rtol=1e-10)
+    def test_pvt_method_delegates_to_ork_converter(self, monkeypatch):
+        est = tell.kepler(
+            {
+                "sma": 7000 * u.km,
+                "ecc": 0.01 * u.dimensionless_unscaled,
+                "inc": 30 * u.deg,
+                "argper": 40 * u.deg,
+                "raan": 50 * u.deg,
+                "ma": 60 * u.deg,
+            },
+            tell.abstime("2026-01-01 00:00:00"),
+        )
+        sentinel = object()
+        calls = []
+
+        def fake_import(name):
+            calls.append(("import", name))
+            return SimpleNamespace(pvt=lambda arg: calls.append(("pvt", arg)) or sentinel)
+
+        monkeypatch.setattr(
+            importlib,
+            "import_module",
+            fake_import,
+        )
+
+        assert est.pvt() is sentinel
+        assert calls == [("import", "tellurion.ork.element"), ("pvt", est)]
 
     def test_iskepels_true_with_epoch(self, leo1):
         est = leo1['kep']
