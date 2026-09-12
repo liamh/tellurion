@@ -86,7 +86,13 @@ class ElementSetT:
         return (self.elements, self.time)[idx]
 
     def pvt(self):
-        """Convert this element set to a Cartesian state.
+        """
+        Convert this element set to a Cartesian state.
+
+        Returns
+        -------
+        tellurion.core.posvel.PositionVelocityT
+            Cartesian state at the same epoch as this element set.
 
         Notes
         -----

@@ -362,8 +362,9 @@ generic adapters::
    :func:`~tellurion.equinoctial`, and :func:`~tellurion.circular`.
    Use the instance methods when you already have an
    :class:`~tellurion.ElementSetT` or :class:`~tellurion.PositionVelocityT`.
-   The instance methods accept an optional ``mean_time_element`` keyword
-   (default ``True``) to select between mean and true angle variants.
+   The :class:`~tellurion.PositionVelocityT` conversion methods accept an
+   optional ``mean_time_element`` keyword (default ``True``) to select between
+   mean and true angle variants.
 
 Reading Individual Element Values
 ----------------------------------
