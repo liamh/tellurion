@@ -359,7 +359,8 @@ generic adapters::
    :meth:`~tellurion.PositionVelocityT.equinoctial`, and
    :meth:`~tellurion.PositionVelocityT.circular` are distinct from the top-level
    constructor functions :func:`~tellurion.kepler`,
-   :func:`~tellurion.equinoctial`, and :func:`~tellurion.circular`.
+   :func:`~tellurion.equinoctial`, :func:`~tellurion.circular`, and
+   :func:`~tellurion.pvt`.
    Use the instance methods when you already have an
    :class:`~tellurion.ElementSetT` or :class:`~tellurion.PositionVelocityT`.
    The :class:`~tellurion.PositionVelocityT` conversion methods accept an

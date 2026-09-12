@@ -5,6 +5,7 @@
 
 import astropy.units as u
 import importlib
+from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
@@ -17,6 +18,8 @@ from tellurion.core.element import (ElementSetT, iskepels,
                                     circeltma_names, circeltta_names)
 
 # conftest.py is auto-discovered by pytest, so fixtures are available
+
+_OREKIT_DATA = Path(__file__).resolve().parents[1] / "orekit-data.zip"
 
 def _make_eq_from_pvt(pvtobj):
     """Equinoctial ElementSetT from a PVT via the monkey-patch."""
@@ -85,6 +88,28 @@ class TestElementSetT:
 
         assert est.pvt() is sentinel
         assert calls == [("import", "tellurion.ork.element"), ("pvt", est)]
+
+    @pytest.mark.skipif(
+        not _OREKIT_DATA.exists(),
+        reason="Orekit data zip not available for integration conversion test.",
+    )
+    def test_pvt_method_integration(self, leo1):
+        est = leo1["kep"]
+        via_method = est.pvt()
+        via_fixture = leo1["pvt"]
+
+        assert isinstance(via_method, tell.PositionVelocityT)
+        assert via_method.time == via_fixture.time
+        np.testing.assert_allclose(
+            via_method.cartesian["position"].si.value,
+            via_fixture.cartesian["position"].si.value,
+            rtol=1e-10,
+        )
+        np.testing.assert_allclose(
+            via_method.cartesian["velocity"].si.value,
+            via_fixture.cartesian["velocity"].si.value,
+            rtol=1e-10,
+        )
 
     def test_iskepels_true_with_epoch(self, leo1):
         est = leo1['kep']
