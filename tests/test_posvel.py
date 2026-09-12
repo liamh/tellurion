@@ -4,18 +4,17 @@ Comprehensive test suite for posvel module.
 Tests position and velocity handling with AstroPy-style conventions.
 """
 import importlib
-
-import pytest
-import numpy as np
-import astropy.units as u
-import astropy.time
-from astropy.timeseries import TimeSeries
-from numpy.testing import assert_allclose, assert_array_equal
 from types import SimpleNamespace
+
+import astropy.time
+import astropy.units as u
+import numpy as np
+import pytest
+from astropy.timeseries import TimeSeries
+from numpy.testing import assert_allclose
 
 # Import the module to test
 from tellurion.core import posvel
-from tellurion.astro import units
 
 
 # Test data: satellite states (km, km/s, MJD)
