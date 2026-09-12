@@ -85,6 +85,13 @@ class ElementSetT:
     def __getitem__(self, idx):
         return (self.elements, self.time)[idx]
 
+    def pvt(self):
+        """Convert this element set to a Cartesian state."""
+        from importlib import import_module
+
+        ork_element = import_module("tellurion.ork.element")
+        return ork_element.pvt(self)
+
 # kep1 = kepler({"ecc":0.1, "sma":8000.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25})
 # kep2 = kepler({"zper":250.0, "zapo":350.0, "inc":22.0, "argper":66.0, "raan":68.0, "ma":7.25})
 def kepler(oes, dttm=None, unitlookup=tunits.prefunits):

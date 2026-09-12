@@ -55,6 +55,17 @@ class TestElementSetT:
         assert est[0] is est.elements
         assert est[1] is est.time
 
+    def test_pvt_method_matches_tell_pvt(self, leo1):
+        est = leo1['kep']
+        via_method = est.pvt()
+        via_function = tell.pvt(est)
+        np.testing.assert_allclose(via_method.cartesian['position'].si.value,
+                                   via_function.cartesian['position'].si.value,
+                                   rtol=1e-10)
+        np.testing.assert_allclose(via_method.cartesian['velocity'].si.value,
+                                   via_function.cartesian['velocity'].si.value,
+                                   rtol=1e-10)
+
     def test_iskepels_true_with_epoch(self, leo1):
         est = leo1['kep']
         assert iskepels(est, est=True)
@@ -311,7 +322,7 @@ class TestEquinoctialRoundTrip:
     def test_pvt_to_equinoctial_to_pvt(self, leo1):
         """PVT → equinoctial ElementSetT → PVT should recover original."""
         eq_est = _make_eq_from_pvt(leo1['pvt'])
-        recovered = tell.pvt(eq_est)
+        recovered = eq_est.pvt()
         np.testing.assert_allclose(self._pvt_array(recovered),
                                    self._pvt_array(leo1['pvt']),
                                    rtol=1e-9)
@@ -457,7 +468,7 @@ class TestCircularRoundTrip:
 
     def test_pvt_to_circular_to_pvt(self, leo1):
         circ_est  = _make_circ_from_pvt(leo1['pvt'])
-        recovered = tell.pvt(circ_est)
+        recovered = circ_est.pvt()
         np.testing.assert_allclose(self._pvt_array(recovered),
                                    self._pvt_array(leo1['pvt']),
                                    rtol=1e-9)
