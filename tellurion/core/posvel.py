@@ -480,13 +480,16 @@ class PositionBase(abc.ABC):
         return self.copy().concatenate(other).timeorder()
 
     def to_array(self, time_format=atime.prefnumabstime):
-        """
-        Convert to a numpy array using SI units.
+        """Convert to a NumPy array using SI units. The resulting
+        array can be read back in with `pvtcart()`.
 
         Parameters
         ----------
         time_format : str, optional
-            Format for time column (default: 'mjd')
+            Format for time column (default: 'mjd'). If array will
+            be saved in printed form, set to full precision for
+            accurate times: `np.set_printoptions(precision=17,
+            suppress=True)`.
 
         Returns
         -------
@@ -502,12 +505,15 @@ class PositionBase(abc.ABC):
 
         Examples
         --------
-        >>> pvt = pvtcart(state, time)
+        >>> pvt = tell.pvtcart(state, time)
         >>> arr = pvt.to_array()
         >>> arr.shape
         (1, 7)
         >>> arr[0, :3]  # position in meters
         array([5740132683.5, 3314067150. ,          0. ])
+
+        >>> np.save('arr.npy', arr) # Save to a file
+        >>> pvt_reload = tell.pvtcart(np.load('arr.npy', arr), None) # Reload in new Python
         """
         pos = self.position_vector
         has_velocity = self.has_velocity
