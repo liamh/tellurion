@@ -82,39 +82,40 @@ def make_quantity(
     --------
     Create a simple quantity:
 
-    >>> make_quantity(5.0, 'meter')
+    >>> import tellurion as tell
+    >>> tell.make_quantity(5.0, 'meter')
     <Quantity 5. m>
 
     Create a quantity using physical type lookup:
 
     >>> unit_lookup = {'length': 'm', 'time': 's'}
-    >>> make_quantity(10.0, 'length', unit_lookup=unit_lookup)
+    >>> tell.make_quantity(10.0, 'length', unit_lookup=unit_lookup)
     <Quantity 10. m>
 
     Create a structured quantity from a dict:
 
     >>> values = {'x': 1.0, 'y': 2.0}
     >>> units = {'x': 'm', 'y': 'm'}
-    >>> make_quantity(values, units)
+    >>> tell.make_quantity(values, units)
     <Quantity (1., 2.) m>
 
     Create a structured quantity with different units:
 
     >>> values = {'position': 10.0, 'velocity': 5.0}
     >>> units = {'position': 'm', 'velocity': 'm/s'}
-    >>> make_quantity(values, units)
+    >>> tell.make_quantity(values, units)
     <Quantity (10., 5.) (m, m / s)>
 
     Wrap an array as a single vector element:
 
     >>> values = {'position': [1, 2, 3]}
-    >>> make_quantity(values, 'm', is_scalar=True)
+    >>> tell.make_quantity(values, 'm', is_scalar=True)
     <Quantity ([1, 2, 3],) m>
 
     Wrap an existing Quantity into a structured format:
 
     >>> existing_q = 5.0 * u.m
-    >>> make_quantity({'distance': existing_q.value}, existing_q.unit)
+    >>> tell.make_quantity({'distance': existing_q.value}, existing_q.unit)
     <Quantity (5.,) m>
 
     Notes
@@ -232,17 +233,18 @@ def change_units(
     --------
     Convert a simple quantity:
 
+    >>> import tellurion as tell
     >>> q = 1000.0 * u.meter
     >>> unit_lookup = {'length': 'km'}
-    >>> change_units(q, unit_lookup)
+    >>> tell.change_units(q, unit_lookup)
     <Quantity 1. km>
 
     Convert a structured quantity:
 
     >>> # Create structured quantity with cm and hours
-    >>> q = make_quantity({'height': 100, 'duration': 2}, {'height': 'cm', 'duration': 'hour'})
+    >>> q = tell.make_quantity({'height': 100, 'duration': 2}, {'height': 'cm', 'duration': 'hour'})
     >>> unit_lookup = {'length': 'm', 'time': 's'}
-    >>> change_units(q, unit_lookup)
+    >>> tell.change_units(q, unit_lookup)
     <Quantity (1., 7200.) (m, s)>
 
     Notes
@@ -402,23 +404,24 @@ def hstack(quantities: Sequence[u.Quantity]) -> u.Quantity:
     --------
     Stack two scalar structured quantities:
 
-    >>> q1 = make_quantity({'x': 5}, 'm')
-    >>> q2 = make_quantity({'y': 10}, 'm')
-    >>> hstack([q1, q2])
+    >>> import tellurion as tell
+    >>> q1 = tell.make_quantity({'x': 5}, 'm')
+    >>> q2 = tell.make_quantity({'y': 10}, 'm')
+    >>> tell.hstack([q1, q2])
     <Quantity (5., 10.) m>
 
     Stack two array structured quantities:
 
-    >>> q1 = make_quantity({'x': [1, 2, 3]}, 'm')
-    >>> q2 = make_quantity({'y': [4, 5, 6]}, 'm')
-    >>> hstack([q1, q2])
+    >>> q1 = tell.make_quantity({'x': [1, 2, 3]}, 'm')
+    >>> q2 = tell.make_quantity({'y': [4, 5, 6]}, 'm')
+    >>> tell.hstack([q1, q2])
     <Quantity [(1., 4.), (2., 5.), (3., 6.)] m>
 
     Stack quantities with different units:
 
-    >>> q1 = make_quantity({'position': [1, 2]}, 'm')
-    >>> q2 = make_quantity({'velocity': [3, 4]}, 'm/s')
-    >>> hstack([q1, q2])
+    >>> q1 = tell.make_quantity({'position': [1, 2]}, 'm')
+    >>> q2 = tell.make_quantity({'velocity': [3, 4]}, 'm/s')
+    >>> tell.hstack([q1, q2])
     <Quantity [(1., 3.), (2., 4.)] (m, m / s)>
 
     See Also
@@ -494,23 +497,24 @@ def vstack(quantities: Sequence[u.Quantity]) -> u.Quantity:
     --------
     Stack two structured quantities with the same structure:
 
-    >>> q1 = make_quantity({'x': [1, 2]}, 'm')
-    >>> q2 = make_quantity({'x': [3, 4]}, 'm')
-    >>> vstack([q1, q2])
+    >>> import tellurion as tell
+    >>> q1 = tell.make_quantity({'x': [1, 2]}, 'm')
+    >>> q2 = tell.make_quantity({'x': [3, 4]}, 'm')
+    >>> tell.vstack([q1, q2])
     <Quantity [(1.,), (2.,), (3.,), (4.,)] m>
 
     Stack scalar quantities:
 
-    >>> q1 = make_quantity({'x': 5}, 'm')
-    >>> q2 = make_quantity({'x': 10}, 'm')
-    >>> vstack([q1, q2])
+    >>> q1 = tell.make_quantity({'x': 5}, 'm')
+    >>> q2 = tell.make_quantity({'x': 10}, 'm')
+    >>> tell.vstack([q1, q2])
     <Quantity [(5.,), (10.,)] m>
 
     Stack multi-field structured quantities:
 
-    >>> q1 = make_quantity({'x': [1, 2], 'y': [3, 4]}, 'm')
-    >>> q2 = make_quantity({'x': [5, 6], 'y': [7, 8]}, 'm')
-    >>> vstack([q1, q2])
+    >>> q1 = tell.make_quantity({'x': [1, 2], 'y': [3, 4]}, 'm')
+    >>> q2 = tell.make_quantity({'x': [5, 6], 'y': [7, 8]}, 'm')
+    >>> tell.vstack([q1, q2])
     <Quantity [(1., 3.), (2., 4.), (5., 7.), (6., 8.)] (m, m)>
 
     See Also
@@ -577,14 +581,15 @@ def quantity_to_dict(quantity: u.Quantity) -> Dict[str, Any]:
     --------
     Convert a structured quantity:
 
-    >>> q = make_quantity({'x': 5, 'y': 10}, 'm')
-    >>> quantity_to_dict(q)
+    >>> import tellurion as tell
+    >>> q = tell.make_quantity({'x': 5, 'y': 10}, 'm')
+    >>> tell.quantity_to_dict(q)
     {'x': <Quantity 5. m>, 'y': <Quantity 10. m>}
 
     Convert a regular quantity:
 
     >>> q = 5 * u.m
-    >>> quantity_to_dict(q)
+    >>> tell.quantity_to_dict(q)
     {'': 5.0}
 
     """
@@ -618,14 +623,15 @@ def quantity_to_array(quantity: u.Quantity) -> np.ndarray:
     --------
     Convert a regular quantity:
 
+    >>> import tellurion as tell
     >>> q = [1, 2, 3] * u.m
-    >>> quantity_to_array(q)
+    >>> tell.quantity_to_array(q)
     array([1., 2., 3.])
 
     Convert a structured quantity:
 
-    >>> q = make_quantity({'x': [1, 2], 'y': [3, 4]}, 'm')
-    >>> quantity_to_array(q)
+    >>> q = tell.make_quantity({'x': [1, 2], 'y': [3, 4]}, 'm')
+    >>> tell.quantity_to_array(q)
     array([[1., 3.],
            [2., 4.]])
 
