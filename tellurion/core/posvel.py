@@ -1096,7 +1096,8 @@ class PositionVelocityT(PositionBase):
 
         Examples
         --------
-        >>> pvt1 = pvtcart(state, time)
+        >>> import tellurion as tell
+        >>> pvt1 = tell.pvtcart(state, time)
         >>> pvt2 = pvt1.copy()
         >>> pvt2.aux['label'] = 'modified'  # doesn't affect pvt1
         """
@@ -1220,10 +1221,11 @@ def pvtcart(pv, time, specunits=units.prefunits):
     --------
     Single state with explicit time:
 
+    >>> import tellurion as tell
     >>> state = np.array([5740132.6835, 3314067.15, 0.0,
     ...                   -2750.8268, 4764.5718, 5501.6537])
-    >>> time = astropy.time.Time(60676.0, format='mjd')
-    >>> pvt = pvtcart(state, time)
+    >>> time = tell.abstime('2025-01-01T00:00:00')
+    >>> pvt = tell.pvtcart(state, time)
 
     Multiple states with time in array:
 
@@ -1232,12 +1234,12 @@ def pvtcart(pv, time, specunits=units.prefunits):
     ...     [4581815.8086, 4512263.1753, 1616826.6336, -4891.449, 3141.5916, 5166.4227,
              60676.0035]
     ... ])
-    >>> pvt = pvtcart(states, None)
+    >>> pvt = tell.pvtcart(states, None)
 
     Position only:
 
     >>> pos = np.array([5740132.6835, 3314067.15, 0.0])
-    >>> pt = pvtcart(pos, time)
+    >>> pt = tell.pvtcart(pos, time)
     >>> pt.has_velocity
     False
 
@@ -1245,7 +1247,7 @@ def pvtcart(pv, time, specunits=units.prefunits):
 
     >>> prop = tell.propagate(demoa.propa.gen, prop5m1h, include_init=True,
                output='pvt')
-    >>> new = pvtcart(prop.to_array(), None, tell.siunits)
+    >>> new = tell.pvtcart(prop.to_array(), None, tell.siunits)
 
     See Also
     --------
