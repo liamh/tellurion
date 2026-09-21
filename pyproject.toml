@@ -13,7 +13,7 @@ license = {text = "MIT"}
 
 # Core package dependencies
 dependencies = [
-    "astropy>=7.0",
+    "astropy>=8.0",
     "numpy>=1.20",
     "jdk4py",
     "orekit-jpype",

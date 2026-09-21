@@ -4,6 +4,11 @@ from importlib import import_module as _import_module, util as _importlib_util
 from importlib.metadata import PackageNotFoundError, version as _version
 
 import numpy as np
+from astropy.table import conf as table_conf
+
+# Configure printing
+table_conf.format_size_threshold = 3
+np.set_printoptions(suppress=True, precision=4, linewidth=np.inf)
 
 import tellurion.core as _core
 from tellurion.astro import (
@@ -73,8 +78,6 @@ from tellurion.core import (
     timeelements,
     userid,
 )
-
-np.set_printoptions(suppress=True, precision=4, linewidth=np.inf)
 
 try:
     __version__ = _version("tellurion")

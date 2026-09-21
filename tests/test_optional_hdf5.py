@@ -1,14 +1,16 @@
 import sys
 import unittest.mock as mock
-
+import pytest
 
 def test_hdf5_modules_load_when_available():
-    """The hdf5 try/except block succeeds when astropy_hdf5io is installed."""
-    import astropy_hdf5io  # if this import works, the optional block should too
-    import tellurion.core.posvel_hdf5
-    import tellurion.core.element_hdf5
-    import tellurion.core.spacetrack_hdf5
-
+    """HDF5 modules import when the optional dependency is installed."""
+    pytest.importorskip(
+        "astropy_hdf5io",
+        reason="astropy_hdf5io is an optional HDF5 dependency",
+    )
+    import tellurion.core.posvel_hdf5  # noqa: F401
+    import tellurion.core.element_hdf5  # noqa: F401
+    import tellurion.core.spacetrack_hdf5  # noqa: F401
 
 def test_hdf5_modules_skipped_when_unavailable():
     """The hdf5 try/except block is silently skipped when astropy_hdf5io is missing."""
