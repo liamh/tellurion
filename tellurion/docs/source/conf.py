@@ -1,14 +1,17 @@
 # Configuration file for the Sphinx documentation builder.
 # pip install sphinx sphinx-rtd-theme sphinx-astropy sphinx-automodapi \
 #             sphinx-changelog sphinx-design sphinxcontrib-globalsubs \
-#             nbsphinx nbsphinx-link matplotlib ipython pydata-sphinx-theme
+#             myst-nb jupytext matplotlib ipython pydata-sphinx-theme
 
 import os
 import sys
 from sphinx_astropy.conf.v2 import *
 
-# Add your package to the path so Sphinx can import it
-sys.path.insert(0, os.path.abspath('../..'))
+# Compute project root relative to this conf.py file (docs/source/ -> project_root)
+project_root = os.path.abspath("../..")
+
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 # -- Project information -----------------------------------------------------
 project = 'Tellurion'
@@ -30,7 +33,7 @@ extensions = [
     'sphinx_changelog',
     'sphinx_design',
     'sphinxcontrib.globalsubs',
-    'nbsphinx',
+    'myst_nb',                   # Replaced nbsphinx
     'matplotlib.sphinxext.plot_directive',
     'IPython.sphinxext.ipython_console_highlighting',  # For better syntax highlighting
 ]
@@ -59,8 +62,7 @@ plot_formats = ['png', 'svg', 'pdf']
 
 numpydoc_xref_param_type = True
 numpydoc_xref_aliases = {
-    'Quantity': ': class:`~astropy.units.Quantity`',
-    # ... add your project-specific aliases
+    'Quantity': ':class:`~astropy.units.Quantity`',
 }
 
 intersphinx_mapping = {
@@ -71,11 +73,25 @@ intersphinx_mapping = {
     'astropy': ('https://docs.astropy.org/en/stable/', None),
 }
 
-# Don't execute notebooks during build (use pre-executed outputs)
-nbsphinx_execute = 'never'
+# -- myst-nb & Jupytext Configuration ----------------------------------------
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.ipynb': 'myst-nb',
+    '.md': 'myst-nb',
+    '.py': 'myst-nb',
+}
 
-# Timeout for notebook execution (if you do execute)
-nbsphinx_timeout = 180
+jupytext_custom_formats = {
+    ".py": "jupytext.reads(RST_TEXT, format_name='percent')",
+}
+
+# Ensure MyST-NB recognizes jupytext percent files
+nb_custom_formats = {
+    ".py": ["jupytext.reads", {"fmt": "py:percent"}]
+}
+
+nb_execution_mode = 'auto'
+nb_execution_timeout = 180
 
 # Napoleon settings for numpy-style docstrings
 napoleon_google_docstring = False
@@ -83,23 +99,16 @@ napoleon_numpy_docstring = True
 napoleon_use_param = False
 napoleon_use_ivar = True
 
-# Intersphinx mapping to link to external docs
-intersphinx_mapping = {
-    'python': ('https://docs.python.org/3/', None),
-    'numpy': ('https://numpy.org/doc/stable/', None),
-    'astropy': ('https://docs.astropy.org/en/stable/', None),
-    'matplotlib': ('https://matplotlib.org/stable/', None),
-}
-
 # Automodapi settings
 numpydoc_show_class_members = False
 
 templates_path = ['_templates']
-exclude_patterns = []
+exclude_patterns = [
+    "tutorials/cartprop2.py",
+]
 
 # -- Options for HTML output -------------------------------------------------
-html_theme = 'pydata_sphinx_theme' # or 'sphinx_rtd_theme', 'alabaster', 'sphinx_book_theme'
-# html_theme = 'sphinx_rtd_theme'  # Use Read the Docs theme
+html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
 html_theme_options = dict(globals().get('html_theme_options', {}))
 html_theme_options['secondary_sidebar_items'] = []
@@ -114,15 +123,12 @@ autodoc_default_options = {
     'show-inheritance': True,
 }
 
-# This helps with monkey-patched methods
 autodoc_mock_imports = []
 
 # Configure automodapi
 automodapi_toctreedirnm = 'api'
-automodsumm_writereprocessed = False  # Don't write separate reprocessed files
-automodapi_writereprocessed = False   # Don't write separate API files
-numpydoc_show_class_members = False
-autosummary_generate = False  # Don't auto-generate, let automodapi handle it
+automodsumm_writereprocessed = False
+automodapi_writereprocessed = False
+autosummary_generate = False
 
-# Not nitpicky about references
 nitpicky = False

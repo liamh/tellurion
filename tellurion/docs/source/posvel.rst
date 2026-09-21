@@ -248,9 +248,10 @@ Classes
 
 .. autoclass:: tellurion.PositionVelocityT
    :members:
+   :exclude-members: kepler, equinoctial, circular
 
 .. autoclass:: tellurion.PVT
-   :members:
+   :members:      
 
 Constructors
 ------------
