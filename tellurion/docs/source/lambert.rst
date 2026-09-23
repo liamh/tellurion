@@ -1,7 +1,7 @@
 .. _lambert:
 
 ************************************
-Lambert Transfers (`tell.lambert`)
+Lambert solver
 ************************************
 
 Introduction

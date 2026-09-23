@@ -1,7 +1,7 @@
 .. _element:
 
 *******************************************************
-Orbital Elements (`tell.*`)
+Elements
 *******************************************************
 
 Introduction
@@ -55,9 +55,10 @@ returns the structured :class:`~astropy.units.Quantity` alone::
 Defining Orbits by Altitude
 ----------------------------
 
-The :func:`~tellurion.allplane` utility converts between the pairs
-``(sma, ecc)``, ``(radper, radapo)``, and ``(altper, altapo)`` so that you can
-define an orbit in whatever form is most natural::
+The :func:`~tellurion.allplane` utility creates the other two pairs
+from one pair of the following: ``(sma, ecc)``, ``(radper, radapo)``,
+and ``(altper, altapo)``, so that you can define an orbit in whatever
+form is most natural::
 
     # GEO transfer orbit defined by perigee and apogee altitudes
     gto = tell.kepler(

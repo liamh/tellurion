@@ -7,8 +7,8 @@ Requirements
 **Required:**
 
 * Orekit (orekit-jpype)
-* Python 3.8 or later
-* AstroPy 7.0 or later
+* Python 3.10 or later
+* AstroPy 8.0 or later
 * NumPy 1.20 or later
 
 **Optional:**

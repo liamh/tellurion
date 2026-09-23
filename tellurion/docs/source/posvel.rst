@@ -1,7 +1,7 @@
 .. _posvel:
 
 *******************************************************
-Position, Velocity, and Time (`tell.*`)
+Position, Velocity, and Time
 *******************************************************
 
 Introduction
@@ -10,10 +10,9 @@ Introduction
 Tellurion (typically imported as ``import tellurion as tell``) provides classes for representing satellite
 orbital states with position, velocity, and time information. It supports:
 
-* Lazy conversion between Cartesian and spherical coordinate systems
-* Integration with AstroPy's time and coordinate systems
+* Conversion on demand between Cartesian and spherical coordinate systems
 * Efficient handling of single epochs or time series (ephemerides)
-* Auxiliary metadata storage for labels, flags, and other attributes
+* Storage of discrete states and events
 
 Getting Started
 ===============
@@ -257,6 +256,11 @@ Constructors
 ------------
 
 .. autofunction:: tellurion.pvtcart
+
+Helpers
+-------
+
+.. autofunction:: tellurion.abstime
 
 Orekit Conversion Methods on ``PositionVelocityT``
 --------------------------------------------------

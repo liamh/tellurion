@@ -1,6 +1,6 @@
 .. Tellurion documentation master file
 
-Welcome to Tellurion's Documentation
+Welcome to Tellurion's documentation
 ====================================
 
 Tellurion is a Python package for satellite orbit propagation and analysis,
@@ -10,15 +10,15 @@ built on AstroPy.
    :maxdepth: 2
    :caption: User Guide
 
-   installation
-   structured_quantities
-   astropy_extensions
    posvel
    element
    prop
    lambert
-   hdf5_serialization
    examples
+   installation
+   structured_quantities
+   astropy_extensions
+   hdf5_serialization
 
 .. toctree::
    :maxdepth: 1
@@ -28,7 +28,7 @@ built on AstroPy.
 
 See the :doc:`installation` page to get started.
 
-Quick Example
+Quick example
 -------------
 
 .. code-block:: python

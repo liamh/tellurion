@@ -15,7 +15,7 @@ if project_root not in sys.path:
 
 # -- Project information -----------------------------------------------------
 project = 'Tellurion'
-copyright = '2025, Liam M. Healy'
+copyright = '2026, Liam M. Healy'
 author = 'Liam Healy'
 release = '0.1.0'
 

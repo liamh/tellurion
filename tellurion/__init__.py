@@ -2,6 +2,8 @@
 
 from importlib import import_module as _import_module, util as _importlib_util
 from importlib.metadata import PackageNotFoundError, version as _version
+import inspect
+from functools import wraps
 
 import numpy as np
 from astropy.table import conf as table_conf
@@ -133,6 +135,7 @@ def _ork_attr(name):
             _raise_orekit_runtime_error(exc)
         raise
     if callable(value):
+        @wraps(value)
         def _wrapped(*args, **kwargs):
             try:
                 return value(*args, **kwargs)
@@ -194,7 +197,6 @@ def pvt(*args, **kwargs):
 
 
 def allplane(*args, **kwargs):
-    """Convert between equivalent orbital element input pairs."""
     return _ork_attr("allplane")(*args, **kwargs)
 
 
@@ -313,3 +315,48 @@ __all__ = [
 for _opt_name in ("element_hdf5", "posvel_hdf5", "spacetrack_hdf5"):
     if hasattr(_core, _opt_name):
         __all__.append(_opt_name)
+
+# Mapping of parameter names to their clean signature representations for Sphinx/help()
+_CLEAN_PARAM_REPRS = {
+    "forceenv": "force.deffe",
+    "unitlookup": "units.prefunits",
+}
+
+# Synchronize docstrings, signatures, and clean defaults from
+# tellurion.ork onto top-level wrappers
+try:
+    import tellurion.ork as _ork_module
+
+    for _name in __all__:
+        _wrapper = globals().get(_name)
+        if callable(_wrapper) and hasattr(_ork_module, _name):
+            _impl = getattr(_ork_module, _name)
+
+            # 1. Sync Docstrings
+            if hasattr(_impl, "__doc__") and _impl.__doc__:
+                _wrapper.__doc__ = _impl.__doc__
+
+            # 2. Sync Signatures & Format Defaults
+            try:
+                sig = inspect.signature(_impl)
+                new_params = []
+                for param_name, param in sig.parameters.items():
+                    if param_name in _CLEAN_PARAM_REPRS:
+                        display_str = _CLEAN_PARAM_REPRS[param_name]
+
+                        class _DefaultDisplay:
+                            def __init__(self, repr_str):
+                                self._repr_str = repr_str
+
+                            def __repr__(self):
+                                return self._repr_str
+
+                        param = param.replace(default=_DefaultDisplay(display_str))
+                    new_params.append(param)
+
+                _wrapper.__signature__ = sig.replace(parameters=new_params)
+            except (ValueError, TypeError):
+                pass
+except Exception:
+    # Gracefully handle missing Orekit/Java dependencies during bare import
+    pass

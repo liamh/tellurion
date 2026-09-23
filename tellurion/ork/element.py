@@ -471,41 +471,70 @@ def pvt(object, dttm=None):
 
 
 def allplane(oesdict, forceenv=force.deffe, unitlookup=units.prefunits):
-    """Generate all plane pairs (sma, ecc), (radper, radapo), (altper,
-    altapo) from the first or last pairs; additionally, the mean
+    """Generate all plane pairs (``sma``, ``ecc``), (``radper``, ``radapo``), (``altper``,
+    ``altapo``) from the first or last pairs; additionally, the mean
     motion can be substituted for semimajor axis in the first pair.
 
-    Example 1, convert from altitudes of perigee and apogee to
-    semimajor axis and eccentricity
-    byalts = tell.kepler({"altper":160*u.km, "altapo":20250*u.km, \
-                          "inc":28.5*u.deg, "argper": 0.0*u.deg, "raan": 0.0*u.deg, \
-                          "ma": 0.0*u.deg}, \
-                          tell.abstime('2022-02-15T08:30:00'))
-    smaecc = tork.allplane(byalts)
-    smaecc[0]['sma'] # <Quantity 16583.13646 km>
-    smaecc[0]['ecc'] # <Quantity 0.60573583>
-    tell.iskepels(byalts) # False
-    tell.iskepels(smaecc) # True
+    Example 1: convert from altitudes of perigee and apogee to
+    semimajor axis and eccentricity::
 
-    Example 2, convert from semimajor axis and eccentricity to
-    altitudes of perigee and apogee
-    bysmaecc = {"sma":8000, "ecc":0.1, "inc":45, "argper": 120.0, "raan": 80.0,
-               "ma": 0.0}
-    alts = tork.allplane(bysmaecc)
-    alts[0]['altper'] # <Quantity 821.86354 km>
-    alts[0]['altapo'] # <Quantity 2421.86354 km>
+       byalts = tell.kepler(
+         {
+           "altper":160*u.km,
+           "altapo":20250*u.km,
+           "inc":28.5*u.deg,
+           "argper": 0.0*u.deg,
+           "raan": 0.0*u.deg,
+           "ma": 0.0*u.deg
+         },
+         tell.abstime('2022-02-15T08:30:00')
+       )
+       smaecc = tork.allplane(byalts)
+       smaecc[0]['sma'] # <Quantity 16583.13646 km>
+       smaecc[0]['ecc'] # <Quantity 0.60573583>
+       tell.iskepels(byalts) # False
+       tell.iskepels(smaecc) # True
 
-    Example 3, define a geosynchronous orbit by mean motion
-    geo = tork.allplane({"memo":1.0*u.rev/u.sday, "ecc":0.0*u.dimensionless_unscaled, \
-                          "inc":0.0*u.deg, "argper": 120.0*u.deg, "raan": 0.0*u.deg,
-                          "ma": 0.0*u.deg})
+    Example 2: convert from semimajor axis and eccentricity to altitudes of perigee and apogee::
 
-    Example 4, define a geosynchronous transfer orbit
-    gto = tork.allplane({"altper": 350*u.km, "altapo": tork.sma(1.0,True), \
-                          "ecc":0.0*u.dimensionless_unscaled, \
-                          "inc":0.0*u.deg, "argper": 120.0*u.deg, "raan": 0.0*u.deg,
-                          "ma": 0.0*u.deg})
+        bysmaecc = {
+            "sma":8000,
+            "ecc":0.1,
+            "inc":45,
+            "argper": 120.0,
+            "raan": 80.0,
+            "ma": 0.0
+        }
+        alts = tork.allplane(bysmaecc)
+        alts[0]['altper'] # <Quantity 821.86354 km>
+        alts[0]['altapo'] # <Quantity 2421.86354 km>
 
+    Example 3: define a geosynchronous orbit by mean motion::
+
+        geo = tork.allplane(
+                {
+                 "memo":1.0*u.rev/u.sday,
+                 "ecc":0.0*u.dimensionless_unscaled,
+                 "inc":0.0*u.deg,
+                 "argper": 120.0*u.deg,
+                 "raan": 0.0*u.deg,
+                 "ma": 0.0*u.deg
+                }
+        )
+
+    Example 4: Define a geosynchronous transfer orbit::
+
+        gto = tork.allplane(
+            {
+                "altper": 350 * u.km,
+                "altapo": tork.sma(1.0, True),
+                "ecc": 0.0 * u.dimensionless_unscaled,
+                "inc": 0.0 * u.deg,
+                "argper": 120.0 * u.deg,
+                "raan": 0.0 * u.deg,
+                "ma": 0.0 * u.deg,
+            }
+        )
     """
     names = oesdict.keys()
     if ("sma" in names or "memo" in names) and "ecc" in names:  # OR PERIOD IN NAMES
@@ -543,19 +572,24 @@ def allplane(oesdict, forceenv=force.deffe, unitlookup=units.prefunits):
 
 
 def sma(input, altitude=False, forceenv=force.deffe, unitlookup=units.prefunits):
-    """Find the semimajor axis from the mean motion, orbital perioid,
-    altitude, or specific energy; if `input` is a number, it is
+    """Find the semimajor axis from the mean motion, orbital period,
+    altitude, or specific energy; if ``input`` is a number, it is
     assumed to be a mean motion in revolutions/sidereal day.
 
-    Example of geosynchronous satellite semimajor axis
-      tork.sma(1.0)
-      <Quantity 42164.1696233 km>
-    Example of orbital period
-      tork.sma(10000*u.s)
-      <Quantity 10032.11910363 km>
-    Example of specific energy
-      tork.sma(-20*(u.km/u.s)**2)
+    Example of geosynchronous satellite semimajor axis::
 
+        tell.sma(1.0)
+        # -> <Quantity 42164.1696233 km>
+
+    Example of orbital period::
+
+        import astropy.units as u
+        tell.sma(10000 * u.s)
+        # -> <Quantity 10032.11910363 km>
+
+    Example of specific energy::
+
+        tork.sma(-20 * (u.km / u.s) ** 2)
     """
     mu = forceenv["earthmu"]
     if type(input) is u.Quantity:

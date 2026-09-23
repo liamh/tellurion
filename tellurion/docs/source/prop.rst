@@ -1,7 +1,7 @@
 .. _propagation:
 
 *************************************************************
-Orbital Propagation (`tell.prepare`, `tell.propagate`)
+Propagation
 *************************************************************
 
 Introduction
@@ -79,7 +79,7 @@ The simplest analytic propagator using two-body dynamics (no perturbations).
 **Characteristics:**
 
 * Fastest computation
-* No force environment required
+* The default force environment is sufficient, so ``forceenv`` need not be explicitly specified
 * Osculating elements match the orbit at initial epoch only
 
 **Example:**
@@ -89,33 +89,33 @@ The simplest analytic propagator using two-body dynamics (no perturbations).
     gen = tell.prepare(initstate, proptime, propagator='keplerian')
     result = tell.propagate(gen, [0.5*u.day])
 
-Brouwer-Lyddane (J2-J5 Perturbations)
+Brouwer-Lyddane (Zonal perturbations)
 -------------------------------------
 
 Analytic propagator with mean element theory accounting for second through
-fifth-order zonal harmonics (J2-J5). Specifically designed to handle circular
+fifth-order zonal harmonics (:math:`J_2` through :math:`J_5`). Specifically designed to handle circular
 and equatorial orbits.
 
 **When to use:**
 
 * Medium-accuracy propagation needed
-* Perturbation effects important (J2 precession, etc.)
+* Perturbation effects important (:math:`J_2` precession of the node, etc.)
 * Fast computation essential
 * Circular or equatorial orbits (key advantage over Keplerian)
 
 **Characteristics:**
 
 * Faster than numerical integration
-* Accounts for J2-J5 perturbations
+* Accounts for :math:`J_2` through :math:`J_5` zonal harmonic perturbations
 * Uses osculating-to-mean element conversion
 * Much more accurate than Keplerian for perturbed orbits
 * Robust handling of singular coordinate cases
 
 **Advantages over Keplerian:**
 
-* Includes J2-J5 perturbations (precession, etc.)
-* Handles circular orbits (e=0) naturally
-* Handles equatorial orbits (i=0) naturally
+* Includes :math:`J_2` through :math:`J_5` geopotential perturbations
+* Handles circular orbits (:math:`e=0`) naturally
+* Handles equatorial orbits (:math:`i=0`) naturally
 
 **Example with Elliptical Orbit:**
 
@@ -150,14 +150,16 @@ For equatorial orbits, pass initial state in equinoctial element form::
 DSST (Semi-Analytical)
 ----------------------
 
-Semi-analytical propagator using Draper Semi-analytical Satellite Theory.
-Combines numerical integration with perturbation averaging for efficient
-long-term propagation with full gravity model.
+Semi-analytical propagator using Draper Semi-analytical Satellite
+Theory.  Combines numerical integration with perturbation averaging
+for efficient long-term propagation with full gravity model. Note: the
+DSST model will sometimes crash; the location of this error has not
+been determined.
 
 **When to use:**
 
 * Long-duration propagation (days to weeks)
-* Full gravity model needed (not just J2-J5)
+* Full gravity model needed (not just :math:`J_2`--:math:`J_5`)
 * Better speed/accuracy tradeoff than pure numerical integration
 * All orbit types including circular and equatorial
 
@@ -174,12 +176,12 @@ long-term propagation with full gravity model.
 
 * Significantly faster (2-10x depending on gravity degree/order)
 * Can handle extended propagation periods
-* Still uses full gravity model (not restricted to J2-J5)
+* Still uses full gravity model
 * Smaller numerical errors due to averaging over orbital period
 
 **Advantages over Brouwer-Lyddane:**
 
-* Supports full tesseral harmonics (not just zonal J2-J5)
+* Supports full tesseral harmonics
 * More accurate for long-term propagation
 * Better for higher-degree gravity models
 

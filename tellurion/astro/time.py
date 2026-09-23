@@ -17,9 +17,9 @@ import numpy as np
 ## Time
 ################################################################################
 
-prefnumabstime = 'mjd' # Preferred numerical format for absolute time
+prefnumabstime = "mjd" # Preferred numerical format for absolute time
 
-def abstime(ratimes, reftime='now'):
+def abstime(ratimes, reftime="now"):
     """Convert `ratimes`, which is a relative time (also known as
     "time delta" or "time interval"), or an absolute time, or an
     iterable of those things, into an absolute time
@@ -31,7 +31,7 @@ def abstime(ratimes, reftime='now'):
     ratimes :  str, int, float, astropy.time.Time, u.Quantity, datetime, or iterable
         The relative or absolute time(s) to convert.
     reftime : str or astropy.time.Time, optional
-        The reference time for relative times. Default is ``'now'``.
+        The reference time for relative times. Default is ``"now"``.
 
     Returns
     -------
@@ -43,45 +43,47 @@ def abstime(ratimes, reftime='now'):
     >>> import tellurion as tell
     >>> import astropy.units as u
     >>> import numpy as np
-    >>> newyear = tell.abstime('2025-01-01T00:00:00')
+    >>> newyear = tell.abstime("2025-01-01T00:00:00")
     >>> prop5m1h = np.linspace(5.0*u.minute, 60.0*u.minute, 12)
-    >>> tell.abstime(['2025-01-01T00:00:00', '2025-01-02T00:00:00'])
+    >>> tell.abstime(["2025-01-01T00:00:00", "2025-01-02T00:00:00"])
     >>> tell.abstime(prop5m1h, newyear)
     >>> tell.abstime(5*u.hour, newyear)
-    >>> tell.abstime('12d 17hr 23min 33.1s', newyear)
-    >>> tell.abstime([5*u.hour, '12d 17hr 23min 33.1s'], newyear)
+    >>> tell.abstime("12d 17hr 23min 33.1s", newyear)
+    >>> tell.abstime([5*u.hour, "12d 17hr 23min 33.1s"], newyear)
 
     Using datetime objects:
 
     >>> import datetime
     >>> tell.abstime(datetime.datetime(2025, 4, 17, 22, 54, 8, 684006))
     """
-    if reftime=='now':
-        reftime = astropy.time.Time(datetime.datetime.now(datetime.UTC), scale='utc')
-    if type(ratimes)==astropy.time.Time:
+    if reftime=="now":
+        reftime = astropy.time.Time(datetime.datetime.now(datetime.UTC), scale="utc")
+    if isinstance(ratimes, astropy.time.Time):
         return ratimes
-    if type(ratimes) == datetime.datetime:
+    if isinstance(ratimes, datetime.datetime):
         return astropy.time.Time(ratimes.isoformat())
-    if type(ratimes) == np.datetime64:
+    if isinstance(ratimes, np.datetime64):
         return astropy.time.Time(str(ratimes))
-    if type(ratimes)==str:
+    if isinstance(ratimes, str):
         try:
-            return (astropy.time.Time(ratimes, scale='utc'))
+            return (astropy.time.Time(ratimes, scale="utc"))
         except:
             try:
-                return abstime(astropy.time.TimeDelta(ratimes).to_value('sec')*u.s, reftime)
+                return abstime(astropy.time.TimeDelta(ratimes).to_value("sec")*u.s, reftime)
             except:
                 raise ValueError("Cannot interpret string as relative or absolute time")
     if type(ratimes) in [int, float, np.float64]:
         return abstime(ratimes*u.s, reftime)
-    if type(ratimes) == u.Quantity:
+    if isinstance(ratimes, u.Quantity):
         return reftime + ratimes
     if isinstance(ratimes, collections.abc.Iterable):
         # Check if all elements are already Time objects
         if all(isinstance(t, astropy.time.Time) for t in ratimes):
             # All are Time objects - use AstroPy's native concatenation
             # This preserves the original format
-            time_list = [t if not t.isscalar else astropy.time.Time([t.value], format=t.format, scale=t.scale)
+            time_list = [t if not t.isscalar
+                         else astropy.time.Time([t.value],
+                                                format=t.format, scale=t.scale)
                         for t in ratimes]
             # Use vstack to concatenate (preserves format)
             return astropy.time.Time(np.hstack([t.value for t in time_list]),
@@ -127,7 +129,7 @@ def time_concat(time1, time2):
 
 def timesec(t):
     """Convert a u.Quantity to seconds as a Python float"""
-    if type(t) is u.Quantity and u.get_physical_type(t) == 'time':
+    if type(t) is u.Quantity and u.get_physical_type(t) == "time":
         pt = t.si.value.tolist() # convert to seconds and get the value_unit
     elif isinstance(t, collections.abc.Iterable):
         return [timesec(i) for i in t]
@@ -185,7 +187,7 @@ def tq(compstr):
     >>> tell.tq(tell.tc(123456*u. s))
     <Quantity 123456. s>
     """
-    return astropy.time.TimeDelta(compstr).to_value('sec')*u.s
+    return astropy.time.TimeDelta(compstr).to_value("sec")*u.s
 
 ################################################################################
 ## Time

@@ -81,11 +81,9 @@ leo2.pvt.spherical['distance']
 
 
 # %% [markdown]
-# The Cartesian coordinates can also  `.to_dict()`, or the parts extracted
-
-# %% [markdown]
-# (quantities-and-units)=
+# <a id="quantities-and-units"></a>
 # ## Quantities and units
+#
 # Quantities and units are defined using [AstroPy](https://docs.astropy.org/en/stable/units/index.html); the `import astropy.units as u` at the beginning permits specification of units. Quantities with units may be created or converted.
 
 # %%
@@ -123,7 +121,9 @@ tell.prefunits
 
 # %% [markdown]
 # ### Defining an ElementSetT
-# To define an element set directly from elements, use `tell.kepler()`. This is geosynchronous transfer orbit; using `tell.allplane()` converts the altitudes of perigee and apogee to semimajor axis and eccentricity, and `tell.sma()` converts multiple quantities into a radial distance, in this case, the number of sidereal days into the radius of a circular orbit with that period.
+# To define an element set directly from elements, use `tell.kepler()`.
+# This is geosynchronous transfer orbit; using the [`tell.allplane()`](#tellurion.allplane) function that
+# converts the altitudes of perigee and apogee to semimajor axis and eccentricity, and `tell.sma()` converts multiple quantities into a radial distance, in this case, the number of sidereal days into the radius of a circular orbit with that period.
 
 # %%
 ell1 = Munch()
@@ -192,13 +192,14 @@ eph1.eph = eph1.pvts.ephemeris()
 eph1.eph
 
 # %% [markdown]
-# As with a single PVT, componenets can be extracted, but this time we get a two-dimensional array.
+# As with a single PVT, components can be extracted, but this time we get a two-dimensional array.
 
 # %%
 eph1.eph['position']
 
 # %% [markdown]
-# Element values may be computed from an ephemeris table with `tell.tselements()`; for example, the altitudes of perigee and apogee. From this time series, an individual column may be extracted.
+# Element values may be computed from an ephemeris table with
+# `tell.tselements()`; for example, the altitudes of perigee and apogee. From this time series, an individual column may be extracted.
 
 # %%
 eph1.altperapo = tell.tselements(eph1.eph, ['altper','altapo'])
