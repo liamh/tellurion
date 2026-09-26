@@ -565,6 +565,11 @@ def quantity_to_dict(quantity: u.Quantity) -> Dict[str, Any]:
     For regular (non-structured) Quantities, returns a dict with empty
     string key.
 
+    .. note::
+
+        Importing :mod:`tellurion` monkey-patches this functionality directly onto
+        :class:`astropy.units.Quantity` as :meth:`~astropy.units.Quantity.to_dict`.
+
     Parameters
     ----------
     quantity : Quantity
@@ -584,6 +589,8 @@ def quantity_to_dict(quantity: u.Quantity) -> Dict[str, Any]:
     >>> import tellurion as tell
     >>> q = tell.make_quantity({'x': 5, 'y': 10}, 'm')
     >>> tell.quantity_to_dict(q)
+    {'x': <Quantity 5. m>, 'y': <Quantity 10. m>}
+    >>> q.to_dict()
     {'x': <Quantity 5. m>, 'y': <Quantity 10. m>}
 
     Convert a regular quantity:
@@ -606,6 +613,11 @@ def quantity_to_array(quantity: u.Quantity) -> np.ndarray:
     Converts a Quantity to a pure numpy array, discarding unit information.
     For structured Quantities, converts to an unstructured array using
     numpy's structured_to_unstructured function.
+
+    .. note::
+
+        Importing :mod:`tellurion` monkey-patches this functionality directly onto
+        :class:`astropy.units.Quantity` as :meth:`~astropy.units.Quantity.to_array`.
 
     Parameters
     ----------

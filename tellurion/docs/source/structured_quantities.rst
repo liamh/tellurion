@@ -1,10 +1,10 @@
 .. _structured_quantities:
 
-Creating Structured Quantities
-===============================
+Structured Quantities
+=====================
 
 Structured quantities are :class:`~astropy.units.Quantity` objects that have multiple named fields,
-each with potentially different units. They are useful for representing
+each with potentially `different units <https://docs.astropy.org/en/stable/units/structured_units.html>`_. They are useful for representing
 collections of related physical quantities, such as position vectors,
 phase space coordinates, or observational data with multiple measured quantities.
 
@@ -15,7 +15,7 @@ than manually constructing structured arrays.
 Quick Start
 -----------
 
-The simplest way to create a structured quantity is using :func:`make_quantity`
+The simplest way to create a structured quantity is using :func:`tellurion.make_quantity`
 with a dictionary::
 
     >>> from astropy import units as u
