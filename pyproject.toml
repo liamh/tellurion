@@ -9,7 +9,7 @@ description = "Astrodynamics and satellite navigation using Orekit and AstroPy"
 authors = [{name = "Liam Healy"}]
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = "MIT"
 license-files = ["LICENSE"]
 # Classifiers help PyPI index and search your license correctly
 classifiers = [
