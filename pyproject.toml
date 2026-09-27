@@ -10,7 +10,7 @@ authors = [{name = "Liam Healy"}]
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-license-files = ["LICENSE"]
+license-files = ["LICENSE.txt"]
 # Classifiers help PyPI index and search your license correctly
 classifiers = [
     "Programming Language :: Python :: 3.10",
