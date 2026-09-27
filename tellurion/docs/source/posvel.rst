@@ -102,13 +102,15 @@ Velocity uses time derivatives of spherical coordinates.
    conversion (Cartesian → Spherical → Cartesian) may have numerical precision
    limitations.
 
-Working with Ephemerides
-=========================
+.. _ephemeris:
+
+Ephemeris
+=========
 
 Creating Time Series
 --------------------
 
-Convert position-velocity states to AstroPy TimeSeries::
+Convert position-velocity states to :class:`~astropy.timeseries.TimeSeries`:
 
     pvt = tell.pvtcart(states, None)
     ts = pvt.ephemeris()
@@ -262,19 +264,19 @@ Helpers
 
 .. autofunction:: tellurion.abstime
 
-Orekit Conversion Methods on ``PositionVelocityT``
---------------------------------------------------
+Conversion to elements
+----------------------
 
-These instance methods are different from the top-level constructor functions:
+These instance methods convert the orbital state to one of the element set representations :class:`ElementSetT <tellurion.ElementSetT>`.
 
-* :meth:`tellurion.PositionVelocityT.kepler` converts a Cartesian state to a
+* :meth:`tellurion.PositionVelocityT.kepler` converts an orbital state to a
   Keplerian element set.
-* :meth:`tellurion.PositionVelocityT.equinoctial` converts a Cartesian state to
+* :meth:`tellurion.PositionVelocityT.equinoctial` converts an orbital state to
   an equinoctial element set.
-* :meth:`tellurion.PositionVelocityT.circular` converts a Cartesian state to a
+* :meth:`tellurion.PositionVelocityT.circular` converts an orbital state to a
   circular element set.
-* Top-level :func:`tellurion.kepler`, :func:`tellurion.equinoctial`, and
-  :func:`tellurion.circular` construct element sets from element dictionaries.
+
+Note that the functions :func:`tellurion.kepler`, :func:`tellurion.equinoctial`, and :func:`tellurion.circular` are used to construct element sets from element dictionaries.
 
 ``PositionVelocityT.kepler``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

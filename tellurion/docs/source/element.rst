@@ -245,6 +245,9 @@ the Keplerian elements by:
      - angle
      - :math:`f + \omega + \Omega`
 
+Exactly one of ``ml`` or ``tl`` must be present.
+
+
 .. note::
    For a circular orbit ``ex = ey = 0``; for a zero-inclination orbit
    ``hx = hy = 0``.  These are the cases where Keplerian elements are
@@ -291,13 +294,15 @@ components are measured relative to the latitude argument:
      - angle
      -
    * - ``mla``
-     - Mean latitude argument *(time element, mean variant)*
+     - Mean argument of latitude *(time element, mean variant)*
      - angle
      - :math:`M + \omega`
    * - ``tla``
-     - True latitude argument *(time element, true variant)*
+     - True argument of latitude *(time element, true variant)*
      - angle
      - :math:`f + \omega`
+
+Exactly one of ``mla`` or ``tla`` must be present.
 
 .. note::
    Circular elements remain singular at zero inclination (the RAAN is
@@ -331,8 +336,10 @@ Conversions
 Between Element Sets and Cartesian State
 -----------------------------------------
 
-The preferred user-facing style is to use instance methods for conversions
-between existing Tellurion objects. Use the top-level functions
+To convert between :class:`ElementSetT <tellurion.ElementSetT>` and :class:`PositionVelocityT <tellurion.PositionVelocityT>`.
+
+
+ Use the top-level functions
 :func:`~tellurion.kepler`, :func:`~tellurion.equinoctial`,
 :func:`~tellurion.circular`, and :func:`~tellurion.pvt` as constructors or
 generic adapters::
@@ -485,14 +492,17 @@ Constructors
 
 .. autofunction:: tellurion.circular
 
-Utilities
----------
+Helpers
+-------
+
+.. autofunction:: tellurion.abstime
+   :no-index:
 
 .. autofunction:: tellurion.allplane
 
-.. autofunction:: tellurion.sma
-
 .. autofunction:: tellurion.elementval
+
+.. autofunction:: tellurion.sma
 
 .. autofunction:: tellurion.tselements
 
@@ -500,3 +510,5 @@ Utilities
    :ref:`posvel` — position, velocity, and time representation.
 
    :ref:`hdf5-serialization` — saving and loading element sets.
+
+

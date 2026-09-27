@@ -98,27 +98,40 @@ def prepare(
     output="et",
     propagator="auto",
 ):
-    """
-    Prepare a propagation
+    """Prepare a propagation.
 
     Parameters
     ----------
-    initstate  : initial state, must be in a form acceptable to the propagator
-                 chosen
-    proptime   : time of propagation
-    events     : dict
-    forceenv   : dict
-    reftime    : reference time used to fill the relevant column of the ephemeris table
-    output     : string
-        'et' - ephemeris table
-        'ss' - Orekit SpacecraftState
-    propagator : str
-        'auto' - automatically select based on initstate and forceenv
-        'keplerian' - two-body analytic
-        'brouwer-lyddane' - J2 perturbations analytic
-        'dsst' - semi-analytical with multiple perturbations
-        'numerical' - numerical integration
-        'sgp4' - SGP4 mean elements (requires MeanElementSetT)
+    initstate : object
+        Initial state, must be in a form acceptable to the propagator chosen.
+    proptime : Time or Quantity
+        Time of propagation.
+    events : dict or list, optional
+        Definitions for discrete state transitions. See :ref:`event` for details.
+    forceenv : dict, optional
+        Force environment configuration.
+    reftime : str, optional
+        Reference time used to fill the relevant column of the ephemeris table.
+    output : {'et', 'ss'}, default: 'et'
+        Type of output structure generated:
+
+        * ``'et'`` : Ephemeris table (:class:`~astropy.timeseries.TimeSeries`).
+        * ``'pvt'`` : :class:`~tellurion.PositionVelocityT`
+        * ``'ss'`` : Orekit ``SpacecraftState``.
+
+    propagator : {'auto', 'keplerian', 'brouwer-lyddane', 'dsst', 'numerical', 'sgp4'}, default: 'auto'
+        See :ref:`propagators` for details and :ref:`propcomp` for a summary table.
+
+        =====================  ==================================================
+        Propagator             Description
+        =====================  ==================================================
+        ``'auto'``             Automatically select based on ``initstate`` and ``forceenv``
+        ``'keplerian'``        Two-body analytic
+        ``'brouwer-lyddane'``  J2 perturbations analytic
+        ``'dsst'``             Semi-analytical with multiple perturbations
+        ``'numerical'``        Numerical integration
+        ``'sgp4'``             SGP4 mean elements (requires ``MeanElementSetT``)
+        =====================  ==================================================
     """
     if propagator == "auto":
         propagator = _select_propagator(initstate, forceenv)

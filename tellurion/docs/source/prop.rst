@@ -46,7 +46,7 @@ Propagate a satellite orbit using the two-step process::
 Choosing a Propagator
 ---------------------
 
-The ``prepare()`` function automatically selects a propagator based on the
+The :func:`tellurion.prepare` function automatically selects a propagator based on the
 initial state type and force environment::
 
     # Auto-selection (recommended)
@@ -60,6 +60,8 @@ initial state type and force environment::
                       forceenv=tell.setgravity(20, 20))
     gen = tell.prepare(initstate, proptime, propagator='numerical',
                       forceenv=tell.setgravity(20, 20))
+
+.. _propagators:
 
 Propagators
 ===========
@@ -89,7 +91,7 @@ The simplest analytic propagator using two-body dynamics (no perturbations).
     gen = tell.prepare(initstate, proptime, propagator='keplerian')
     result = tell.propagate(gen, [0.5*u.day])
 
-Brouwer-Lyddane (Zonal perturbations)
+Brouwer-Lyddane (zonal perturbations)
 -------------------------------------
 
 Analytic propagator with mean element theory accounting for second through
@@ -347,6 +349,8 @@ Use numerical propagation when atmospheric drag is mission-significant::
 ``atmdensname`` can be ``'hp'`` (Harris-Priester), ``'dtm'`` (DTM2000), or
 ``'msis'`` (NRLMSISE00).
 
+.. _propcomp:
+
 Propagator Comparison
 =====================
 
@@ -432,10 +436,15 @@ For all orbits including equatorial (sma, ex, ey, hx, hy, ml/tl)::
     eq = geo_pvt.equinoctial()
     gen = tell.prepare(eq, 1.0*u.day)
 
-Event Detection
-===============
+.. _event:
 
-Detect and record events during propagation using the ``events`` dictionary.
+Discrete state and event
+========================
+
+An *event* is a transition of some *discrete state* from one value to another. For example, a transition from full sunlight to penumbra is an eclipse event. Tellurion can record several discrete states for any ephemeris, and create an ephemeris table of the transition events for that class of state.
+
+To detect and record states and events during propagation, using the ``events`` dictionary when calling
+:func:`~tellurion.prepare`.
 
 Eclipse Detection
 -----------------
@@ -537,8 +546,8 @@ See :doc:`tutorials/stm1` for a step-by-step STM workflow.
 Propagation Output
 ==================
 
-The ``prepare()`` function returns a generator dictionary with propagation
-setup. The ``propagate()`` function then computes results.
+The :func:`~tellurion.prepare` returns a generator dictionary with propagation
+setup. The :func:`~tellurion.propagate` function then computes the position and velocity over the requested time steps as a :class:`~tellurion.PositionVelocityT` or an :ref:`ephemeris`.
 
 Output Formats
 --------------
@@ -557,7 +566,7 @@ Control output format with the ``output`` parameter::
 Ephemeris Table (ET)
 ~~~~~~~~~~~~~~~~~~~~
 
-AstroPy TimeSeries with columns for position, velocity, time, and any
+A :class:`~astropy.timeseries.TimeSeries` with columns for position, velocity, time, and any
 requested auxiliary data::
 
     ephem = tell.propagate(gen, times, output='et')
@@ -569,7 +578,7 @@ requested auxiliary data::
 Position-Velocity (PVT)
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Native ``PositionVelocityT`` object with methods for coordinate conversion::
+Native :class:`~tellurion.PositionVelocityT` object with methods for coordinate conversion::
 
     pvt = tell.propagate(gen, times, output='pvt')
     print(pvt.cartesian)
@@ -582,6 +591,8 @@ SpacecraftState (SS)
 Orekit ``SpacecraftState`` objects (advanced use)::
 
     states = tell.propagate(gen, times, output='ss')
+
+Most users will not need this form; it is mainly for internal use by Tellurion.
 
 Propagation Example: Complete Workflow
 =======================================

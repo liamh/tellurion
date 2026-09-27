@@ -20,17 +20,17 @@ import numpy as np
 prefnumabstime = "mjd" # Preferred numerical format for absolute time
 
 def abstime(ratimes, reftime="now"):
-    """Convert `ratimes`, which is a relative time (also known as
+    """Convert ``ratimes``, which is a relative time (also known as
     "time delta" or "time interval"), or an absolute time, or an
     iterable of those things, into an absolute time
-    (astropy.time.Time) or a list of absolute times. If `reftime` is
+    (`~astropy.time.Time`) or a list of absolute times. If `reftime` is
     not provided, it defaults to the current time.
 
     Parameters
     ----------
-    ratimes :  str, int, float, astropy.time.Time, u.Quantity, datetime, or iterable
+    ratimes :  `str` as ISO8601 date/time, `int`, `float`, `~astropy.time.Time`, `~astropy.units.Quantity` with ``unit`` having physical dimension of ``time`` e.g., ``u.s``, `datetime`, :class:`numpy.datetime64`, or iterable
         The relative or absolute time(s) to convert.
-    reftime : str or astropy.time.Time, optional
+    reftime : str or `~astropy.time.Time`, optional
         The reference time for relative times. Default is ``"now"``.
 
     Returns
@@ -206,7 +206,7 @@ def to_array(tms, format=prefnumabstime):
     format : str, optional
         The time format for conversion. Common formats include ``'mjd'``
         (Modified Julian Date), ``'jd'`` (Julian Date), ``'unix'`` (Unix
-        timestamp), ``'cxcsec'`` (Chandra X-ray Center seconds), ``'gps'``
+        timestamp), ``'gps'``
         (GPS seconds), ``'plot_date'`` (Matplotlib plot date). See the
         `astropy.time.Time formats documentation
         <https://docs.astropy.org/en/stable/time/index.html#time-format>`_

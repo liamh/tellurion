@@ -112,7 +112,7 @@ class ElementSetT:
 
 # kep1 = kepler({"ecc":0.1, "sma":8000.0, "inc":42.0, "argper":66.0, "raan":217.4, "ma":7.25})
 # kep2 = kepler({"zper":250.0, "zapo":350.0, "inc":22.0, "argper":66.0, "raan":68.0, "ma":7.25})
-def kepler(oes, dttm=None, unitlookup=tunits.prefunits):
+def kepler(oes, time=None, unitlookup=tunits.prefunits):
     """Make a Kepler orbital element set with either mean or true
     anomaly as the time element. Units not specified default to those
     given in unitlookup."""
@@ -120,16 +120,16 @@ def kepler(oes, dttm=None, unitlookup=tunits.prefunits):
     keppt = {"inc":"angle", "argper":"angle", "raan":"angle", "ma":"angle", "ta":"angle", \
              "ecc":"dimensionless", "sma":"length", "memo":"angular speed", \
              "radper":"length", "radapo":"length", "altper":"length", "altapo":"length"}
-    isscalar = not(hasattr(dttm, "isscalar")) or dttm.isscalar
+    isscalar = not(hasattr(time, "isscalar")) or time.isscalar
     kepsq = quant.make_quantity(oes, keppt, isscalar, unitlookup)
     # Possibly check kepsq['inc'] is in upper halfplane with
     # .is_within_bounds('0d', '180d') on Angle instances
     #    raise ValueError('Inclination must be between 0 and 180 degrees, inclusive')
     kepsqn = tunits.normalizeangle(kepsq, u.rev/2, timeelements)
-    if dttm is None:
+    if time is None:
         return kepsqn
     else:
-        return ElementSetT(elements=kepsqn, time=dttm)
+        return ElementSetT(elements=kepsqn, time=time)
 
 def iskepels(obj, est=True):
     if type(obj) is ElementSetT and est:
@@ -168,7 +168,7 @@ _circpt = {
 }
 
 
-def equinoctial(oes, dttm=None, unitlookup=tunits.prefunits):
+def equinoctial(oes, time=None, unitlookup=tunits.prefunits):
     """Make an equinoctial orbital element set.
 
     Parameters
@@ -176,13 +176,13 @@ def equinoctial(oes, dttm=None, unitlookup=tunits.prefunits):
     oes : dict or structured Quantity
         Keys: sma, ex, ey, hx, hy, and one of ml (mean longitude) or tl
         (true longitude).
-    dttm : `~astropy.time.Time`, optional
+    time : `~astropy.time.Time`, optional
         Epoch; if supplied, returns an ``ElementSetT``.
     """
-    isscalar = not hasattr(dttm, "isscalar") or dttm.isscalar
+    isscalar = not hasattr(time, "isscalar") or time.isscalar
     eqsq = quant.make_quantity(oes, _equpt, isscalar, unitlookup)
     eqsqn = tunits.normalizeangle(eqsq, u.rev / 2, equtimeelements)
-    return ElementSetT(elements=eqsqn, time=dttm) if dttm is not None else eqsqn
+    return ElementSetT(elements=eqsqn, time=time) if time is not None else eqsqn
 
 def isequels(obj, est=True):
     if type(obj) is ElementSetT and est:
@@ -192,7 +192,7 @@ def isequels(obj, est=True):
             and (not set(equeltma_names) - set(obj.dtype.names)
                  or not set(equeltta_names) - set(obj.dtype.names)))
 
-def circular(oes, dttm=None, unitlookup=tunits.prefunits):
+def circular(oes, time=None, unitlookup=tunits.prefunits):
     """Make a circular orbital element set.
 
     Parameters
@@ -200,13 +200,13 @@ def circular(oes, dttm=None, unitlookup=tunits.prefunits):
     oes : dict or structured Quantity
         Keys: sma, cex, cey, inc, raan, and one of mla (mean latitude
         argument) or tla (true latitude argument).
-    dttm : `~astropy.time.Time`, optional
+    time : `~astropy.time.Time`, optional
         Epoch; if supplied, returns an ``ElementSetT``.
     """
-    isscalar = not hasattr(dttm, "isscalar") or dttm.isscalar
+    isscalar = not hasattr(time, "isscalar") or time.isscalar
     csq = quant.make_quantity(oes, _circpt, isscalar, unitlookup)
     csqn = tunits.normalizeangle(csq, u.rev / 2, circtimeelements)
-    return ElementSetT(elements=csqn, time=dttm) if dttm is not None else csqn
+    return ElementSetT(elements=csqn, time=time) if time is not None else csqn
 
 def iscircels(obj, est=True):
     if type(obj) is ElementSetT and est:

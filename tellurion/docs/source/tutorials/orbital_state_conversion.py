@@ -57,7 +57,9 @@ leo2.pvt.cartesian.unit
 leo2.pvt.cartesian.dtype
 
 # %% [markdown]
-# The individual components can be extracted by using the names `'position'` and `'velocity'`, or the entire vector as an `np.array`.
+# The individual components can be extracted by using the names
+# `'position'` and `'velocity'`, or the entire vector as an
+# `np.array`.
 
 # %%
 leo2.pvt.cartesian['position']
@@ -69,7 +71,12 @@ leo2.pvt.cartesian['velocity']
 leo2.pvt.cartesian.to_array() # Make a numerical array
 
 # %% [markdown]
-# The spherical coordinates (right ascension, declination, and geocentric distance, and their rates) are found in the {attr}`spherical <tellurion.PositionBase.spherical>` property. To make it easier to see, the function {func}`.to_dict() <tellurion.quantity_to_dict>` will convert the result into a dictionary, or the individual parts can be extracted directly.
+# The spherical coordinates (right ascension, declination, and
+# geocentric distance, and their rates) are found in the
+# {attr}`spherical <tellurion.PositionBase.spherical>` property. To
+# make it easier to see, the function {func}`.to_dict()
+# <tellurion.quantity_to_dict>` will convert the result into a
+# dictionary, or the individual parts can be extracted directly.
 
 # %%
 leo2.pvt.spherical
@@ -82,10 +89,12 @@ leo2.pvt.spherical['distance']
 
 
 # %% [markdown]
-# <a id="quantities-and-units"></a>
 # ## Quantities and units
 #
-# Quantities and units are defined using [AstroPy](https://docs.astropy.org/en/stable/units/index.html); the `import astropy.units as u` at the beginning permits specification of units. Quantities with units may be created or converted.
+# Quantities and units are defined using
+# [AstroPy](https://docs.astropy.org/en/stable/units/index.html); the
+# `import astropy.units as u` at the beginning permits specification
+# of units. Quantities with units may be created or converted.
 
 # %%
 157.0*u.meter
@@ -94,7 +103,8 @@ leo2.pvt.spherical['distance']
 leo2.pvt.cartesian.si
 
 # %% [markdown]
-# Default units are used throughout, so for most cases, values can be given as plain numbers
+# Default units are used throughout, so for most cases, values can be
+# given as plain numbers
 
 # %%
 tell.prefunits
@@ -104,7 +114,8 @@ tell.prefunits
 
 # %% [markdown]
 # ### Defining an ElementSetT
-# To define an element set directly from elements, use [`tell.kepler()`](#tellurion.kepler).
+# To define an element set directly from Keplerian (classical) orbital
+# elements, use [`tell.kepler()`](#tellurion.kepler).
 
 # %%
 kep = tell.kepler(
@@ -189,7 +200,11 @@ leo2.pvt.kepler().elements['sma']
 
 # %% [markdown]
 # ## Ephemerides
-# Multiple states can be stacked and then converted to an ephemeris table, an instance of an [AstroPy time series](https://docs.astropy.org/en/stable/timeseries/index.html). These usually come from orbit propagation; the example here is constructed a data array that originated in a propagation.
+# Multiple states can be stacked and then converted to an ephemeris
+# table, an instance of an [AstroPy time
+# series](https://docs.astropy.org/en/stable/timeseries/index.html). These
+# usually come from orbit propagation; the example here is constructed
+# a data array that originated in a propagation.
 
 # %%
 eph1 = Munch()
@@ -232,7 +247,9 @@ eph1.eph['position']
 
 # %% [markdown]
 # Element values may be computed from an ephemeris table with
-# `tell.tselements()`; for example, the altitudes of perigee and apogee. From this time series, an individual column may be extracted.
+# `tell.tselements()`; for example, the altitudes of perigee and
+# apogee. From this time series, an individual column may be
+# extracted.
 
 # %%
 eph1.altperapo = tell.tselements(eph1.eph, ['altper','altapo'])

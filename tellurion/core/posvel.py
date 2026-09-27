@@ -41,7 +41,7 @@ class PositionBase(abc.ABC):
     time : `~astropy.time.Time` or None
         The date and time of the position
     aux : dict, optional
-        Discrete attributes (labels, flags, metadata, etc.)
+        Discrete attributes (e.g., in sunlight)
     cartesian : `~astropy.units.Quantity`, optional
         Cartesian coordinates (either position only or position+velocity)
     spherical : `~astropy.units.Quantity`, optional
@@ -54,7 +54,7 @@ class PositionBase(abc.ABC):
     time : `~astropy.time.Time`
         The date and time of the position
     aux : dict
-        Discrete attributes (labels, flags, metadata, etc.)
+        Discrete attributes (e.g., in sunlight)
     isscalar : bool
         True if this represents a single epoch rather than multiple
 

@@ -7,16 +7,13 @@ import os
 import sys
 from sphinx_astropy.conf.v2 import *
 
-# Compute project root relative to this conf.py file (docs/source/ -> project_root)
-project_root = os.path.abspath("../..")
-
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 # -- Project information -----------------------------------------------------
 project = 'Tellurion'
 copyright = '2026, Liam M. Healy'
-author = 'Liam Healy'
+author = 'Liam M. Healy'
 release = '0.1.0'
 
 # -- General configuration ---------------------------------------------------
@@ -81,6 +78,8 @@ source_suffix = {
     '.py': 'myst-nb',
 }
 
+myst_heading_anchors = 3  # Automatically creates anchors for h1, h2, and h3 headers
+
 jupytext_custom_formats = {
     ".py": "jupytext.reads(RST_TEXT, format_name='percent')",
 }
@@ -90,6 +89,7 @@ nb_custom_formats = {
     ".py": ["jupytext.reads", {"fmt": "py:percent"}]
 }
 
+nb_kernel_args = ["--transport=ipc"]
 nb_execution_mode = 'auto'
 nb_execution_timeout = 180
 
