@@ -114,8 +114,9 @@ tell.prefunits
 
 # %% [markdown]
 # ### Defining an ElementSetT
-# To define an element set directly from Keplerian (classical) orbital
-# elements, use [`tell.kepler()`](#tellurion.kepler).
+# To define an element set directly from orbital elements, use
+# {ref}`constructor functions <element-constructors>` such as
+# {func}`~tellurion.kepler`.
 
 # %%
 kep = tell.kepler(
@@ -126,14 +127,14 @@ kep = tell.kepler(
 kep.elements.to_dict()      # structured u.Quantity converted to dict for readability
 
 # %%
-kep.time          # astropy Time
+kep.time          # the epoch time of the element set
 
 # %% [markdown]
 # There are convience functions that make some definitions
 # easier. This is a geosynchronous transfer orbit; using the
-# [`tell.allplane()`](#tellurion.allplane) function converts the
+# {func}`~tellurion.allplane` function converts the
 # altitudes of perigee and apogee to semimajor axis and eccentricity,
-# and [`tell.sma()`](#tellurion.sma) converts multiple quantities into
+# and {func}`~tellurion.sma` converts multiple quantities into
 # a radial distance, in this case, the number of sidereal days into
 # the altitude of a circular orbit with that period.
 
@@ -147,21 +148,29 @@ ell1.est = tell.kepler(ell1.els, tell.abstime('2026-01-01 05:55:00'))
 ell1.est.elements.to_dict()
 
 # %% [markdown]
-# This element set can be converted to a PVT
+# ### Convert to PVT
+# An {class}`~tellurion.ElementSetT` can be converted to a
+# {class}`~tellurion.PositionVelocityT` using the class method
+# {meth}`~tellurion.ElementSetT.pvt`.
 
 # %%
 ell1.pvt = ell1.est.pvt()
-ell1.pvt.cartesian.to_dict()
+ell1.pvt.cartesian.to_dict() # Show as dictionary for readability
 
 # %% [markdown]
 # ### Convert from PVT
-# Orbital elements can be generated from a
-# {class}`tell.PositionVelocityT <tellurion.PositionVelocityT>`. They
-# can be displayed more readably as a dictionary, or individual
-# elements extracted.
+
+# Orbital elements can be generated from a {class}`PositionVelocityT
+# <tellurion.PositionVelocityT>` with the class methods
+# {meth}`~tellurion.PositionVelocityT.kepler`,
+# {meth}`~tellurion.PositionVelocityT.equinoctial`, or
+# {meth}`~tellurion.PositionVelocityT.circular`. Note that these are
+# distinct from the {ref}`constructor functions <element-constructors>`
+# with the same names. They can be displayed more readably as a
+# dictionary, or individual elements extracted.
 
 # %%
-# This produces an object of class ElementSetT
+# This produces Keplerian elements in an object of class ElementSetT
 leo2.pvt.kepler()
 
 # %%
@@ -169,6 +178,12 @@ leo2.pvt.kepler().elements.to_dict()
 
 # %%
 leo2.pvt.kepler().elements['sma']
+
+# %%
+# The PVT is converted equinoctial elements in an object of class
+# ElementSetT, then those elements are displayed as a dictionary for
+# readability.
+leo2.pvt.equinoctial().elements.to_dict()
 
 # %% [markdown]
 # ## Individual orbital elements
