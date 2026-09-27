@@ -74,6 +74,10 @@ Homepage = "https://github.com/liamh/tellurion"
 Repository = "https://github.com/liamh/tellurion"
 Documentation = "https://tellurion.readthedocs.io"
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tellurion*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
