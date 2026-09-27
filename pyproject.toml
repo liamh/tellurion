@@ -10,6 +10,15 @@ authors = [{name = "Liam Healy"}]
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
+license-files = ["LICENSE"]
+# Classifiers help PyPI index and search your license correctly
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education"
+    ]
 
 # Core package dependencies
 dependencies = [
