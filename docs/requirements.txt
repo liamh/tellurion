@@ -7,3 +7,12 @@ nbsphinx
 ipython
 ipykernel
 astropy
+sphinx-astropy
+sphinx-changelog
+sphinx-design
+sphinxcontrib-globalsubs
+myst-nb
+jupytext
+matplotlib
+ipython
+pydata-sphinx-theme
