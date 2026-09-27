@@ -26,13 +26,14 @@ dependencies = [
     "numpy>=1.20",
     "jdk4py",
     "orekit-jpype",
-    "git+https://gitlab.orekit.org/orekit/orekit-data.git",
+    "orekit-data @ git+https://gitlab.orekit.org/orekit/orekit-data.git",
     "funcy",
     "pandas",
     "spacetrack",
     "geocoder",
     "munch",  # for demos
 ]
+
 
 [project.optional-dependencies]
 # HDF5 serialization support
@@ -70,9 +71,9 @@ all = [
 ]
 
 [project.urls]
-Homepage = "none"
-Documentation = "none"
-Repository = "none"
+Homepage = "https://github.com/liamh/tellurion"
+Repository = "https://github.com/liamh/tellurion"
+Documentation = "https://tellurion.readthedocs.io"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
