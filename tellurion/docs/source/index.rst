@@ -3,8 +3,8 @@
 Welcome to Tellurion's documentation
 ====================================
 
-Tellurion is a Python package for satellite orbit propagation and analysis,
-built on AstroPy.
+Tellurion is a package for astrodynamics and space navigation. Input and results use
+`AstroPy <https://www.astropy.org>`__ objects, and orbit computations are performed by `Orekit <https://www.orekit.org/>`__.
 
 .. toctree::
    :maxdepth: 2
