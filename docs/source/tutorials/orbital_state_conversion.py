@@ -1,6 +1,22 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %%
-!pip install "orekitdata @ git+https://gitlab.orekit.org/orekit/orekit-data.git"
-!pip install git+[https://github.com/liamh/tellurion.git](https://github.com/liamh/tellurion.git))
+import sys
+
+# Automatically install missing packages only when running inside Google Colab
+if "google.colab" in sys.modules:
+    !pip install -q "orekitdata @ git+https://gitlab.orekit.org/orekit/orekit-data.git"
+    !pip install -q git+https://github.com/liamh/tellurion.git@develop
 
 # %% [markdown]
 # # Representation and conversion of orbital state
