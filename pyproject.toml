@@ -25,7 +25,6 @@ dependencies = [
     "numpy>=1.20",
     "jdk4py",
     "orekit-jpype",
-    "orekitdata @ git+https://gitlab.orekit.org/orekit/orekit-data.git",
     "funcy",
     "pandas",
     "spacetrack",
@@ -39,6 +38,7 @@ dependencies = [
 hdf5 = [
     "astropy-hdf5io>=0.1.0",
 ]
+
 
 # Documentation dependencies
 docs = [
@@ -67,6 +67,9 @@ dev = [
 # All optional dependencies combined
 all = [
     "tellurion[hdf5,docs,dev]",
+]
+data = [
+    "orekitdata @ git+https://gitlab.orekit.org/orekit/orekit-data.git",
 ]
 
 [project.urls]

@@ -1,3 +1,7 @@
+# %%
+!pip install "orekitdata @ git+https://gitlab.orekit.org/orekit/orekit-data.git"
+!pip install git+[https://github.com/liamh/tellurion.git](https://github.com/liamh/tellurion.git))
+
 # %% [markdown]
 # # Representation and conversion of orbital state
 # This tutorial will show how to create a {class}`tell.PositionVelocityT <tellurion.PositionVelocityT>` in Cartesian or spherical form and convert it to {class}`tell.PositionVelocityT <tellurion.ElementSetT>`, and vice versa
