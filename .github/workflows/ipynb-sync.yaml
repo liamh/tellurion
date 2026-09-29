@@ -24,7 +24,7 @@ jobs:
 
       - name: Install Jupytext
         run: |
-          pip install jupytext
+          pip install jupytext jupyter_client
 
       - name: Convert percent-scripts to ipynb
         run: |
