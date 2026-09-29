@@ -1,0 +1,72 @@
+name: Convert and Sync Colab Notebooks
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch: # Allows manual triggering from GitHub's Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Jupytext
+        run: |
+          pip install jupytext
+
+      - name: Convert percent-scripts to ipynb
+        run: |
+          jupytext --to ipynb --set-kernel python3 docs/source/tutorials/*.py
+
+      - name: Convert Sphinx roles to Read the Docs links
+        run: |
+          python -c "
+          import glob, re
+
+          DOCS_BASE_URL = 'https://tellurion.readthedocs.io/en/latest'
+
+          def sphinx_to_rtd_link(match):
+              role_type = match.group(1)
+              full_target = match.group(2)
+
+              display_name = full_target.split('.')[-1]
+
+              if role_type in ['meth', 'func']:
+                  class_path = '.'.join(full_target.split('.')[:-1])
+                  url = f'{DOCS_BASE_URL}/{class_path}.html#{full_target}'
+                  display_name = f'{display_name}()'
+              else:
+                  url = f'{DOCS_BASE_URL}/{full_target}.html'
+
+              return f'[{display_name}]({url})'
+
+          for path in glob.glob('docs/source/tutorials/*.ipynb'):
+              with open(path, 'r', encoding='utf-8') as f:
+                  content = f.read()
+
+              pattern = r'\{(class|meth|func|mod|ref)\}`~?([^`]+)\`';
+              cleaned = re.sub(pattern, sphinx_to_rtd_link, content)
+
+              with open(path, 'w', encoding='utf-8') as f:
+                  f.write(cleaned)
+          "
+
+      - name: Deploy converted notebooks to colab-notebooks branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/source/tutorials
+          destination_dir: .
+          publish_branch: colab-notebooks          
