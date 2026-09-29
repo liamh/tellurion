@@ -10,6 +10,11 @@
 #     name: python3
 # ---
 
+# %% [markdown]
+# # Run this tutorial in colab
+# [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/liamh/tellurion/blob/colab-notebooks/orbital_state_conversion.ipynb)
+# If you wish to make changes and save the file, select "File" and "Save to Drive" which will save to your Google Drive folder.
+
 # %%
 import sys
 
