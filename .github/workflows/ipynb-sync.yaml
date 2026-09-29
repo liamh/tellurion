@@ -57,6 +57,7 @@ jobs:
               with open(path, 'r', encoding='utf-8') as f:
                   content = f.read()
 
+              pattern = r'\{(class|meth|func|mod|ref)\}' + r'\`~?([^\`]+)\`'
               pattern = r'\{(class|meth|func|mod|ref)\}' + r'`~?([^`]+)`'
               cleaned = re.sub(pattern, sphinx_to_rtd_link, content)
 
