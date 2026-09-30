@@ -46,6 +46,7 @@ docs = [
     "sphinx-automodapi",
     "sphinx-astropy",
     "sphinx-changelog",
+    "sphinx-design",
     "numpydoc",
     "nbsphinx",
     "nbsphinx-link",
