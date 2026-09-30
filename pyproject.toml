@@ -39,13 +39,13 @@ hdf5 = [
     "astropy-hdf5io>=0.1.0",
 ]
 
-
 # Documentation dependencies
 docs = [
     "sphinx>=7.0",
     "sphinx-rtd-theme",
     "sphinx-automodapi",
     "sphinx-astropy",
+    "sphinx-changelog",
     "numpydoc",
     "nbsphinx",
     "nbsphinx-link",
