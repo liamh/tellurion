@@ -17,11 +17,15 @@
 
 # %%
 import sys
+import subprocess
 
-# Automatically install missing packages only when running inside Google Colab
+# Automatically install tellurion along with its optional 'data'
+# dependencies in Google Colab
 if "google.colab" in sys.modules:
-    !pip install -q "orekitdata @ git+https://gitlab.orekit.org/orekit/orekit-data.git"
-    !pip install -q git+https://github.com/liamh/tellurion.git@develop
+    subprocess.run([
+        sys.executable, "-m", "pip", "install", "-q",
+        "tellurion[data] @ git+https://github.com/liamh/tellurion.git@develop"
+    ], check=True)
 
 # %% [markdown]
 # # Representation and conversion of orbital state
