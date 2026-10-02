@@ -29,7 +29,7 @@ if "google.colab" in sys.modules:
 
 # %% [markdown]
 # # Representation and conversion of orbital state
-# This tutorial will show how to create a {class}`tell.PositionVelocityT <tellurion.PositionVelocityT>` in Cartesian or spherical form and convert it to {class}`tell.PositionVelocityT <tellurion.ElementSetT>`, and vice versa
+# This tutorial will show how to create a [PositionVelocityT][tellurion.PositionVelocityT] in Cartesian or spherical form and convert it to [ElementSetT][tellurion.ElementSetT], and vice versa
 #
 # ## Setup
 #
@@ -45,7 +45,7 @@ import tellurion as tell
 
 # %% [markdown]
 # ## Position, velocity, time (PVT) in Cartesian and spherical coordinates
-# Let's define a low-earth orbiting satellite by its Cartesian position and velocity, and then its epoch time. The position and velocity are given as length-6 {class}`numpy.array`. The epoch time doesn't matter for this tutorial, so we will make it whatever time it is now by giving {func}`~tellurion.abstime` the argument 0, meaning make an absolute time that is the same as the current time, i.e., now.
+# Let's define a low-earth orbiting satellite by its Cartesian position and velocity, and then its epoch time. The position and velocity are given as length-6 [numpy.array][numpy.ndarray]. The epoch time doesn't matter for this tutorial, so we will make it whatever time it is now by giving [abstime][tellurion.abstime] the argument 0, meaning make an absolute time that is the same as the current time, i.e., now.
 #
 # <!--
 # def keppvt(dictels, time):
@@ -70,7 +70,7 @@ leo2.pv_cartesian = np.array([4542.2829, 5170.0572,  565.0922,   -5.2368,    4.1
 leo2.epoch = tell.abstime(0)
 
 # %% [markdown]
-# To make a {class}`tell.PositionVelocityT <tellurion.PositionVelocityT>` (`PVT` for short), use the function {func}`tell.pvtcart() <tellurion.pvtcart>`. The [default units](#quantities-and-units) are kilometers for position and kilometers/second for velocity. To check we have the Cartesian orbital state correct, show the {attr}`cartesian <tellurion.PositionBase.cartesian>` property. This object has AstroPy's [structured units](https://docs.astropy.org/en/stable/units/structured_units.html), that is, the units are mixed. See also {doc}`../structured_quantities`.
+# To make a [tell.PositionVelocityT][tellurion.PositionVelocityT] (`PVT` for short), use the function [pvtcart()][tellurion.pvtcart]. The [default units](#quantities-and-units) are kilometers for position and kilometers/second for velocity. To check we have the Cartesian orbital state correct, show the [cartesian][tellurion.PositionBase.cartesian] property. This object has AstroPy's [structured units](https://docs.astropy.org/en/stable/units/structured_units.html), that is, the units are mixed. See also [structured_quantities](../structured_quantities.rst).
 
 # %%
 leo2.pvt = tell.pvtcart(leo2.pv_cartesian, leo2.epoch)
@@ -102,10 +102,10 @@ leo2.pvt.cartesian.to_array() # Make a numerical array
 # %% [markdown]
 # The spherical coordinates (right ascension, declination, and
 # geocentric distance, and their rates) are found in the
-# {attr}`spherical <tellurion.PositionBase.spherical>` property. To
-# make it easier to see, the function {func}`.to_dict()
-# <tellurion.quantity_to_dict>` will convert the result into a
-# dictionary, or the individual parts can be extracted directly.
+# [spherical][tellurion.PositionBase.spherical] property. To
+# make it easier to see, the [to_dict()][tellurion.quantity_to_dict] method
+# (an alias for [quantity_to_dict][tellurion.quantity_to_dict]) will convert
+# the result into a dictionary, or the individual parts can be extracted directly.
 
 # %%
 leo2.pvt.spherical
@@ -144,8 +144,8 @@ tell.prefunits
 # %% [markdown]
 # ### Defining an ElementSetT
 # To define an element set directly from orbital elements, use
-# {ref}`constructor functions <element-constructors>` such as
-# {func}`~tellurion.kepler`.
+# [constructor functions][element-constructors] such as
+# [kepler][tellurion.kepler].
 
 # %%
 kep = tell.kepler(
@@ -161,9 +161,9 @@ kep.time          # the epoch time of the element set
 # %% [markdown]
 # There are convience functions that make some definitions
 # easier. This is a geosynchronous transfer orbit; using the
-# {func}`~tellurion.allplane` function converts the
+# [allplane][tellurion.allplane] function converts the
 # altitudes of perigee and apogee to semimajor axis and eccentricity,
-# and {func}`~tellurion.sma` converts multiple quantities into
+# and [sma][tellurion.sma] converts multiple quantities into
 # a radial distance, in this case, the number of sidereal days into
 # the altitude of a circular orbit with that period.
 
@@ -178,9 +178,9 @@ ell1.est.elements.to_dict()
 
 # %% [markdown]
 # ### Convert to PVT
-# An {class}`~tellurion.ElementSetT` can be converted to a
-# {class}`~tellurion.PositionVelocityT` using the class method
-# {meth}`~tellurion.ElementSetT.pvt`.
+# An [ElementSetT][tellurion.ElementSetT] can be converted to a
+# [PositionVelocityT][tellurion.PositionVelocityT] using the class method
+# [pvt][tellurion.ElementSetT.pvt].
 
 # %%
 ell1.pvt = ell1.est.pvt()
@@ -189,12 +189,12 @@ ell1.pvt.cartesian.to_dict() # Show as dictionary for readability
 # %% [markdown]
 # ### Convert from PVT
 
-# Orbital elements can be generated from a {class}`PositionVelocityT
-# <tellurion.PositionVelocityT>` with the class methods
-# {meth}`~tellurion.PositionVelocityT.kepler`,
-# {meth}`~tellurion.PositionVelocityT.equinoctial`, or
-# {meth}`~tellurion.PositionVelocityT.circular`. Note that these are
-# distinct from the {ref}`constructor functions <element-constructors>`
+# %% [markdown]
+# Orbital elements can be generated from a [PositionVelocityT][tellurion.PositionVelocityT]
+# with the class methods [kepler()][tellurion.PositionVelocityT.kepler],
+# [equinoctial()][tellurion.PositionVelocityT.equinoctial], or
+# [circular()][tellurion.PositionVelocityT.circular]. Note that these are
+# distinct from the [constructor functions][element-constructors]
 # with the same names. They can be displayed more readably as a
 # dictionary, or individual elements extracted.
 
@@ -217,10 +217,10 @@ leo2.pvt.equinoctial().elements.to_dict()
 # %% [markdown]
 # ## Individual orbital elements
 # It is possible to get individual elements from a
-# {class}`tell.PositionVelocityT <tellurion.PositionVelocityT>`
-# without doing a complete conversion to a full
-# {class}`tell.ElementSetT <tellurion.ElementSetT>`. This will be
-# illustrated in the next section.
+# [PositionVelocityT][tellurion.PositionVelocityT] without doing a
+# complete conversion to a full
+# [ElementSetT][tellurion.ElementSetT]. This will be illustrated in
+# the next section.
 
 # The available Keplerian orbital elements are:
 #
@@ -291,7 +291,7 @@ eph1.eph['position']
 
 # %% [markdown]
 # Element values may be computed from an ephemeris table with
-# `tell.tselements()`; for example, the altitudes of perigee and
+# [tselements][tellurion.tselements]; for example, the altitudes of perigee and
 # apogee. From this time series, an individual column may be
 # extracted.
 
