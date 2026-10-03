@@ -5,17 +5,40 @@ Usage: python tools/rtd_links.py docs/source/tutorials/*.ipynb
 """
 import re
 import sys
+import time
+import urllib.error
 import urllib.request
 import zlib
 
 DOCS_BASE = "https://tellurion.readthedocs.io/en/latest"
 ROLE_RE = re.compile(r"\{(?:py:)?(class|meth|func|attr|mod|exc|data)\}`(~?)([^`]+)`")
 INV_LINE = re.compile(r"(.+?)\s+(\S+)\s+(-?\d+)\s+(\S*)\s+(.*)")
+HEADERS = {
+    # The default Python-urllib User-Agent is often rejected with 403.
+    "User-Agent": "Mozilla/5.0 (compatible; tellurion-docs-linker/1.0; "
+                  "+https://github.com/liamh/tellurion)",
+    "Accept": "*/*",
+}
+
+
+def fetch(url, attempts=4):
+    """GET url with a browser-like User-Agent, retrying on transient errors."""
+    last = None
+    for i in range(attempts):
+        try:
+            req = urllib.request.Request(url, headers=HEADERS)
+            return urllib.request.urlopen(req, timeout=30).read()
+        except (urllib.error.URLError, TimeoutError) as exc:
+            last = exc
+            print(f"fetch attempt {i + 1}/{attempts} failed: {exc}",
+                  file=sys.stderr)
+            time.sleep(2 * (i + 1))
+    raise SystemExit(f"Could not download {url}: {last}")
 
 
 def load_inventory(base):
     """Return {object name: absolute URL} for Python-domain objects."""
-    raw = urllib.request.urlopen(f"{base}/objects.inv", timeout=30).read()
+    raw = fetch(f"{base}/objects.inv")
     # Header is 4 text lines, then zlib-compressed entries.
     pos = 0
     for _ in range(4):
@@ -48,6 +71,7 @@ def make_replacer(inv, missing):
 
 def main(paths):
     inv = load_inventory(DOCS_BASE)
+    print(f"Loaded {len(inv)} Python objects from {DOCS_BASE}/objects.inv")
     missing = set()
     for path in paths:
         text = open(path, encoding="utf-8").read()
