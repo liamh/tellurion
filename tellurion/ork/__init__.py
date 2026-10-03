@@ -54,15 +54,24 @@ def init_orekit():
         data_dir = ensure_orekit_data(auto_download=True)
 
         try:
+            # 1. Export OREKIT_DATA_PATH BEFORE importing orekit_jpype.
+            # This prevents orekit_jpype from searching for /content/orekit-data.zip on import.
+            os.environ["OREKIT_DATA_PATH"] = str(data_dir)
+
+            # 2. Safely import orekit_jpype and boot the JVM
             import orekit_jpype as orekit
             orekit.initVM()
 
-            # Java imports must come after initVM()
+            # 3. Java imports must come after initVM()
             from java.io import File
             from org.orekit.data import DataContext, DirectoryCrawler
 
+            # 4. Explicitly attach your DirectoryCrawler to the Orekit DataContext
             manager = DataContext.getDefault().getDataProvidersManager()
-            manager.addProvider(DirectoryCrawler(File(str(data_dir))))
+            
+            # Avoid adding duplicate crawlers if one was already registered
+            if manager.getProviders().isEmpty():
+                manager.addProvider(DirectoryCrawler(File(str(data_dir))))
 
             _VM_INITIALIZED = True
         except Exception as exc:
