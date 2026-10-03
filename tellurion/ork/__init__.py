@@ -33,12 +33,12 @@ _OREKIT_SCAN_MODULES = _OREKIT_TOPLEVEL_SUBMODULES + (
 )
 _OREKIT_SYMBOL_TO_MODULES = None
 
-
 def init_orekit():
     """Initialize JVM + Orekit data once, explicitly or on first Orekit use."""
     global _VM_INITIALIZED, _INIT_ERROR
     if _VM_INITIALIZED:
         return
+
     with _INIT_LOCK:
         if _VM_INITIALIZED:
             return
@@ -47,18 +47,22 @@ def init_orekit():
                 "Orekit initialization previously failed. "
                 "Restart your Python session after fixing your Java/Orekit setup."
             ) from _INIT_ERROR
+
+        from .data import ensure_orekit_data
+
+        # Download/locate data first (retryable failures should not poison _INIT_ERROR)
+        data_dir = ensure_orekit_data(auto_download=True)
+
         try:
-            # Ensure data exists first (may download on first use)
-            data_dir = ensure_orekit_data(auto_download=True)
-
-            import os
-            os.environ.setdefault("OREKIT_DATA_PATH", str(data_dir))
-
             import orekit_jpype as orekit
             orekit.initVM()
 
-            from orekit_jpype.pyhelpers import setup_orekit_data
-            setup_orekit_data()
+            # Java imports must come after initVM()
+            from java.io import File
+            from org.orekit.data import DataContext, DirectoryCrawler
+
+            manager = DataContext.getDefault().getDataProvidersManager()
+            manager.addProvider(DirectoryCrawler(File(str(data_dir))))
 
             _VM_INITIALIZED = True
         except Exception as exc:

@@ -23,6 +23,7 @@
 import sys
 import subprocess
 
+# subprocess.run([sys.executable, "-m", "pip", "install", "-q", "tellurion"], check=True)
 if "google.colab" in sys.modules:
     subprocess.run(
         [
@@ -31,7 +32,7 @@ if "google.colab" in sys.modules:
             "pip",
             "install",
             "-q",
-            "tellurion[data] @ git+https://github.com/liamh/tellurion.git@develop",
+            "tellurion @ git+https://github.com/liamh/tellurion.git@develop",
         ],
         check=True,
     )
