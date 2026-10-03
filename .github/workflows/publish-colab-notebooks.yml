@@ -1,57 +1,15 @@
-name: Publish Colab notebooks
-
-on:
-  push:
-    branches:
-      - develop
-    paths:
-      - "docs/source/tutorials/*.py"
-      - "tools/build_colab_notebooks.py"
-      - ".github/workflows/publish-colab-notebooks.yml"
-  workflow_dispatch:
-
-jobs:
-  build-and-publish:
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout develop
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install jupytext
-        run: |
-          python -m pip install --upgrade pip
-          pip install jupytext
-
-      - name: Generate notebooks for Colab
-        run: |
-          python tools/build_colab_notebooks.py
-
       - name: Publish notebooks to colab-notebooks branch
         run: |
-          git fetch origin colab-notebooks:colab-notebooks || git checkout --orphan colab-notebooks
-          git checkout colab-notebooks || git checkout -b colab-notebooks
+          set -euo pipefail
 
-          # Remove tracked files except .git metadata (safe reset for this branch)
-          git rm -rf . || true
+          # Copy generated notebooks to a dedicated publish directory
+          rm -rf colab-export
+          mkdir -p colab-export
+          cp docs/source/tutorials/*.ipynb colab-export/
 
-          # Restore generated notebooks from develop
-          git checkout develop -- docs/source/tutorials/*.ipynb
-
-          # Flatten notebooks to branch root for current Colab badge URL
-          cp docs/source/tutorials/*.ipynb ./
-
-          git add *.ipynb
+          # Commit only the export directory contents to colab-notebooks branch root
+          # via subtree split (clean and reliable)
+          git add colab-export/*.ipynb
           if git diff --cached --quiet; then
             echo "No notebook changes to publish."
             exit 0
@@ -59,5 +17,15 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Publish Colab notebooks from develop"
-          git push origin colab-notebooks
+
+          # Create a synthetic commit in current branch with export content
+          git commit -m "Prepare Colab notebooks for publish"
+
+          # Split export dir to a temporary branch
+          git subtree split --prefix colab-export -b colab-publish-branch
+
+          # Force-push split branch to colab-notebooks (branch root contains only notebooks)
+          git push --force origin colab-publish-branch:colab-notebooks
+
+          # Clean temp branch
+          git branch -D colab-publish-branch
