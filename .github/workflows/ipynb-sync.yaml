@@ -32,38 +32,7 @@ jobs:
           jupytext --to ipynb --set-kernel python3 docs/source/tutorials/*.py
 
       - name: Convert Sphinx roles to Read the Docs links
-        run: |
-          python -c "
-          import glob, re
-
-          DOCS_BASE_URL = 'https://tellurion.readthedocs.io/en/latest'
-
-          def sphinx_to_rtd_link(match):
-              role_type = match.group(1)
-              full_target = match.group(2)
-
-              display_name = full_target.split('.')[-1]
-
-              if role_type in ['meth', 'func', 'attr']:
-                  class_path = '.'.join(full_target.split('.')[:-1])
-                  url = f'{DOCS_BASE_URL}/{class_path}.html#{full_target}'
-                  if role_type in ['meth', 'func']:
-                      display_name = f'{display_name}()'
-              else:
-                  url = f'{DOCS_BASE_URL}/{full_target}.html'
-
-              return f'[{display_name}]({url})'
-
-          for path in glob.glob('docs/source/tutorials/*.ipynb'):
-              with open(path, 'r', encoding='utf-8') as f:
-                  content = f.read()
-
-              pattern = r'\{(?:py:)?(class|meth|func|attr|mod|ref)\}' + r'\`~?([^\`]+)\`'
-              cleaned = re.sub(pattern, sphinx_to_rtd_link, content)
-
-              with open(path, 'w', encoding='utf-8') as f:
-                  f.write(cleaned)
-          "
+        run: python tools/rtd_links.py docs/source/tutorials/*.ipynb
 
       - name: Deploy converted notebooks to colab-notebooks branch
         uses: peaceiris/actions-gh-pages@v3
