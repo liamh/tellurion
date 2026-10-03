@@ -45,7 +45,8 @@ if "google.colab" in sys.modules:
 #
 # ## Setup
 #
-# We import Tellurion plus a few helper packages. {py:mod}`munch` is used as a
+# We import Tellurion plus a few helper
+# packages. [Munch](https://github.com/Infinidat/munch) is used as a
 # convenient container for grouping related values in each example section.
 
 # %%
