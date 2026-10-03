@@ -8,6 +8,16 @@ from functools import wraps
 import numpy as np
 from astropy.table import conf as table_conf
 
+# tellurion/__init__.py
+
+import os
+from tellurion.data import get_orekit_data_path
+
+# Populate environment variable early so orekit_jpype sees it on import
+data_path = get_orekit_data_path()
+if data_path:
+    os.environ["OREKIT_DATA_PATH"] = str(data_path)
+
 # Configure printing
 table_conf.format_size_threshold = 3
 np.set_printoptions(suppress=True, precision=4, linewidth=np.inf)
