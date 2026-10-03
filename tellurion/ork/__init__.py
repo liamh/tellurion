@@ -4,6 +4,7 @@ import ast
 from importlib import import_module, util as importlib_util
 from pathlib import Path
 from threading import Lock
+from .data import ensure_orekit_data, get_orekit_data_path, orekit_data_setup_instructions
 
 __all__ = ["init_orekit", "ensure_orekit_initialized", "orekit_available"]
 
@@ -47,12 +48,18 @@ def init_orekit():
                 "Restart your Python session after fixing your Java/Orekit setup."
             ) from _INIT_ERROR
         try:
+            # Ensure data exists first (may download on first use)
+            data_dir = ensure_orekit_data(auto_download=True)
+
+            import os
+            os.environ.setdefault("OREKIT_DATA_PATH", str(data_dir))
+
             import orekit_jpype as orekit
-
             orekit.initVM()
-            from orekit_jpype.pyhelpers import setup_orekit_data
 
+            from orekit_jpype.pyhelpers import setup_orekit_data
             setup_orekit_data()
+
             _VM_INITIALIZED = True
         except Exception as exc:
             _INIT_ERROR = exc
