@@ -13,8 +13,8 @@ DOCS_BASE = "https://tellurion.readthedocs.io/en/stable"
 # Match MyST/Sphinx Python roles in markdown:
 # {py:class}`~tellurion.PositionVelocityT`
 # {py:func}`tellurion.abstime`
-ROLE_RE = re.compile(r"\{py:(class|func|meth|attr|mod)\}`(~?)([^`]+)`")
-
+# Support both {py:class}`...` and {{py:class}}`...`
+ROLE_RE = re.compile(r"\{\{?py:(class|func|meth|attr|mod)\}?\}`(~?)([^`]+)`")
 
 def role_to_markdown(target: str, shorten: bool) -> str:
     label = target.split(".")[-1] if shorten else target
