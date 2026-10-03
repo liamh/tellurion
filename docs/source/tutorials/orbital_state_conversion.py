@@ -42,7 +42,7 @@ if "google.colab" in sys.modules:
 # This tutorial shows how to create a {py:class}`~tellurion.PositionVelocityT`
 # in Cartesian or spherical form and convert it to {py:class}`~tellurion.ElementSetT`,
 # and vice versa.
-#
+# (setup-section)=
 # ## Setup
 #
 # We import Tellurion plus a few helper
@@ -108,7 +108,7 @@ leo2.pvt.cartesian.to_array()
 
 # %% [markdown]
 # Spherical coordinates are available from
-# {py:attr}`tellurion.PositionBase.spherical`.
+# {py:attr}`~tellurion.PositionBase.spherical`.
 #
 # For readability, use {py:func}`~tellurion.quantity_to_dict` (also available
 # as `.to_dict()` on returned structured quantities).
@@ -125,7 +125,10 @@ leo2.pvt.spherical["distance"]
 # %% [markdown]
 # ## Quantities and units
 #
-# Units are provided by AstroPy (`astropy.units`).
+# Units are provided by [AstroPy
+# units](https://docs.astropy.org/en/stable/units/index.html) in
+# order to use them, we need the `import astropy.units as u` line that
+# is in the [Setup](#setup-section) section.
 
 # %%
 157.0 * u.meter
@@ -193,7 +196,7 @@ ell1.est.elements.to_dict()
 #
 # Convert an {py:class}`~tellurion.ElementSetT` to
 # {py:class}`~tellurion.PositionVelocityT` with
-# {py:meth}`tellurion.ElementSetT.pvt`.
+# {py:meth}`~tellurion.ElementSetT.pvt`.
 
 # %%
 ell1.pvt = ell1.est.pvt()
@@ -203,9 +206,9 @@ ell1.pvt.cartesian.to_dict()
 # ### Convert PVT → element sets
 #
 # Starting from {py:class}`~tellurion.PositionVelocityT`, compute elements with:
-# - {py:meth}`tellurion.PositionVelocityT.kepler`,
-# - {py:meth}`tellurion.PositionVelocityT.equinoctial`,
-# - {py:meth}`tellurion.PositionVelocityT.circular`.
+# - {py:meth}`~tellurion.PositionVelocityT.kepler`,
+# - {py:meth}`~tellurion.PositionVelocityT.equinoctial`,
+# - {py:meth}`~tellurion.PositionVelocityT.circular`.
 
 # %%
 leo2.pvt.kepler()
