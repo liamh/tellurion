@@ -1,10 +1,15 @@
 # conftest.py
 """Shared test fixtures for orbit and element tests."""
 
+from __future__ import annotations
 import numpy as np
 import astropy.units as u
 import tellurion as tell
 import pytest
+import os
+from pathlib import Path
+
+
 
 def keppvt(dictels, time):
     """From the dictionary of element values, compute the Kepler
@@ -81,3 +86,62 @@ def gps1():
 def all_orbits(leo1, leo2, geo1, ell1, ell2, vang1, gps1):
     """All orbit fixtures as a list"""
     return [leo1, leo2, geo1, ell1, ell2, vang1, gps1]
+
+# -----------------------------------------------------------------------
+# Orekit data fixtures
+# -----------------------------------------------------------------------
+
+def _candidate_paths(repo_root: Path) -> list[Path]:
+    return [
+        # explicit override
+        Path(os.environ["OREKIT_DATA_PATH"]).expanduser().resolve()
+        if "OREKIT_DATA_PATH" in os.environ
+        else Path("__missing__"),
+        # package-bundled
+        repo_root / "tellurion" / "ork" / "_orekit_data",
+        repo_root / "tellurion" / "ork" / "_orekit_data.zip",
+        # cache
+        Path.home() / ".cache" / "tellurion",
+        Path.home() / ".cache" / "tellurion" / "orekit-data.zip",
+    ]
+
+
+def _find_orekit_data(repo_root: Path) -> Path | None:
+    for p in _candidate_paths(repo_root):
+        if p.exists():
+            return p
+    return None
+
+
+@pytest.fixture(scope="session")
+def orekit_data_path() -> Path:
+    repo_root = Path(__file__).resolve().parents[1]
+    p = _find_orekit_data(repo_root)
+    if p is None:
+        pytest.skip(
+            "Orekit data not found. Checked tellurion/ork/_orekit_data, "
+            "tellurion/ork/_orekit_data.zip, ~/.cache/tellurion, "
+            "~/.cache/tellurion/orekit-data.zip, and OREKIT_DATA_PATH."
+        )
+    return p
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "requires_orekit_data: mark test as requiring local Orekit data files",
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    repo_root = Path(__file__).resolve().parents[1]
+    data_path = _find_orekit_data(repo_root)
+    if data_path is not None:
+        return
+
+    skip_marker = pytest.mark.skip(
+        reason="Orekit data not found (set OREKIT_DATA_PATH or install cached/package data)."
+    )
+    for item in items:
+        if "requires_orekit_data" in item.keywords:
+            item.add_marker(skip_marker)

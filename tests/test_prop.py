@@ -574,7 +574,6 @@ class TestEclipseDetection:
         )
 
 
-@pytest.mark.skip(reason="Unknown heisenbug segmentation fault")
 class TestDSSSTPropagator:
     """Test DSST (Draper Semi-analytical Satellite Theory) propagator."""
 
@@ -631,7 +630,6 @@ class TestDSSSTPropagator:
         assert result is not None
 
 
-    @pytest.mark.skip(reason="DSST geo pvt intermittent segfaults?")
     def test_dsst_geo1_pvt(self, geo1):
         """Propagate GEO orbit with DSST (PVT)."""
         initstate = geo1["pvt"]
@@ -668,8 +666,6 @@ class TestDSSSTPropagator:
         result = tell.propagate(gen, [3.0 * u.day])
         assert result is not None
 
-    @pytest.mark.skip(reason="DSST + equinoctial elements cause intermittent"
-                      "segfaults - suspected Orekit memory leak (issue to be reported)")
     def test_dsst_geo1_equinoctial(self, geo1):
         """Propagate GEO orbit with DSST and equinoctial elements
         (handles equatorial)."""

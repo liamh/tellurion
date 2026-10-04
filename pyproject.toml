@@ -92,7 +92,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --tb=short"
+addopts = "-p no:faulthandler -v --tb=short"
 markers = [
     "hdf5: tests requiring astropy-hdf5io (deselect with '-m not hdf5')",
 ]

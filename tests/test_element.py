@@ -89,10 +89,7 @@ class TestElementSetT:
         assert est.pvt() is sentinel
         assert calls == [("import", "tellurion.ork.element"), ("pvt", est)]
 
-    @pytest.mark.skipif(
-        not _OREKIT_DATA.exists(),
-        reason="Orekit data zip not available for integration conversion test.",
-    )
+    @pytest.mark.requires_orekit_data
     def test_pvt_method_integration(self, leo1):
         est = leo1["kep"]
         via_method = est.pvt()
