@@ -3,15 +3,18 @@
 import os
 import shutil
 import tempfile
+import urllib.error
 import urllib.request
 import zipfile
 from importlib import resources
 from pathlib import Path
 
-DATA_URL = (
-    "https://gitlab.orekit.org/orekit/orekit-data/-/archive/master/"
-    "orekit-data-master.zip"
+DATA_URLS = tuple(
+    f"https://gitlab.orekit.org/orekit/orekit-data/-/archive/{b}/"
+    f"orekit-data-{b}.zip"
+    for b in ("main", "master")
 )
+DATA_URL = DATA_URLS[0]
 ENV_VAR = "TELLURION_OREKIT_DATA"
 _MARKER = "UTC-TAI.history"
 
@@ -38,14 +41,25 @@ def cache_dir():
     return Path(base) / "tellurion"
 
 
-def download_orekit_data(dest=None, url=DATA_URL):
+def download_orekit_data(dest=None, url=None):
     """Download and extract Orekit data into ``dest``; return its path."""
     dest = Path(dest) if dest else cache_dir() / "orekit-data"
     dest.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=dest.parent) as tmp:
         zpath = Path(tmp) / "orekit-data.zip"
-        with urllib.request.urlopen(url, timeout=60) as resp, open(zpath, "wb") as f:
-            shutil.copyfileobj(resp, f)
+        last_exc = None
+        for candidate in (url,) if url else DATA_URLS:
+            try:
+                with urllib.request.urlopen(candidate, timeout=60) as resp:
+                    with open(zpath, "wb") as f:
+                        shutil.copyfileobj(resp, f)
+                break
+            except urllib.error.URLError as exc:
+                last_exc = exc
+        else:
+            raise RuntimeError(
+                f"Could not download Orekit data from {DATA_URLS}"
+            ) from last_exc
         with zipfile.ZipFile(zpath) as z:
             z.extractall(tmp)
         roots = [p for p in Path(tmp).iterdir() if p.is_dir()]

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Refresh the vendored Orekit data snapshot from upstream.
-# Usage: scripts/update_orekit_data.sh [git-ref]   (default: master)
+# Usage: scripts/update_orekit_data.sh [git-ref]   (default: main)
 set -euo pipefail
-REF="${1:-master}"
+REF="${1:-main}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DEST="$ROOT/tellurion/_orekit_data"
 TMP="$(mktemp -d)"
