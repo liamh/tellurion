@@ -5,7 +5,7 @@ from tellurion import orekit_data as od
 
 def _make_data(path):
     path.mkdir(parents=True)
-    (path / "UTC-TAI.history").write_text("x")
+    (path / "tai-utc.dat").write_text("x")
     return path
 
 

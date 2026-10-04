@@ -16,11 +16,11 @@ DATA_URLS = tuple(
 )
 DATA_URL = DATA_URLS[0]
 ENV_VAR = "TELLURION_OREKIT_DATA"
-_MARKER = "UTC-TAI.history"
+_MARKERS = ("tai-utc.dat", "UTC-TAI.history")
 
 
 def _valid(path):
-    return path.is_dir() and any(path.rglob(_MARKER))
+    return path.is_dir() and any(any(path.rglob(m)) for m in _MARKERS)
 
 
 def bundled_data_path():
