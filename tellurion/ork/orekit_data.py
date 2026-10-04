@@ -26,7 +26,7 @@ def _valid(path):
 def bundled_data_path():
     """Return the bundled data directory, or None if it is not present."""
     try:
-        path = Path(str(resources.files("tellurion") / "_orekit_data"))
+        path = Path(str(resources.files("tellurion.ork") / "_orekit_data"))
     except (ModuleNotFoundError, TypeError):
         return None
     return path if _valid(path) else None

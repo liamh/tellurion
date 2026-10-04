@@ -53,7 +53,7 @@ def init_orekit():
             from java.io import File
             from org.orekit.data import DataContext, DirectoryCrawler
 
-            from tellurion.orekit_data import orekit_data_path
+            from tellurion.ork.orekit_data import orekit_data_path
 
             manager = DataContext.getDefault().getDataProvidersManager()
             manager.addProvider(DirectoryCrawler(File(str(orekit_data_path()))))

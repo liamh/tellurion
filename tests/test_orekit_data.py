@@ -1,6 +1,6 @@
 """Tests for Orekit data location helper."""
 
-from tellurion import orekit_data as od
+from tellurion.ork import orekit_data as od
 
 
 def _make_data(path):

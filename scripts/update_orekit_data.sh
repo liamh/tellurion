@@ -4,7 +4,7 @@
 set -euo pipefail
 REF="${1:-main}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DEST="$ROOT/tellurion/_orekit_data"
+DEST="$ROOT/tellurion/ork/_orekit_data"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 git clone --depth 1 --branch "$REF" https://gitlab.orekit.org/orekit/orekit-data.git "$TMP/src"

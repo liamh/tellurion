@@ -85,7 +85,7 @@ where = ["."]
 include = ["tellurion*"]
 
 [tool.setuptools.package-data]
-tellurion = ["_orekit_data/**/*"]
+"tellurion.ork" = ["_orekit_data/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

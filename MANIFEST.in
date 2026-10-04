@@ -1,2 +1,2 @@
 include LICENSE.txt README.md
-recursive-include tellurion/_orekit_data *
+recursive-include tellurion/ork/_orekit_data *
