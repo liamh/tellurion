@@ -3,7 +3,7 @@ name: Convert and Sync Colab Notebooks
 on:
   push:
     branches:
-      - main
+      - production
       - develop
   workflow_dispatch: # Allows manual triggering from GitHub's Actions tab
 
