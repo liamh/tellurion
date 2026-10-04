@@ -3,7 +3,7 @@
 import pathlib
 import astropy.coordinates as coord
 from demos.propdemo import *
-from fsc.hdf5_io import save, load
+from importlib.resources import files
 import astropy_hdf5io  # registers all serializers including MeanElementSetT
 
 _MODULE_DIR = pathlib.Path(__file__).parent # To find pre-recorded file sentinel3a.h5 in this directory
