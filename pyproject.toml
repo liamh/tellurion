@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -74,9 +74,6 @@ dev = [
 all = [
     "tellurion[hdf5,docs,dev]",
 ]
-data = [
-    "orekitdata @ git+https://gitlab.orekit.org/orekit/orekit-data.git",
-]
 
 [project.urls]
 Homepage = "https://github.com/liamh/tellurion"
@@ -86,6 +83,9 @@ Documentation = "https://tellurion.readthedocs.io"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["tellurion*"]
+
+[tool.setuptools.package-data]
+"tellurion.ork" = ["_orekit_data/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

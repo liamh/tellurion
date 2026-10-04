@@ -26,6 +26,14 @@ The easiest way to install is using pip:
 
    pip install tellurion
 
+Orekit data
+-----------
+
+A pinned snapshot of the Orekit data is bundled with the package. If it is
+missing, the data is downloaded once into ``~/.cache/tellurion``. Set
+``TELLURION_OREKIT_DATA`` to use your own data directory. To refresh the
+bundled snapshot, run ``scripts/update_orekit_data.sh`` before a release.
+
 Installing dependencies manually (optional)
 -------------------------------------------
 
@@ -36,7 +44,6 @@ only needed if you want to install dependencies individually:
 
    pip install jdk4py
    pip install orekit-jpype
-   pip install git+https://gitlab.orekit.org/orekit/orekit-data.git
    pip install astropy
    pip install funcy
    pip install pandas
