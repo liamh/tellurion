@@ -50,9 +50,13 @@ def init_orekit():
             import orekit_jpype as orekit
 
             orekit.initVM()
-            from orekit_jpype.pyhelpers import setup_orekit_data
+            from java.io import File
+            from org.orekit.data import DataContext, DirectoryCrawler
 
-            setup_orekit_data()
+            from tellurion.orekit_data import orekit_data_path
+
+            manager = DataContext.getDefault().getDataProvidersManager()
+            manager.addProvider(DirectoryCrawler(File(str(orekit_data_path()))))
             _VM_INITIALIZED = True
         except Exception as exc:
             _INIT_ERROR = exc

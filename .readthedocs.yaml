@@ -14,5 +14,4 @@ python:
     - method: pip
       path: .    # Installs directly from repository root via pip install .
       extra_requirements:
-        - data
         - docs
