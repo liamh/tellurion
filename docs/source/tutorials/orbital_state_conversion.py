@@ -31,7 +31,7 @@ if "google.colab" in sys.modules:
             "pip",
             "install",
             "-q",
-            "tellurion[data] @ git+https://github.com/liamh/tellurion.git@develop",
+            "tellurion",
         ],
         check=True,
     )
