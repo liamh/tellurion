@@ -1,9 +1,12 @@
 name: Publish to PyPI
 
+# Runs from the non-default `production` branch. push/release events use the
+# workflow file at the triggering commit, so this file need not exist on the
+# default branch.
 on:
-  workflow_dispatch:  # Trigger manually from the GitHub Actions tab
-  # release:
-  #   types: [published]
+  push:
+    tags:
+      - "v*"
 
 jobs:
   build-and-publish:
@@ -16,11 +19,21 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # need history to check branch ancestry
+
+      - name: Require tagged commit to be on production
+        run: |
+          git fetch origin production
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/production; then
+            echo "::error::Tag $GITHUB_REF_NAME is not on the production branch; refusing to publish."
+            exit 1
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install build tools
         run: pip install build
