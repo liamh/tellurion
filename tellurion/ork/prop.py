@@ -201,11 +201,7 @@ def _convert_to_orbit(state, forceenv):
     elif element.iscircels(state):
         conv = _circularorbit(state, forceenv=forceenv)
     elif isinstance(state, PositionVelocityT):
-        conv = CartesianOrbit(
-            convert._tspvc(state),
-            forceenv["celestialframe"],
-            forceenv["earthmu"].si.value,
-        )
+        conv = _cartorb(state, forceenv)
     else:
         raise TypeError(
             "Can only convert Keplerian, Equinoctial, or Circular "
@@ -213,6 +209,13 @@ def _convert_to_orbit(state, forceenv):
         )
     return conv
 
+def _cartorb(pvt, forceenv):
+    """Convert the PositionVelocityT state to an Orekit CartesianOrbit"""
+    return CartesianOrbit(
+        convert._tspvc(pvt),
+        forceenv["celestialframe"],
+        forceenv["earthmu"].si.value,
+    )
 
 def kaprep(initstate, proptime, events, forceenv, reftime, output):
     """Prepare the Keplerian (two-body) analytic propagator"""
@@ -443,10 +446,21 @@ def timerange(object):
         raise ValueError("Cannot get timerange for this object")
 
 
-def _to_spacecraft_state(tspvc, forceenv=force.deffe):
-    """From the TimeStampedPVCoordinates, create a SpacecraftState"""
-    if isinstance(tspvc, TimeStampedPVCoordinates):
-        apvc = AbsolutePVCoordinates(forceenv["celestialframe"], tspvc)
+def _to_spacecraft_state(posvel, forceenv=force.deffe):
+    """From the TimeStampedPVCoordinates, CartesianOrbit, or
+    PositionVelocityT, create a SpacecraftState.
+    """
+    if isinstance(posvel, TimeStampedPVCoordinates):
+        apvc = AbsolutePVCoordinates(forceenv["celestialframe"], posvel)
         return SpacecraftState(apvc)
+    elif isinstance(posvel, PositionVelocityT):
+        if posvel.isscalar:
+            # Orbit-backed state, so getOrbit() works (needed by relative._relframe)
+            return SpacecraftState(_cartorb(posvel, forceenv))
+        else:
+            return [_to_spacecraft_state(posvel[i], forceenv)
+                    for i in range(len(posvel))]
+    elif isinstance(posvel, CartesianOrbit):
+        return SpacecraftState(posvel)
     else:
-        return tspvc
+        return posvel

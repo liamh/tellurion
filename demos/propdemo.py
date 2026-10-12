@@ -32,6 +32,17 @@ demoa.init.kep = demoa.init.pvt.kepler()  # Convert PVT to Kepler elements
 demoa.init.seekep = demoa.init.kep.elements.to_dict()  # Easier to read Kepler elements
 demoa.init.cart = demoa.init.kep.pvt()  # Convert back to Cartesian, same as demoa.init.pvt
 
+# --------- Relative state --------------
+# Curtis 4th edition example 7.1, pp. 355-357
+curtis_ex71 = Munch()
+curtis_ex71.a_pvt = tell.pvtcart(([-266.77, 3865.8, 5426.2,
+                                   -6.4836, -3.6198, 2.4156]), newyear)
+curtis_ex71.b_pvt = tell.pvtcart(([-5890.71, -2979.8, 1792.2,
+                                   0.93583, -5.2403, -5.5009]), newyear)
+# Compare curtis_ex71.lvlh.cartesian with results at step 9, at the top of p. 357
+curtis_ex71.lvlh = tell.lvlh(curtis_ex71.b_pvt, curtis_ex71.a_pvt)
+curtis_ex71.ntw = tell.ntw(curtis_ex71.b_pvt, curtis_ex71.a_pvt)
+
 # --------- Propagation two-body --------------
 
 demoa.propn = Munch()
@@ -147,11 +158,16 @@ demoa.props.finstm4x4hpB01 = demoa.props.gen4x4hpB01['final']['stm'] # STM of fi
 # Compare demoa.props.finstm with demoa.props.finstm4x4hpB01, they are very different
 
 # Effects of atmospheric drag in NTW and RSW (LVLH) relative coordinates
-demoa.propp.ss4x4hpB01 = tell.propagate(demoa.propp.gen4x4hpB01, prop5m1h, True, output='ss')
-demoa.propp.ss4x4 = tell.propagate(demoa.propp.gen4x4, prop5m1h, True, output='ss')
-demoa.propp.ntw_4x4hpB01_to_4x4 = tell.ntw(demoa.propp.ss4x4hpB01, demoa.propp.ss4x4, tell.siunits)
-demoa.propp.rsw_4x4hpB01_to_4x4 = tell.lvlh(demoa.propp.ss4x4hpB01,
-                                            demoa.propp.ss4x4, tell.siunits)
+demoa.propp.pvt4x4hpB01 = tell.propagate(demoa.propp.gen4x4hpB01, prop5m1h, True, output='pvt')
+demoa.propp.pvt4x4 = tell.propagate(demoa.propp.gen4x4, prop5m1h, True, output='pvt')
+demoa.propp.ntw_4x4hpB01_to_4x4 = tell.ntw(demoa.propp.pvt4x4hpB01, demoa.propp.pvt4x4, tell.siunits)
+demoa.propp.rsw_4x4hpB01_to_4x4 = tell.lvlh(demoa.propp.pvt4x4hpB01,
+                                            demoa.propp.pvt4x4, tell.siunits)
+
+# Inverse relative transformation
+demoa.propp.reconstruct_inertial = tell.inv_lvlh(demoa.propp.rsw_4x4hpB01_to_4x4, demoa.propp.pvt4x4)
+demoa.propp.rel_roundtrip = np.linalg.norm(demoa.propp.reconstruct_inertial.ephemeris()["position"]
+                                           -demoa.propp.pvt4x4hpB01.ephemeris()["position"])
 
 # Lifetime - need a very low orbit to avoid a long integration, but
 # don't go below 100km altitude, HP will fail

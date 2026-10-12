@@ -616,6 +616,10 @@ class PositionBase(abc.ABC):
         >>> ts.colnames  # 'time' is unchanged
         ['time', 'Satellite position', 'Satellite velocity']
         """
+
+        if self.isscalar:
+            raise ValueError("Cannot generate ephemeris from scalar")
+
         # Determine column names based on velocity presence.
         has_velocity = self.has_velocity
         expected_names = 2 if has_velocity else 1
