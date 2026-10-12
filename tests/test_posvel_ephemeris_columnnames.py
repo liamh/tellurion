@@ -117,7 +117,7 @@ def test_invalid_columnnames_length_raises_value_error(
 ):
     instance = position_velocity if obj == "velocity" else position_only
 
-    with pytest.raises(ValueError, match=expected):
+    with pytest.raises(ValueError, match=f"{expected}.*always named 'time'"):
         instance.ephemeris(columnnames=names)
 
 
