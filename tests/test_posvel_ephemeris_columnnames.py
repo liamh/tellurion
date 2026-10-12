@@ -160,6 +160,13 @@ def test_dynamic_name_prefixes_default_names_only(position_velocity):
     assert ts.colnames == ["time", "Satellite position", "Satellite velocity"]
 
 
+def test_empty_dynamic_name_keeps_legacy_prefix(position_velocity):
+    position_velocity.name = ""
+    ts = position_velocity.ephemeris(elapsed=False, reftime=None)
+
+    assert ts.colnames == ["time", " position", " velocity"]
+
+
 def test_dynamic_name_prefixes_spherical_names(position_velocity, position_only):
     position_velocity.name = "Probe"
     defaults = position_velocity.ephemeris(

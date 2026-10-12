@@ -571,7 +571,8 @@ class PositionBase(abc.ABC):
             Names for data columns only: [position, velocity] when velocity
             is present, or [position] for position-only objects. The time
             column is always named 'time'. For spherical coordinates, these
-            names prefix their native component names.
+            names prefix their native component names. If the object has a
+            `name` attribute, its value prefixes each data column.
         components : bool, optional
             If True, split Cartesian 3-vectors into scalar components named
             with '_x', '_y', and '_z' suffixes. Spherical coordinates are
@@ -621,10 +622,11 @@ class PositionBase(abc.ABC):
             columnnames = defaults[1:]
         elif len(columnnames) != expected_names:
             expected = "[position, velocity]" if has_velocity else "[position]"
+            count_noun = "name" if expected_names == 1 else "names"
             raise ValueError(
-                f"columnnames must contain {expected_names} data-column names "
-                f"{expected}; the time column is always named 'time' and is "
-                f"not included; got {len(columnnames)}"
+                f"columnnames must contain {expected_names} data-column "
+                f"{count_noun} {expected}; the time column is always named "
+                f"'time' and is not included; got {len(columnnames)}"
             )
         else:
             columnnames = list(columnnames)
@@ -632,7 +634,7 @@ class PositionBase(abc.ABC):
         name_prefix = getattr(self, "name", None)
 
         def prefix_column(name):
-            return f"{name_prefix} {name}" if name_prefix else name
+            return f"{name_prefix} {name}" if name_prefix is not None else name
 
         data_names = [prefix_column(name) for name in columnnames]
 
@@ -664,7 +666,7 @@ class PositionBase(abc.ABC):
             spherical = self.spherical
             fields = spherical.dtype.names
             position_fields = fields[:3]
-            velocity_fields = fields[3:]
+            velocity_fields = fields[3:] if has_velocity else ()
 
             for field in position_fields:
                 base_name = (f"{columnnames[0]}_{field}" if custom_columnnames
