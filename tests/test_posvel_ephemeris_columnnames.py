@@ -49,6 +49,13 @@ def test_position_only_custom_names_and_split_components(position_only):
     assert split.colnames == ["time", "coords_x", "coords_y", "coords_z"]
 
 
+def test_position_only_components_false_keeps_default_name_compact(position_only):
+    ts = position_only.ephemeris(elapsed=False, reftime=None, components=False)
+
+    assert ts.colnames == ["time", "position"]
+    assert ts["position"].shape == (2, 3)
+
+
 def test_spherical_velocity_uses_custom_columnnames(position_velocity):
     ts = position_velocity.ephemeris(
         elapsed=False,
