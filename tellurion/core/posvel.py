@@ -572,7 +572,7 @@ class PositionBase(abc.ABC):
             is present, or [position] for position-only objects. The time
             column is always named 'time'. For spherical coordinates, these
             names prefix their native component names. If the object has a
-            `name` attribute, its value prefixes each data column.
+            non-empty `name` attribute, its value prefixes each data column.
         components : bool, optional
             If True, split Cartesian 3-vectors into scalar components named
             with '_x', '_y', and '_z' suffixes. Spherical coordinates are
@@ -634,7 +634,7 @@ class PositionBase(abc.ABC):
         name_prefix = getattr(self, "name", None)
 
         def prefix_column(name):
-            return f"{name_prefix} {name}" if name_prefix is not None else name
+            return f"{name_prefix} {name}" if name_prefix else name
 
         data_names = [prefix_column(name) for name in columnnames]
 
