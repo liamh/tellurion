@@ -659,18 +659,20 @@ class PositionBase(abc.ABC):
             fields = spherical.dtype.names
             position_fields = fields[:3]
             velocity_fields = fields[3:]
+
+            def column_name(field, data_name):
+                if custom_columnnames:
+                    return f"{data_name}_{field}"
+                if hasattr(self, "name"):
+                    return f"{self.name} {field}"
+                return field
+
             for field in position_fields:
-                name = (f"{data_names[0]}_{field}" if custom_columnnames
-                        else field)
-                if hasattr(self, "name") and not custom_columnnames:
-                    name = f"{self.name} {name}"
+                name = column_name(field, data_names[0])
                 ts[name] = spherical[field]
                 ts[name].info.format = pvformats[0]
             for field in velocity_fields:
-                name = (f"{data_names[1]}_{field}" if custom_columnnames
-                        else field)
-                if hasattr(self, "name") and not custom_columnnames:
-                    name = f"{self.name} {name}"
+                name = column_name(field, data_names[1])
                 ts[name] = spherical[field]
                 ts[name].info.format = pvformats[1]
 

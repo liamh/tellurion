@@ -160,6 +160,51 @@ def test_dynamic_name_prefixes_default_names_only(position_velocity):
     assert ts.colnames == ["time", "Satellite position", "Satellite velocity"]
 
 
+def test_dynamic_name_prefixes_spherical_names(position_velocity, position_only):
+    position_velocity.name = "Probe"
+    defaults = position_velocity.ephemeris(
+        elapsed=False, reftime=None, coordinate_type="spherical"
+    )
+    custom = position_velocity.ephemeris(
+        elapsed=False,
+        reftime=None,
+        coordinate_type="spherical",
+        columnnames=["sky", "sky_rate"],
+    )
+    position_only.name = "Probe"
+    spherical_position = position_only.ephemeris(
+        elapsed=False,
+        reftime=None,
+        coordinate_type="spherical",
+        columnnames=["sky"],
+    )
+
+    assert defaults.colnames == [
+        "time",
+        "Probe rtasc",
+        "Probe decl",
+        "Probe distance",
+        "Probe rtasc_r",
+        "Probe decl_r",
+        "Probe distance_r",
+    ]
+    assert custom.colnames == [
+        "time",
+        "Probe sky_rtasc",
+        "Probe sky_decl",
+        "Probe sky_distance",
+        "Probe sky_rate_rtasc_r",
+        "Probe sky_rate_decl_r",
+        "Probe sky_rate_distance_r",
+    ]
+    assert spherical_position.colnames == [
+        "time",
+        "Probe sky_rtasc",
+        "Probe sky_decl",
+        "Probe sky_distance",
+    ]
+
+
 def test_default_position_only_and_spherical_names_remain_unchanged(
     position_only, position_velocity
 ):
