@@ -626,7 +626,7 @@ class PositionBase(abc.ABC):
         else:
             columnnames = list(columnnames)
 
-        data_names = columnnames[1:]
+        data_names = columnnames
         if hasattr(self, "name"):
             data_names = [f"{self.name} {name}" for name in data_names]
 

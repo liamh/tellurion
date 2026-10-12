@@ -107,7 +107,9 @@ def test_cartesian_velocity_can_split_components(position_velocity):
     "obj,names,expected",
     [
         ("velocity", ["place"], "2 data-column names"),
+        ("velocity", ["time", "place", "motion"], "2 data-column names"),
         ("position", ["place", "motion"], "1 data-column name"),
+        ("position", ["time", "place"], "1 data-column name"),
     ],
 )
 def test_invalid_columnnames_length_raises_value_error(
