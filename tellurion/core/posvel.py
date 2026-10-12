@@ -568,8 +568,14 @@ class PositionBase(abc.ABC):
             One of 'cartesian', 'spherical', or 'both' [not yet functional]
             (default: 'cartesian')
         columnnames : list of str, optional
-            Column names to use (default: ['position', 'velocity'])
-        components : Split 3-vectors into scalar components
+            Names for time, position, and velocity. Position-only objects
+            expect [time, position]. The time column remains named 'time'.
+            For spherical coordinates, the position and velocity names prefix
+            their native component names.
+        components : bool, optional
+            If True, split Cartesian 3-vectors into scalar components named
+            with '_x', '_y', and '_z' suffixes. Spherical coordinates are
+            already represented by scalar components.
         pvformats : tuple of str, optional
             Tuple of (position_format, velocity_format) for display
 
@@ -596,44 +602,70 @@ class PositionBase(abc.ABC):
 
         >>> ts = pvt.ephemeris(columnnames=['time', 'pos', 'vel'])
         """
-        # Determine column names based on velocity presence and aux attributes
-        if columnnames is None:
-            if self.has_velocity:
-                # Has velocity - use position and velocity columns
-                columnnames = pvhelper._ephemeris_columns
-            else:
-                # Position only
-                columnnames = pvhelper._ephemeris_columns_pos_only
-        # Name the columns with the PVT name if available
-        if hasattr(self,"name"):
-            timenm = columnnames[0]
-            columnnames = [self.name + " " + cn for cn in columnnames]
-            columnnames[0]=timenm
-
-        # Get position data - unused
-        # pos_data = self.position_vector.tovector()
-
-        # Create time series with appropriate data
-        if coordinate_type=="cartesian":
-            # Cartesian coordinates
-            if self.has_velocity:
-                ts = TimeSeries(time=self.time, data=self.cartesian)
-                names = self.cartesian.dtype.names
-                ts[names[0]].info.format = pvformats[0]
-                ts[names[1]].info.format = pvformats[1]
-            else:
-                colnames=[columnnames[1]+"_x", columnnames[1]+"_y", columnnames[1]+"_z"]
-                ts = TimeSeries(time=self.time, data=self.cartesian, names=colnames)
-                ts[colnames[0]].info.format = pvformats[0]
-                ts[colnames[1]].info.format = pvformats[0]
-                ts[colnames[2]].info.format = pvformats[0]
+        # Determine column names based on velocity presence.
+        has_velocity = self.has_velocity
+        expected_names = 3 if has_velocity else 2
+        custom_columnnames = columnnames is not None
+        if not custom_columnnames:
+            columnnames = (pvhelper._ephemeris_columns if has_velocity
+                           else pvhelper._ephemeris_columns_pos_only)
+        elif len(columnnames) != expected_names:
+            expected = "[time, position, velocity]" if has_velocity \
+                else "[time, position]"
+            raise ValueError(
+                f"columnnames must contain {expected_names} names "
+                f"{expected}; got {len(columnnames)}"
+            )
         else:
-            # Spherical coordinates
-            ts = TimeSeries(time=self.time, data=self.spherical)
-            for nm in self.spherical.dtype.names[0:3]:
-                ts[nm].info.format = pvformats[0]
-            for nm in self.spherical.dtype.names[3:6]:
-                ts[nm].info.format = pvformats[1]
+            columnnames = list(columnnames)
+
+        data_names = columnnames[1:]
+        if hasattr(self, "name"):
+            data_names = [f"{self.name} {name}" for name in data_names]
+
+        ts = TimeSeries(time=self.time)
+        if coordinate_type == "cartesian":
+            pos = self.position_vector
+            vel = self.velocity_vector
+            split_components = components or (
+                not custom_columnnames and not has_velocity
+            )
+            if split_components:
+                labels = ("x", "y", "z")
+                for i, label in enumerate(labels):
+                    name = f"{data_names[0]}_{label}"
+                    ts[name] = pos[..., i]
+                    ts[name].info.format = pvformats[0]
+                if has_velocity:
+                    for i, label in enumerate(labels):
+                        name = f"{data_names[1]}_{label}"
+                        ts[name] = vel[..., i]
+                        ts[name].info.format = pvformats[1]
+            else:
+                ts[data_names[0]] = pos
+                ts[data_names[0]].info.format = pvformats[0]
+                if has_velocity:
+                    ts[data_names[1]] = vel
+                    ts[data_names[1]].info.format = pvformats[1]
+        else:
+            spherical = self.spherical
+            fields = spherical.dtype.names
+            position_fields = fields[:3]
+            velocity_fields = fields[3:]
+            for field in position_fields:
+                name = (f"{data_names[0]}_{field}" if custom_columnnames
+                        else field)
+                if hasattr(self, "name") and not custom_columnnames:
+                    name = f"{self.name} {name}"
+                ts[name] = spherical[field]
+                ts[name].info.format = pvformats[0]
+            for field in velocity_fields:
+                name = (f"{data_names[1]}_{field}" if custom_columnnames
+                        else field)
+                if hasattr(self, "name") and not custom_columnnames:
+                    name = f"{self.name} {name}"
+                ts[name] = spherical[field]
+                ts[name].info.format = pvformats[1]
 
         # Add aux attributes if present
         for key in self.aux:
