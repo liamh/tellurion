@@ -549,7 +549,7 @@ class PositionBase(abc.ABC):
                 return np.hstack((pos_vals, time_array))
 
     def ephemeris(self, elapsed=True, reftime="epoch", coordinate_type="cartesian",
-                  columnnames=None, components=False,
+                  columnnames=None, components=None,
                   pvformats=(pvhelper._pos_format, pvhelper._vel_format)):
         """
         Create an AstroPy time series.
@@ -568,8 +568,21 @@ class PositionBase(abc.ABC):
             One of 'cartesian', 'spherical', or 'both' [not yet functional]
             (default: 'cartesian')
         columnnames : list of str, optional
-            Column names to use (default: ['position', 'velocity'])
-        components : Split 3-vectors into scalar components
+            Names for data columns only: [position, velocity] when velocity
+            is present, or [position] for position-only objects. The time
+            column is always named 'time'. For spherical coordinates, these
+            names prefix their native component names. Do not include 'time'
+            in this list; replace legacy [time, position, velocity] lists
+            with [position, velocity] by dropping the leading 'time'. If the
+            object has a non-empty `name` attribute, its value is converted
+            to text and prefixes each data column.
+        components : bool, optional
+            If True, split Cartesian 3-vectors into scalar components named
+            with '_x', '_y', and '_z' suffixes. If False, keep Cartesian
+            vectors compact. If omitted, position-only Cartesian output uses
+            its legacy split layout when default column names are used;
+            custom column names produce compact position-only output.
+            Spherical coordinates are already represented by scalar components.
         pvformats : tuple of str, optional
             Tuple of (position_format, velocity_format) for display
 
@@ -594,46 +607,89 @@ class PositionBase(abc.ABC):
 
         With custom column names:
 
-        >>> ts = pvt.ephemeris(columnnames=['time', 'pos', 'vel'])
+        >>> ts = pvt.ephemeris(columnnames=['pos', 'vel'])
+
+        Prefix the default position and velocity names:
+
+        >>> pvt.name = 'Satellite'
+        >>> ts = pvt.ephemeris()
+        >>> ts.colnames  # 'time' is unchanged
+        ['time', 'Satellite position', 'Satellite velocity']
         """
-        # Determine column names based on velocity presence and aux attributes
-        if columnnames is None:
-            if self.has_velocity:
-                # Has velocity - use position and velocity columns
-                columnnames = pvhelper._ephemeris_columns
-            else:
-                # Position only
-                columnnames = pvhelper._ephemeris_columns_pos_only
-        # Name the columns with the PVT name if available
-        if hasattr(self,"name"):
-            timenm = columnnames[0]
-            columnnames = [self.name + " " + cn for cn in columnnames]
-            columnnames[0]=timenm
-
-        # Get position data - unused
-        # pos_data = self.position_vector.tovector()
-
-        # Create time series with appropriate data
-        if coordinate_type=="cartesian":
-            # Cartesian coordinates
-            if self.has_velocity:
-                ts = TimeSeries(time=self.time, data=self.cartesian)
-                names = self.cartesian.dtype.names
-                ts[names[0]].info.format = pvformats[0]
-                ts[names[1]].info.format = pvformats[1]
-            else:
-                colnames=[columnnames[1]+"_x", columnnames[1]+"_y", columnnames[1]+"_z"]
-                ts = TimeSeries(time=self.time, data=self.cartesian, names=colnames)
-                ts[colnames[0]].info.format = pvformats[0]
-                ts[colnames[1]].info.format = pvformats[0]
-                ts[colnames[2]].info.format = pvformats[0]
+        # Determine column names based on velocity presence.
+        has_velocity = self.has_velocity
+        expected_names = 2 if has_velocity else 1
+        custom_columnnames = columnnames is not None
+        if not custom_columnnames:
+            columnnames = ([pvhelper._eph_pos, pvhelper._eph_vel] if has_velocity
+                           else [pvhelper._eph_pos])
+        elif len(columnnames) != expected_names:
+            expected = "[position, velocity]" if has_velocity else "[position]"
+            count_noun = "name" if expected_names == 1 else "names"
+            raise ValueError(
+                f"columnnames must contain exactly {expected_names} "
+                f"data-column {count_noun} {expected}; got {len(columnnames)}. "
+                "The time column is always named 'time'; drop the leading "
+                "'time' entry from legacy lists."
+            )
         else:
-            # Spherical coordinates
-            ts = TimeSeries(time=self.time, data=self.spherical)
-            for nm in self.spherical.dtype.names[0:3]:
-                ts[nm].info.format = pvformats[0]
-            for nm in self.spherical.dtype.names[3:6]:
-                ts[nm].info.format = pvformats[1]
+            columnnames = list(columnnames)
+
+        name_prefix = getattr(self, "name", None)
+        if name_prefix is not None:
+            name_prefix = str(name_prefix)
+
+        def prefix_column(name):
+            return f"{name_prefix} {name}" if name_prefix else name
+
+        data_names = [prefix_column(name) for name in columnnames]
+
+        ts = TimeSeries(time=self.time)
+        if coordinate_type == "cartesian":
+            pos = self.position_vector
+            vel = self.velocity_vector
+            # Keep the historical split layout for default position-only
+            # output while honoring explicit components=False and custom names.
+            split_components = (
+                components if components is not None
+                else not custom_columnnames and not has_velocity
+            )
+            if split_components:
+                labels = ("x", "y", "z")
+                for i, label in enumerate(labels):
+                    name = f"{data_names[0]}_{label}"
+                    ts[name] = pos[..., i]
+                    ts[name].info.format = pvformats[0]
+                if has_velocity:
+                    for i, label in enumerate(labels):
+                        name = f"{data_names[1]}_{label}"
+                        ts[name] = vel[..., i]
+                        ts[name].info.format = pvformats[1]
+            else:
+                ts[data_names[0]] = pos
+                ts[data_names[0]].info.format = pvformats[0]
+                if has_velocity:
+                    ts[data_names[1]] = vel
+                    ts[data_names[1]].info.format = pvformats[1]
+        else:
+            spherical = self.spherical
+            fields = spherical.dtype.names
+            position_fields = fields[:3]
+            velocity_fields = fields[3:] if has_velocity else ()
+
+            def spherical_column_name(data_name, field):
+                base_name = (f"{data_name}_{field}" if custom_columnnames
+                             else field)
+                return prefix_column(base_name)
+
+            for field in position_fields:
+                name = spherical_column_name(columnnames[0], field)
+                ts[name] = spherical[field]
+                ts[name].info.format = pvformats[0]
+            for field in velocity_fields:
+                name = spherical_column_name(columnnames[1], field)
+                ts[name] = spherical[field]
+                ts[name].info.format = pvformats[1]
 
         # Add aux attributes if present
         for key in self.aux:
