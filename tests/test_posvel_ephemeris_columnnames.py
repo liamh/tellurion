@@ -174,6 +174,13 @@ def test_empty_dynamic_name_does_not_prefix_columns(position_velocity):
     assert ts.colnames == ["time", "position", "velocity"]
 
 
+def test_non_string_dynamic_name_is_converted_to_text(position_velocity):
+    position_velocity.name = 42
+    ts = position_velocity.ephemeris(elapsed=False, reftime=None)
+
+    assert ts.colnames == ["time", "42 position", "42 velocity"]
+
+
 def test_dynamic_name_prefixes_spherical_names(position_velocity, position_only):
     position_velocity.name = "Probe"
     defaults = position_velocity.ephemeris(

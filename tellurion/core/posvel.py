@@ -573,13 +573,15 @@ class PositionBase(abc.ABC):
             column is always named 'time'. For spherical coordinates, these
             names prefix their native component names. Do not include 'time'
             in this list; replace legacy [time, position, velocity] lists
-            with [position, velocity]. If the object has a non-empty `name`
-            attribute, its value prefixes each data column.
+            with [position, velocity] by dropping the leading 'time'. If the
+            object has a non-empty `name` attribute, its value is converted
+            to text and prefixes each data column.
         components : bool, optional
             If True, split Cartesian 3-vectors into scalar components named
             with '_x', '_y', and '_z' suffixes. If False, keep Cartesian
             vectors compact. If omitted, position-only Cartesian output uses
-            its legacy split layout when default column names are used.
+            its legacy split layout when default column names are used;
+            custom column names produce compact position-only output.
             Spherical coordinates are already represented by scalar components.
         pvformats : tuple of str, optional
             Tuple of (position_format, velocity_format) for display
@@ -627,12 +629,15 @@ class PositionBase(abc.ABC):
             raise ValueError(
                 f"columnnames must contain exactly {expected_names} "
                 f"data-column {count_noun} {expected}; got {len(columnnames)}. "
-                "The time column is always named 'time'."
+                "The time column is always named 'time'; drop the leading "
+                "'time' entry from legacy lists."
             )
         else:
             columnnames = list(columnnames)
 
         name_prefix = getattr(self, "name", None)
+        if name_prefix is not None:
+            name_prefix = str(name_prefix)
 
         def prefix_column(name):
             return f"{name_prefix} {name}" if name_prefix else name
@@ -643,6 +648,8 @@ class PositionBase(abc.ABC):
         if coordinate_type == "cartesian":
             pos = self.position_vector
             vel = self.velocity_vector
+            # Keep the historical split layout for default position-only
+            # output while honoring explicit components=False and custom names.
             split_components = (
                 components if components is not None
                 else not custom_columnnames and not has_velocity
