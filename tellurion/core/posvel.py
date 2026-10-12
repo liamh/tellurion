@@ -568,10 +568,10 @@ class PositionBase(abc.ABC):
             One of 'cartesian', 'spherical', or 'both' [not yet functional]
             (default: 'cartesian')
         columnnames : list of str, optional
-            Names for time, position, and velocity. Position-only objects
-            expect [time, position]. The time column remains named 'time'.
-            For spherical coordinates, the position and velocity names prefix
-            their native component names.
+            Names for data columns only: [position, velocity] when velocity
+            is present, or [position] for position-only objects. The time
+            column is always named 'time'. For spherical coordinates, these
+            names prefix their native component names.
         components : bool, optional
             If True, split Cartesian 3-vectors into scalar components named
             with '_x', '_y', and '_z' suffixes. Spherical coordinates are
@@ -600,20 +600,27 @@ class PositionBase(abc.ABC):
 
         With custom column names:
 
-        >>> ts = pvt.ephemeris(columnnames=['time', 'pos', 'vel'])
+        >>> ts = pvt.ephemeris(columnnames=['pos', 'vel'])
+
+        Prefix the default position and velocity names:
+
+        >>> pvt.name = 'Satellite'
+        >>> ts = pvt.ephemeris()
+        >>> ts.colnames  # 'time' is unchanged
+        ['time', 'Satellite position', 'Satellite velocity']
         """
         # Determine column names based on velocity presence.
         has_velocity = self.has_velocity
-        expected_names = 3 if has_velocity else 2
+        expected_names = 2 if has_velocity else 1
         custom_columnnames = columnnames is not None
         if not custom_columnnames:
-            columnnames = (pvhelper._ephemeris_columns if has_velocity
-                           else pvhelper._ephemeris_columns_pos_only)
+            defaults = (pvhelper._ephemeris_columns if has_velocity
+                        else pvhelper._ephemeris_columns_pos_only)
+            columnnames = defaults[1:]
         elif len(columnnames) != expected_names:
-            expected = "[time, position, velocity]" if has_velocity \
-                else "[time, position]"
+            expected = "[position, velocity]" if has_velocity else "[position]"
             raise ValueError(
-                f"columnnames must contain {expected_names} names "
+                f"columnnames must contain {expected_names} data-column names "
                 f"{expected}; got {len(columnnames)}"
             )
         else:

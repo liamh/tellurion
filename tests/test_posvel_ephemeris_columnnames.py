@@ -25,7 +25,7 @@ def position_only(times):
 
 def test_cartesian_velocity_uses_custom_columnnames(position_velocity):
     ts = position_velocity.ephemeris(
-        elapsed=False, reftime=None, columnnames=["time", "place", "motion"]
+        elapsed=False, reftime=None, columnnames=["place", "motion"]
     )
 
     assert ts.colnames == ["time", "place", "motion"]
@@ -35,12 +35,12 @@ def test_cartesian_velocity_uses_custom_columnnames(position_velocity):
 
 def test_position_only_custom_names_and_split_components(position_only):
     compact = position_only.ephemeris(
-        elapsed=False, reftime=None, columnnames=["time", "coords"]
+        elapsed=False, reftime=None, columnnames=["coords"]
     )
     split = position_only.ephemeris(
         elapsed=False,
         reftime=None,
-        columnnames=["time", "coords"],
+        columnnames=["coords"],
         components=True,
     )
 
@@ -54,7 +54,7 @@ def test_spherical_velocity_uses_custom_columnnames(position_velocity):
         elapsed=False,
         reftime=None,
         coordinate_type="spherical",
-        columnnames=["time", "sky", "sky_rate"],
+        columnnames=["sky", "sky_rate"],
     )
 
     assert ts.colnames == [
@@ -75,7 +75,7 @@ def test_spherical_position_only_uses_custom_name(position_only):
         elapsed=False,
         reftime=None,
         coordinate_type="spherical",
-        columnnames=["time", "sky"],
+        columnnames=["sky"],
     )
 
     assert ts.colnames == ["time", "sky_rtasc", "sky_decl", "sky_distance"]
@@ -86,7 +86,7 @@ def test_cartesian_velocity_can_split_components(position_velocity):
     ts = position_velocity.ephemeris(
         elapsed=False,
         reftime=None,
-        columnnames=["time", "place", "motion"],
+        columnnames=["place", "motion"],
         components=True,
     )
 
@@ -106,8 +106,8 @@ def test_cartesian_velocity_can_split_components(position_velocity):
 @pytest.mark.parametrize(
     "obj,names,expected",
     [
-        ("velocity", ["time", "place"], "3 names"),
-        ("position", ["time", "place", "motion"], "2 names"),
+        ("velocity", ["place"], "2 data-column names"),
+        ("position", ["place", "motion"], "1 data-column name"),
     ],
 )
 def test_invalid_columnnames_length_raises_value_error(
@@ -122,7 +122,7 @@ def test_invalid_columnnames_length_raises_value_error(
 def test_dynamic_name_prefixes_data_but_not_time(position_velocity):
     position_velocity.name = "Probe"
     ts = position_velocity.ephemeris(
-        elapsed=False, reftime=None, columnnames=["time", "place", "motion"]
+        elapsed=False, reftime=None, columnnames=["place", "motion"]
     )
 
     assert ts.colnames == ["time", "Probe place", "Probe motion"]
@@ -130,7 +130,7 @@ def test_dynamic_name_prefixes_data_but_not_time(position_velocity):
 
 def test_elapsed_and_reference_time_with_custom_data_names(position_velocity):
     ts = position_velocity.ephemeris(
-        columnnames=["time", "place", "motion"], elapsed=True, reftime="epoch"
+        columnnames=["place", "motion"], elapsed=True, reftime="epoch"
     )
 
     assert ts.time[0] == position_velocity.time[0]
@@ -149,6 +149,13 @@ def test_default_column_names_and_elapsed_reference_time(position_velocity):
     assert ts["position"].shape == (2, 3)
     assert ts["position"].info.format == posvel.pvhelper._pos_format
     assert ts["velocity"].info.format == posvel.pvhelper._vel_format
+
+
+def test_dynamic_name_prefixes_default_names_only(position_velocity):
+    position_velocity.name = "Satellite"
+    ts = position_velocity.ephemeris(elapsed=False, reftime=None)
+
+    assert ts.colnames == ["time", "Satellite position", "Satellite velocity"]
 
 
 def test_default_position_only_and_spherical_names_remain_unchanged(
