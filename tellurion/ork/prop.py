@@ -112,12 +112,11 @@ def prepare(
         Force environment configuration.
     reftime : str, optional
         Reference time used to fill the relevant column of the ephemeris table.
-    output : {'et', 'ss'}, default: 'et'
+    output : {``"et"``, ``"pvt"``}, default: ``"et"``
         Type of output structure generated:
 
-        * ``'et'`` : Ephemeris table (:class:`~astropy.timeseries.TimeSeries`).
-        * ``'pvt'`` : :class:`~tellurion.PositionVelocityT`
-        * ``'ss'`` : Orekit ``SpacecraftState``.
+        * ``"et"`` : Ephemeris table (:class:`~astropy.timeseries.TimeSeries`).
+        * ``"pvt"`` : :class:`~tellurion.PositionVelocityT`
 
     propagator : {'auto', 'keplerian', 'brouwer-lyddane', 'dsst', 'numerical', 'sgp4'}, default: 'auto'
         See :ref:`propagators` for details and :ref:`propcomp` for a summary table.
@@ -391,13 +390,13 @@ def propagate(generator, reltimes, include_init=True, reftime="epoch", output="e
     true, then include the initial PVT in the ephemeris table.
 
     Output is specified as one of
-      `et`: Ephemeris table (an AstroPy time series; default)
-      `pvt`: a PVT
-      `ss`: SpacecraftState
+      ``"et"``: Ephemeris table (an AstroPy time series; default)
+      ``"pvt"``: a PVT
 
-    If an eclipse detector has been added, the `'sunlight'` value will
-    be one of 'u' (umbra, or total eclipse), 'p' (penumbra, or partial
-    eclipse, or 's' (full sun).
+    If an eclipse detector has been added, the ``"sunlight"`` value
+    will be one of ``"u"`` (umbra, or total eclipse), ``"p"``
+    (penumbra, or partial eclipse, or ``"s"`` (full sun).
+
     """
 
     # Compute the reference time `reft`, an astropy.time.Time, then
@@ -422,8 +421,6 @@ def propagate(generator, reltimes, include_init=True, reftime="epoch", output="e
             _to_spacecraft_state(generator["propfn"](convert._abstime_to_okad(at)))
             for at in atimes
         ]
-    if output == "ss":
-        return ss
     pvt = convert._pvt(ss)
     pvt.aux = event._evstates(generator, ss)
     if output == "pvt":

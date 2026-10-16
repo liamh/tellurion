@@ -560,9 +560,6 @@ Control output format with the ``output`` parameter::
     # Position-Velocity-Time object
     pvt = tell.propagate(gen, times, output='pvt')
 
-    # Orekit SpacecraftState objects
-    states = tell.propagate(gen, times, output='ss')
-
 Ephemeris Table (ET)
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -584,15 +581,6 @@ Native :class:`~tellurion.PositionVelocityT` object with methods for coordinate 
     print(pvt.cartesian)
     print(pvt.spherical)
     kep = pvt.kepler()
-
-SpacecraftState (SS)
-~~~~~~~~~~~~~~~~~~~~
-
-Orekit ``SpacecraftState`` objects (advanced use)::
-
-    states = tell.propagate(gen, times, output='ss')
-
-Most users will not need this form; it is mainly for internal use by Tellurion.
 
 Propagation Example: Complete Workflow
 =======================================
