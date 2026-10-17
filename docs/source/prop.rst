@@ -582,6 +582,25 @@ Native :class:`~tellurion.PositionVelocityT` object with methods for coordinate 
     print(pvt.spherical)
     kep = pvt.kepler()
 
+Relative Frames
+---------------
+
+After generating states with :func:`tellurion.propagate`, you can express one
+spacecraft relative to another in local orbital frames:
+
+* :func:`tellurion.lvlh` (LVLH/RSW)
+* :func:`tellurion.ntw` (NTW)
+
+and map relative states back to inertial with:
+
+* :func:`tellurion.inv_lvlh`
+* :func:`tellurion.inv_ntw`
+
+For frame definitions, conventions, inverse transforms, and complete examples,
+see :ref:`posvel-relative-frames`.
+
+
+
 Propagation Example: Complete Workflow
 =======================================
 
