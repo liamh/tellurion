@@ -190,113 +190,6 @@ Convert to/from numpy arrays::
     # From array
     pvt_new = tell.pvtcart(arr, None)
 
-.. _posvel-relative-frames:
-
-Relative Frames (LVLH/NTW)
-==========================
-
-Tellurion provides relative-state transforms between two spacecraft states
-using local orbital frames:
-
-* :func:`tellurion.lvlh` — LVLH/RSW relative frame
-* :func:`tellurion.ntw` — NTW relative frame
-* :func:`tellurion.inv_lvlh` — inverse LVLH/RSW transform (relative -> inertial)
-* :func:`tellurion.inv_ntw` — inverse NTW transform (relative -> inertial)
-
-These functions work with single states or aligned time series.
-
-Overview
---------
-
-For all four functions:
-
-* ``relsc`` is the secondary/deputy/chaser state (or series).
-* ``refsc`` is the reference/chief/target inertial state (or series) that
-  defines frame origin and orientation.
-* Epochs must match between secondary and reference states (same length for series).
-* ``unitlookup`` controls output units for forward transforms and defaults to
-  preferred units (pass ``tell.siunits`` for SI).
-
-LVLH (RSW) frame
-----------------
-
-The LVLH frame is centered on the reference spacecraft with axes:
-
-* **R** — radial, from central body toward the reference spacecraft
-* **S** — along-track, completing the right-handed set
-* **W** — cross-track, along orbital angular momentum
-
-Use :func:`tellurion.lvlh` for inertial -> LVLH relative coordinates and
-:func:`tellurion.inv_lvlh` for LVLH -> inertial reconstruction.
-
-.. code-block:: python
-
-    import tellurion as tell
-
-    t0 = tell.abstime('2025-01-01T00:00:00')
-    chief = tell.pvtcart([5740.1326835, 3314.06715, 0.0,
-                          -2.7508268, 4.7645718, 5.5016537], t0)
-    deputy = tell.pvtcart([5739.0, 3315.2, 0.4,
-                           -2.75, 4.76, 5.50], t0)
-
-    rel_lvlh = tell.lvlh(deputy, chief)              # preferred units
-    rel_lvlh_si = tell.lvlh(deputy, chief, tell.siunits)
-
-    deputy_reconstructed = tell.inv_lvlh(rel_lvlh, chief)
-
-NTW frame
----------
-
-The NTW frame is centered on the reference spacecraft with axes:
-
-* **N** — in the orbital plane, normal to the velocity vector
-* **T** — tangential, along the velocity vector (in-track)
-* **W** — cross-track, along orbital angular momentum
-
-Use :func:`tellurion.ntw` for inertial -> NTW relative coordinates and
-:func:`tellurion.inv_ntw` for NTW -> inertial reconstruction.
-
-.. code-block:: python
-
-    import tellurion as tell
-
-    t0 = tell.abstime('2025-01-01T00:00:00')
-    chief = tell.pvtcart([5740.1326835, 3314.06715, 0.0,
-                          -2.7508268, 4.7645718, 5.5016537], t0)
-    deputy = tell.pvtcart([5739.0, 3315.2, 0.4,
-                           -2.75, 4.76, 5.50], t0)
-
-    rel_ntw = tell.ntw(deputy, chief, tell.siunits)
-
-    deputy_reconstructed = tell.inv_ntw(rel_ntw, chief)
-
-Time-series example
--------------------
-
-Relative transforms also apply directly to propagated time series when epochs
-are aligned:
-
-.. code-block:: python
-
-    import numpy as np
-    import astropy.units as u
-    import tellurion as tell
-
-    init = tell.pvtcart([5740.1326835, 3314.06715, 0.0,
-                         -2.7508268, 4.7645718, 5.5016537],
-                        tell.abstime('2025-01-01T00:00:00'))
-
-    steps = np.linspace(5.0*u.minute, 60.0*u.minute, 12)
-    chief_series = tell.propagate(tell.prepare(init, 1.0*u.hour), steps, include_init=True, output='pvt')
-    deputy_series = tell.propagate(tell.prepare(init, 1.0*u.hour), steps, include_init=True, output='pvt')
-
-    rel_rsw = tell.lvlh(deputy_series, chief_series, tell.siunits)
-    rel_ntw = tell.ntw(deputy_series, chief_series, tell.siunits)
-
-    deputy_back_rsw = tell.inv_lvlh(rel_rsw, chief_series)
-    deputy_back_ntw = tell.inv_ntw(rel_ntw, chief_series)
-
-
 Example creating and plotting states
 ====================================
 
@@ -341,6 +234,101 @@ Here's a complete example using the test data:
    ax.set_zlabel('Z (km)')
    ax.set_title('Satellite Orbit')
    plt.show()
+
+.. _posvel-relative-frames:
+
+Relative Frames
+===============
+
+Tellurion provides relative-state transforms between two spacecraft
+states using local orbital frames. There are two common ways of
+defining frames; both define the third axis to be the direction of
+angular momentum of the orbit. They differ in how the axis in the
+orbital plane are defined. In the local-vertical, local-horizontal
+(LVLH, or RSW) frame, the first axis aligns with the radial vector of
+the reference satellite, and the second is in the general direction of
+motion, or "along-track". In the NTW frame, the second axis is
+tangential to motion of the reference satellite, in the velocity
+vector direction. The terminology "RSW" and "NTW" used comes from
+Vallado's "Fundamentals of Astrodynamics and Applications" (Orekit
+uses different terms).
+
+The forward functions convert two interial states, or time series of
+inertial states, the secondary and primary (or reference) to a (time
+series) of relative states of the secondary to the primary.
+
+* :func:`tellurion.lvlh` — LVLH/RSW relative frame
+* :func:`tellurion.ntw` — NTW relative frame
+
+The inverse functions convert the relative state(s) and the reference
+state(s) to the inertial state(s) of the secondary.
+
+* :func:`tellurion.inv_lvlh` — inverse LVLH/RSW transform (relative -> inertial)
+* :func:`tellurion.inv_ntw` — inverse NTW transform (relative -> inertial)
+
+These functions work with single states or aligned ephemerides; that
+is, the times must match between secondary and reference states, and
+have the same length. The functions have common arguments.
+
+* ``relsc`` is the secondary state (or series).
+* ``refsc`` is the reference or primary inertial state (or series) that
+  defines frame origin and orientation.
+* ``unitlookup`` controls output units for forward transforms and defaults to
+  preferred units (pass ``tell.siunits`` for SI).
+
+LVLH (RSW) frame
+----------------
+
+The LVLH frame is centered on the reference spacecraft with three axes,
+
+* **R** — radial, from central body toward the reference spacecraft,
+* **S** — along-track, completing the right-handed set,
+* **W** — cross-track, along orbital angular momentum.
+
+Use :func:`tellurion.lvlh` for inertial -> LVLH relative coordinates and
+:func:`tellurion.inv_lvlh` for LVLH -> inertial reconstruction.
+
+.. code-block:: python
+
+    import tellurion as tell
+
+    t0 = tell.abstime('2025-01-01T00:00:00')
+    primary = tell.pvtcart([5740.1326835, 3314.06715, 0.0,
+                          -2.7508268, 4.7645718, 5.5016537], t0)
+    secondary = tell.pvtcart([5739.0, 3315.2, 0.4,
+                           -2.75, 4.76, 5.50], t0)
+
+    rel_lvlh = tell.lvlh(secondary, primary)              # preferred units
+    rel_lvlh_si = tell.lvlh(secondary, primary, tell.siunits)
+
+    secondary_reconstructed = tell.inv_lvlh(rel_lvlh, primary)
+
+NTW frame
+---------
+
+The NTW frame is centered on the reference spacecraft with axes:
+
+* **N** — in the orbital plane, normal to the velocity vector
+* **T** — tangential, along the velocity vector (in-track)
+* **W** — cross-track, along orbital angular momentum
+
+Use :func:`tellurion.ntw` for inertial -> NTW relative coordinates and
+:func:`tellurion.inv_ntw` for NTW -> inertial reconstruction.
+
+.. code-block:: python
+
+    import tellurion as tell
+
+    t0 = tell.abstime('2025-01-01T00:00:00')
+    primary = tell.pvtcart([5740.1326835, 3314.06715, 0.0,
+                          -2.7508268, 4.7645718, 5.5016537], t0)
+    secondary = tell.pvtcart([5739.0, 3315.2, 0.4,
+                           -2.75, 4.76, 5.50], t0)
+
+    rel_ntw = tell.ntw(secondary, primary, tell.siunits)
+
+    secondary_reconstructed = tell.inv_ntw(rel_ntw, primary)
+
 
 API Reference
 =============

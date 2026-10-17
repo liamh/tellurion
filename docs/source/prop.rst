@@ -41,7 +41,7 @@ Propagate a satellite orbit using the two-step process::
     times = [0.5*u.day, 0.75*u.day, 1.0*u.day]
     ephemeris = tell.propagate(gen, times, output='et')
 
-    print(ephemeris)
+    ephemeris.pprint_all(max_width=-1)
 
 Choosing a Propagator
 ---------------------
@@ -474,7 +474,7 @@ The generator's ``'sun transition'`` entry contains the times of eclipse
 transitions::
 
     sun_trans = gen['sun transition']
-    print(sun_trans.ephemeris())
+    sun_trans.ephemeris().pprint_all(max_width=-1)
 
 Altitude Termination
 --------------------
@@ -600,12 +600,16 @@ For frame definitions, conventions, inverse transforms, and complete examples,
 see :ref:`posvel-relative-frames`.
 
 
-
-Propagation Example: Complete Workflow
+Propagation examples
 =======================================
 
+Inertial motion of a single satellite
+-------------------------------------
+
 Here's a complete example comparing propagators on a LEO orbit with
-eclipse detection::
+eclipse detection:
+
+.. jupyter-execute::
 
     import numpy as np
     import astropy.units as u
@@ -617,54 +621,121 @@ eclipse detection::
                              tell.abstime('2025-01-01T00:00:00'))
 
     proptime = 8.0 * u.hour
-    times = np.linspace(1.0*u.hour, 6.0*u.hour, 32)
+    # Ephemeris steps every half hour for 6 hours
+    times = np.linspace(0.5*u.hour, 6.0*u.hour, 12)
 
     # Propagation events
     events = {
         'altitude': 125.0*u.km,
-        'eclipse': [True, True],
+        'eclipse': [True, True],  # [detect umbra, detect penumbra]
         'visibility': []
     }
 
-    # Method 1: Keplerian (fast, no perturbations)
+
+Method 1: Keplerian (fast, no perturbations)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. jupyter-execute::
+
     gen_kep = tell.prepare(initstate, proptime, events=events,
                           propagator='keplerian')
     result_kep = tell.propagate(gen_kep, times, output='et')
+    result_kep.pprint_all(max_width=-1)
 
-    # Method 2: Brouwer-Lyddane (medium speed, J2-J5)
+
+Method 2: Brouwer-Lyddane (medium speed, J2-J5)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. jupyter-execute::
+
     forceenv_bl = tell.setgravity(5, 0)
     gen_bl = tell.prepare(initstate, proptime, events=events,
-                         forceenv=forceenv_bl,
-                         propagator='brouwer-lyddane')
+                          forceenv=forceenv_bl,
+                          propagator='brouwer-lyddane')
     result_bl = tell.propagate(gen_bl, times, output='et')
 
-    # Method 3: DSST (medium speed, full gravity, long-term)
+
+Method 3: DSST (medium speed, full gravity, long-term)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. jupyter-execute::
+
     forceenv_dsst = tell.setgravity(20, 20)
     gen_dsst = tell.prepare(initstate, proptime, events=events,
-                           forceenv=forceenv_dsst,
-                           propagator='dsst')
+                            forceenv=forceenv_dsst,
+                            propagator='dsst')
     result_dsst = tell.propagate(gen_dsst, times, output='et')
 
-    # Method 4: Numerical (slow, high accuracy)
+
+Method 4: Numerical (slow, high accuracy)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. jupyter-execute::
+
     forceenv_num = tell.setgravity(20, 20)
     gen_num = tell.prepare(initstate, proptime, events=events,
-                          forceenv=forceenv_num,
-                          propagator='numerical')
+                           forceenv=forceenv_num,
+                           propagator='numerical')
     result_num = tell.propagate(gen_num, times, output='et')
 
-    # Compare results
+
+Compare results
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. jupyter-execute::
+
     print("Keplerian position at t=4 hours:")
-    print(result_kep[16]['position'])
+    print(result_kep[8]['position'])
     print("\nBrouwer-Lyddane position at t=4 hours:")
-    print(result_bl[16]['position'])
+    print(result_bl[8]['position'])
     print("\nDSST position at t=4 hours:")
-    print(result_dsst[16]['position'])
+    print(result_dsst[8]['position'])
     print("\nNumerical position at t=4 hours:")
-    print(result_num[16]['position'])
+    print(result_num[8]['position'])
 
     # Check eclipse status
     print("\nEclipse transitions (Keplerian):")
-    print(gen_kep['sun transition'].ephemeris())
+    gen_kep['sun transition'].pprint_exclude_names =['position', 'velocity']
+    gen_kep['sun transition'].pprint_all(max_width=-1)
+
+Motion of a secondary satellite relative to a primary
+-----------------------------------------------------
+
+First, initialize the primary and secondary states and propagate them.
+
+.. jupyter-execute::
+
+    import numpy as np
+    import astropy.units as u
+    import tellurion as tell
+
+    icref = np.asarray([5740.1326835, 3314.06715, 0.0, -2.7508268, 4.7645718, 5.5016537])
+    icsec = icref + np.asarray([1.0, 0.0, 0.0, 0.0, -0.001, 0.0])
+
+    init_p = tell.pvtcart(icref, tell.abstime('2025-01-01T00:00:00'))
+    init_s = tell.pvtcart(icsec, tell.abstime('2025-01-01T00:00:00'))
+
+    steps = np.linspace(5.0 * u.minute, 60.0 * u.minute, 12)
+    primary_series = tell.propagate(tell.prepare(init_p, 1.0 * u.hour), steps, include_init=True, output='pvt')
+    secondary_series = tell.propagate(tell.prepare(init_s, 1.0 * u.hour), steps, include_init=True, output='pvt')
+
+Secondary ephemeris
+~~~~~~~~~~~~~~~~~~~
+
+.. jupyter-execute::
+
+   secondary_series.ephemeris().pprint_all(max_width=-1)
+
+Relative frame ephemeris
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. jupyter-execute::
+
+    rel_rsw = tell.lvlh(secondary_series, primary_series, tell.siunits)
+    rel_rsw.ephemeris().pprint_all(max_width=-1)
+
+    rel_ntw = tell.ntw(secondary_series, primary_series, tell.siunits)
+    rel_ntw.ephemeris().pprint_all(max_width=-1)
 
 API Reference
 =============

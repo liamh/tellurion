@@ -31,8 +31,10 @@ extensions = [
     'sphinx_automodapi.automodapi',  # AstroPy's API doc generator
     'sphinx_automodapi.smart_resolver',
     'sphinx_changelog',
+    'sphinx_copybutton',
     'sphinx_design',
     'sphinxcontrib.globalsubs',
+    'jupyter_sphinx',            # Create in-doc example outputs
     'myst_nb',                   # Replaced nbsphinx
     'matplotlib.sphinxext.plot_directive',
     'IPython.sphinxext.ipython_console_highlighting',  # For better syntax highlighting
@@ -50,6 +52,10 @@ suppress_warnings = [
     'autodoc',  # Suppress "don't know which module" warnings
     'docutils',  # Suppress the "Explicit markup ends without blank line" warning
 ]
+
+# Strip Python prompts (>>> and ...) and IPy/Jupyter prompts (In [1]:) when copying
+copybutton_prompt_text = r">>> |\.\.\. |\:\:\: |In \[\d*\]\: |\[\d*\]\: "
+copybutton_prompt_is_regexp = True
 
 plot_rcparams = {
     'axes.labelsize': 'large',
