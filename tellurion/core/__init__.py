@@ -35,7 +35,9 @@ from tellurion.core.posvel import (
 from tellurion.core.spacetrack import (
     MeanElementSetT,
     satdata,
+    spacetrack_history,
     spacetrack_latest,
+    spacetrack_query,
     stscdata,
 )
 from tellurion.core.util import magdiff
@@ -74,7 +76,9 @@ __all__ = [
     "pvtcart",
     "satdata",
     "sfdict",
+    "spacetrack_history",
     "spacetrack_latest",
+    "spacetrack_query",
     "statefnval",
     "stscdata",
     "timeelements",
