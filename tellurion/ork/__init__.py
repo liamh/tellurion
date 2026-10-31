@@ -17,6 +17,7 @@ _OREKIT_TOPLEVEL_SUBMODULES = (
     "dsst",
     "element",
     "force",
+    "frame",
     "geog",
     "iod",
     "jacobian",

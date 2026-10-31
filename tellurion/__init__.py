@@ -190,6 +190,16 @@ def siderealtime(*args, **kwargs):
     return _ork_attr("siderealtime")(*args, **kwargs)
 
 
+def resolve_orekit_frame(*args, **kwargs):
+    """Resolve a supported frame descriptor to an Orekit Frame."""
+    return _ork_attr("resolve_orekit_frame")(*args, **kwargs)
+
+
+def transform_pvt(*args, **kwargs):
+    """Transform a PVT state or series to a supported inertial frame."""
+    return _ork_attr("transform_pvt")(*args, **kwargs)
+
+
 def elementval(*args, **kwargs):
     """Compute orbital element values from a state representation."""
     return _ork_attr("elementval")(*args, **kwargs)
@@ -292,6 +302,7 @@ __all__ = [
     "propagate",
     "pvt",
     "pvtcart",
+    "resolve_orekit_frame",
     "quantity_to_array",
     "quantity_to_dict",
     "rev",
@@ -313,6 +324,7 @@ __all__ = [
     "timeelements",
     "time_concat",
     "timesec",
+    "transform_pvt",
     "to_array",
     "tselements",
     "tq",

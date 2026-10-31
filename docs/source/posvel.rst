@@ -108,6 +108,28 @@ The reference identifier is descriptive metadata, not the reference
 spacecraft trajectory; transformations to or from a local orbital frame
 still require that reference state.
 
+Orekit Frame Resolution and Transformation
+------------------------------------------
+
+Tellurion resolves Earth-centered EME2000 and solar-system-barycentric ICRF
+descriptors to Orekit frames. A PVT with a supported descriptor can be
+transformed at its epoch, including the frame-origin translation and its
+contribution to velocity::
+
+    earth_eme2000 = tell.FrameDescriptor("Earth", "EME2000")
+    barycentric_icrf = tell.FrameDescriptor(
+        "Solar System Barycenter",
+        "ICRF",
+    )
+    earth_state = tell.pvtcart(state, time, frame=earth_eme2000)
+    barycentric_state = tell.transform_pvt(earth_state, barycentric_icrf)
+    earth_state_again = tell.transform_pvt(barycentric_state, earth_eme2000)
+
+Use :func:`~tellurion.resolve_orekit_frame` to resolve a descriptor directly.
+Unsupported origins, axes, and non-inertial frame kinds are rejected rather
+than inferred. Orekit and its data must be initialized before either helper
+is used.
+
 Coordinate Systems
 ==================
 
@@ -394,6 +416,10 @@ Constructors
 ------------
 
 .. autofunction:: tellurion.pvtcart
+
+.. autofunction:: tellurion.resolve_orekit_frame
+
+.. autofunction:: tellurion.transform_pvt
 
 Helpers
 -------
