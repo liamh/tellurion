@@ -7,9 +7,16 @@ import astropy.units as u
 import numpy as np
 import pytest
 from astropy.table import QTable
+from astropy.time import Time
 
 import tellurion as tell
 horizons_reader = importlib.import_module("tellurion.core.horizons")
+
+
+def _tdb_iso(utc):
+    tdb = Time(utc, scale="utc").tdb
+    tdb.precision = 3
+    return tdb.isot
 
 
 def _vectors():
@@ -64,8 +71,8 @@ def test_horizons_returns_pvt_with_center_frame_and_tdb_epochs(monkeypatch):
         "id": "-117",
         "location": "@399",
         "epochs": {
-            "start": "2026-04-01",
-            "stop": "2026-04-05",
+            "start": _tdb_iso("2026-04-01"),
+            "stop": _tdb_iso("2026-04-05"),
             "step": "10m",
         },
     }
@@ -162,3 +169,26 @@ def test_tellurion_import_does_not_import_astroquery():
         ],
         check=True,
     )
+
+
+def test_epochs_accept_any_time_form_and_are_sent_as_iso8601_tdb(monkeypatch):
+    seen = {}
+
+    class FakeHorizons:
+        def __init__(self, **kwargs):
+            seen.update(kwargs)
+
+        def vectors(self, **kwargs):
+            return _vectors()
+
+    monkeypatch.setattr(
+        horizons_reader.importlib,
+        "import_module",
+        lambda name: SimpleNamespace(Horizons=FakeHorizons),
+    )
+    start = tell.abstime("2026-04-02T01:30:00")
+    tell.horizons(start_time=start, stop_time="2026-04-03T01:30:00")
+
+    assert seen["epochs"]["start"] == _tdb_iso("2026-04-02T01:30:00")
+    assert seen["epochs"]["stop"] == _tdb_iso("2026-04-03T01:30:00")
+    assert seen["epochs"]["start"].startswith("2026-04-02T01:31:09.")

@@ -7,6 +7,7 @@ import astropy.units as u
 import numpy as np
 from astropy.time import Time
 
+from tellurion.astro.time import abstime
 from tellurion.core.frame import FrameDescriptor, FrameKind
 from tellurion.core.posvel import pvtcart
 
@@ -33,6 +34,13 @@ def _center_origin(center):
     if match:
         return _CENTER_NAMES.get(match.group(1), str(center).strip())
     return str(center).strip()
+
+
+def _iso8601(time):
+    """ISO 8601 string, in TDB as Horizons expects for vectors."""
+    tdb = abstime(time).tdb
+    tdb.precision = 3
+    return tdb.isot
 
 
 def _frame(center, refplane):
@@ -70,8 +78,10 @@ def horizons(
     center : str, optional
         Horizons vector center/location, e.g. ``"@399"`` for Earth or
         ``"@301"`` for the Moon.
-    start_time, stop_time : str, optional
-        Start and stop epochs accepted by JPL Horizons.
+    start_time, stop_time : optional
+        Start and stop epochs: anything `tellurion.abstime` accepts (ISO 8601
+        string, `~astropy.time.Time`, `datetime`, ...). They are converted to
+        ISO 8601 strings in TDB, the time scale Horizons uses for vectors.
     step : str, optional
         Horizons sampling step, such as ``"10m"`` or ``"1h"``.
     refplane : {"earth", "ecliptic", "body"}, optional
@@ -102,7 +112,11 @@ def horizons(
     obj = horizons_module.Horizons(
         id=str(target_id),
         location=str(center),
-        epochs={"start": start_time, "stop": stop_time, "step": step},
+        epochs={
+            "start": _iso8601(start_time),
+            "stop": _iso8601(stop_time),
+            "step": step,
+        },
     )
     vectors = obj.vectors(refplane=refplane, aberrations="geometric")
     if len(vectors) == 0:
