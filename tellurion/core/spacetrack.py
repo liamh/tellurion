@@ -1,3 +1,4 @@
+import datetime
 import getpass
 import sys
 
@@ -140,7 +141,7 @@ def _by_catid(records, scalar=False):
     return {cid: _meanelset(g, scalar) for cid, g in groups.items()}
 
 
-def spacetrack_query(class_="gp", stclient=None, **predicates):
+def spacetrack_query(class_="gp", stclient=None, recent=30, **predicates):
     """Query space-track.org with any predicates `spacetrack.py` accepts.
 
     Parameters
@@ -152,6 +153,14 @@ def spacetrack_query(class_="gp", stclient=None, **predicates):
         (e.g. ``"satcat"``, ``"decay"``, ``"cdm_public"``).
     stclient : `spacetrack.SpaceTrackClient`, optional
         Client to use; default prompts via `get_stclient`.
+    recent : float or None, optional
+        For class ``"gp"`` only: keep only element sets whose epoch is
+        within this many days of now (default 30).  ``gp`` holds every
+        object not marked decayed, including lost or deep-space objects
+        whose last elements are decades old; this restricts the result
+        to objects that are actively tracked.  ``None`` applies no
+        restriction.  Ignored for other classes, and when an explicit
+        ``epoch`` predicate is given.
     **predicates
         Passed straight to the client: field names such as
         ``norad_cat_id``, ``object_name``, ``epoch``, ``inclination``,
@@ -171,11 +180,19 @@ def spacetrack_query(class_="gp", stclient=None, **predicates):
     >>> import spacetrack.operators as op                    # doctest: +SKIP
     >>> tell.spacetrack_query(object_name=op.like("SENTINEL"),
     ...                       limit=5)                       # doctest: +SKIP
+    >>> tell.spacetrack_query(periapsis=op.less_than(500),
+    ...     apoapsis=op.greater_than(35000), recent=7)       # doctest: +SKIP
+    >>> tell.spacetrack_query(norad_cat_id=15875,
+    ...                       recent=None)                   # doctest: +SKIP
     >>> tell.spacetrack_query("gp_history", norad_cat_id=25544,
     ...     epoch=op.inclusive_range(t0, t1))                # doctest: +SKIP
     """
     if stclient is None:
         stclient = get_stclient()
+    if class_ == "gp" and recent is not None and "epoch" not in predicates:
+        cutoff = (datetime.datetime.now(datetime.timezone.utc)
+                  .replace(tzinfo=None) - datetime.timedelta(days=recent))
+        predicates["epoch"] = op.greater_than(cutoff)
     records = getattr(stclient, class_)(**predicates)
     if isinstance(records, str):
         raise ValueError(f"space-track class {class_!r} returned non-JSON data")
@@ -184,16 +201,27 @@ def spacetrack_query(class_="gp", stclient=None, **predicates):
     return list(records)
 
 
-def spacetrack_latest(satnums, stclient=None):
+def spacetrack_latest(satnums, stclient=None, recent=None):
     """Latest element set for each NORAD ID in ``satnums`` (an int or a
     list of ints).
+
+    Parameters
+    ----------
+    satnums : int or list of int
+        NORAD catalog IDs.
+    stclient : `spacetrack.SpaceTrackClient`, optional
+    recent : float or None, optional
+        Only accept element sets with epoch within this many days of
+        now; objects without one are absent from the result.  Default
+        ``None``: no restriction, so lost or deep-space objects return
+        their last (possibly very old) element set.
 
     Returns
     -------
     dict of {int: `MeanElementSetT`}
         Keyed by NORAD ID, each a single (scalar-time) element set.
     """
-    return spacetrack_query("gp", stclient, norad_cat_id=satnums,
+    return spacetrack_query("gp", stclient, recent, norad_cat_id=satnums,
                             orderby="epoch desc")
 
 

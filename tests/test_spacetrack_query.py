@@ -127,3 +127,39 @@ def test_history_in_orbit_none_left():
     assert tell.spacetrack_history(99999, "2026-01-01", "2026-01-04", c,
                                    in_orbit=True) == {}
     c.gp_history.assert_not_called()
+
+
+def _epoch_arg(c):
+    return c.gp.call_args.kwargs.get("epoch")
+
+
+def test_query_recent_default_30_days():
+    c = _client([])
+    tell.spacetrack_query("gp", c, periapsis="<500")
+    arg = _epoch_arg(c)
+    assert arg.startswith(">")
+    cutoff = datetime.datetime.fromisoformat(arg[1:])
+    age = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) - cutoff
+    assert abs(age - datetime.timedelta(days=30)) < datetime.timedelta(minutes=1)
+
+
+def test_query_recent_none_and_explicit_epoch():
+    c = _client([])
+    tell.spacetrack_query("gp", c, recent=None)
+    assert _epoch_arg(c) is None
+    tell.spacetrack_query("gp", c, epoch=">2020-01-01")
+    assert _epoch_arg(c) == ">2020-01-01"
+
+
+def test_query_recent_ignored_for_other_classes():
+    c = _client([])
+    tell.spacetrack_query("gp_history", c, norad_cat_id=1)
+    assert "epoch" not in c.gp_history.call_args.kwargs
+
+
+def test_latest_recent_default_none_and_passthrough():
+    c = _client([])
+    tell.spacetrack_latest(1, c)
+    assert _epoch_arg(c) is None
+    tell.spacetrack_latest(1, c, recent=7)
+    assert _epoch_arg(c).startswith(">")
