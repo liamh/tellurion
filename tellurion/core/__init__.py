@@ -22,6 +22,7 @@ from tellurion.core.element import (
     statefnval,
     timeelements,
 )
+from tellurion.core.frame import FrameDescriptor, FrameKind
 from tellurion.core.geog import earthloc, nullisland, observer_location
 from tellurion.core.geonames import elev, gnuserid, location, userid
 from tellurion.core.obs import EarthObservationT, azelrange, obsdict1
@@ -45,6 +46,8 @@ from tellurion.core.util import magdiff
 __all__ = [
     "ElementSetT",
     "EarthObservationT",
+    "FrameDescriptor",
+    "FrameKind",
     "MeanElementSetT",
     "PVT",
     "PositionBase",

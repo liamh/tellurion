@@ -41,6 +41,8 @@ from tellurion.astro import (
     vstack,
 )
 from tellurion.core import (
+    FrameDescriptor,
+    FrameKind,
     PVT,
     EarthObservationT,
     ElementSetT,
@@ -238,6 +240,8 @@ __all__ = [
     "__version__",
     "ElementSetT",
     "EarthObservationT",
+    "FrameDescriptor",
+    "FrameKind",
     "MeanElementSetT",
     "PVT",
     "PositionBase",

@@ -7,6 +7,7 @@ import pytest
 import astropy.units as u
 
 import tellurion as tell
+from tellurion.core import FrameKind
 
 pytestmark = pytest.mark.requires_orekit_data
 
@@ -52,6 +53,8 @@ def test_names(leo1):
     sec = _offset(leo1["pvt"], np.array([1.0, 0.0, 0.0]))
     assert tell.ntw(sec, leo1["pvt"]).name == "NTW"
     assert tell.lvlh(sec, leo1["pvt"]).name == "LVLH"
+    assert tell.ntw(sec, leo1["pvt"]).frame.kind is FrameKind.LOCAL_ORBITAL
+    assert tell.lvlh(sec, leo1["pvt"]).frame.axes == "LVLH"
 
 
 def test_lvlh_radial_offset_is_first_axis(leo1):

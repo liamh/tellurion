@@ -73,6 +73,41 @@ For position without velocity information::
     pt = tell.pvtcart(position, time)
     print(pt.position_vector)
 
+Frame Metadata
+--------------
+
+State objects can carry a typed :class:`~tellurion.FrameDescriptor` describing
+the coordinate origin and axis convention. This metadata does not resolve an
+Orekit frame or perform a coordinate transformation; it makes the state
+coordinates explicit for later operations. Existing states default to
+``frame=None`` to preserve existing behavior::
+
+    earth_eme2000 = tell.FrameDescriptor(
+        origin="Earth",
+        axes="EME2000",
+        kind=tell.FrameKind.INERTIAL,
+    )
+    barycentric_icrf = tell.FrameDescriptor(
+        origin="Solar System Barycenter",
+        axes="ICRF",
+        kind=tell.FrameKind.INERTIAL,
+    )
+    pvt = tell.pvtcart(state, time, frame=earth_eme2000)
+
+Local orbital frames can record their frame kind and, when available, a
+reference identifier::
+
+    lvlh_frame = tell.FrameDescriptor(
+        origin="reference spacecraft",
+        axes="LVLH",
+        kind=tell.FrameKind.LOCAL_ORBITAL,
+        reference="chief-1",
+    )
+
+The reference identifier is descriptive metadata, not the reference
+spacecraft trajectory; transformations to or from a local orbital frame
+still require that reference state.
+
 Coordinate Systems
 ==================
 
@@ -335,6 +370,12 @@ API Reference
 
 Classes
 -------
+
+.. autoclass:: tellurion.FrameDescriptor
+   :members:
+
+.. autoclass:: tellurion.FrameKind
+   :members:
 
 .. autoclass:: tellurion.PositionBase
    :members:

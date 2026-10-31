@@ -10,6 +10,7 @@ from org.orekit.orbits import CartesianOrbit
 from org.orekit.propagation import SpacecraftState
 
 from tellurion.astro import units
+from tellurion.core.frame import FrameDescriptor, FrameKind
 from tellurion.ork import convert, prop
 
 
@@ -62,6 +63,7 @@ def ntw(relsc, refsc, unitlookup=units.prefunits):
     """
     rf = _relframe(LOFType.NTW, relsc, refsc, unitlookup)
     rf.name = "NTW"
+    rf.frame = _relative_frame_descriptor(refsc, "NTW")
     return rf
 
 
@@ -102,6 +104,7 @@ def lvlh(relsc, refsc, unitlookup=units.prefunits):
     """
     rf = _relframe(LOFType.LVLH, relsc, refsc, unitlookup)
     rf.name = "LVLH"
+    rf.frame = _relative_frame_descriptor(refsc, "LVLH")
     return rf
 
 
@@ -200,6 +203,16 @@ def _inv_relframe(frame, relsc, refsc):
         ref.getOrbit().getMu(),
     )
     return convert._pvt(SpacecraftState(sec_orbit))
+
+
+def _relative_frame_descriptor(refsc, axes):
+    reference = getattr(refsc, "name", None)
+    return FrameDescriptor(
+        origin=reference or "reference spacecraft",
+        axes=axes,
+        kind=FrameKind.LOCAL_ORBITAL,
+        reference=reference,
+    )
 
 
 # import astropy.coordinates as coord
