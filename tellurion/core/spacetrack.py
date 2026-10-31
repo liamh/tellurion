@@ -44,6 +44,26 @@ class MeanElementSetT:
             f"time={self.time!r}, model={self.model!r}{n})"
         )
 
+    def __len__(self):
+        if self.time.isscalar:
+            raise TypeError("a scalar MeanElementSetT has no len()")
+        return len(self.time)
+
+    def __getitem__(self, key):
+        """Index a series like a numpy array: an integer gives a scalar
+        element set, a slice, index list or boolean mask gives a series."""
+        if self.time.isscalar:
+            raise TypeError("a scalar MeanElementSetT is not subscriptable")
+        idx = np.arange(len(self.time))[key]
+        if np.ndim(idx) == 0:
+            i = int(idx)
+            tle = [self.tle[0][i], self.tle[1][i]]
+        else:
+            tle = [[lines[i] for i in idx] for lines in self.tle]
+        els = {k: v[idx] for k, v in self.els.items()}
+        return MeanElementSetT(els, self.time[idx], tle, self.model,
+                               self.scdata)
+
     def __eq__(self, other):
         if not isinstance(other, MeanElementSetT):
             return NotImplemented

@@ -82,3 +82,29 @@ def test_series_hdf5_roundtrip(tmp_path):
     assert list(back.tle) == ser.tle
     assert back.time.shape == (2,)
     assert (back.els["inc"] == ser.els["inc"]).all()
+
+
+def test_series_len_getitem_iter():
+    c = _client([_rec(25544, "ISS", "2026-01-0%dT00:00:00.000000" % d,
+                      inc=str(50 + d)) for d in (1, 2, 3)])
+    ser = tell.spacetrack_history(25544, "2026-01-01", "2026-01-04", c)[25544]
+    assert len(ser) == 3
+    one = ser[-1]
+    assert one.time.isscalar and one.els["inc"].value == 53
+    assert one.tle == ["1 2026-01-03T00:00:00.000000",
+                       "2 2026-01-03T00:00:00.000000"]
+    sub = ser[:2]
+    assert len(sub) == 2 and len(sub.tle[0]) == 2
+    assert len(ser[[0, 2]]) == 2
+    assert [e.els["inc"].value for e in ser] == [51, 52, 53]
+    with pytest.raises(IndexError):
+        ser[3]
+
+
+def test_scalar_not_subscriptable():
+    c = _client([_rec(1, "X", "2026-01-01T00:00:00.000000")])
+    one = tell.spacetrack_latest(1, c)[1]
+    with pytest.raises(TypeError):
+        len(one)
+    with pytest.raises(TypeError):
+        one[0]
