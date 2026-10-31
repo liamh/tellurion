@@ -73,6 +73,9 @@ For position without velocity information::
     pt = tell.pvtcart(position, time)
     print(pt.position_vector)
 
+
+.. _posvel-frames:
+
 Frame Metadata
 --------------
 
@@ -133,12 +136,14 @@ Querying JPL Horizons
 The optional Astroquery dependency can fetch geometric state vectors directly
 from JPL Horizons. Install it with ``pip install "tellurion[horizons]"``.
 The returned PVT uses km and km/s, and its ``frame`` records the requested
-center and reference plane. Horizons vector epochs are TDB::
+center and reference plane. Horizons vector epochs are TDB; ``start_time`` and ``stop_time`` accept
+anything :func:`tellurion.abstime` does and are sent as ISO 8601 TDB, and the
+returned times display in ISO 8601::
 
     pvt = tell.horizons(
         target_id="-1024",
         center="@399",
-        start_time="2026-04-01",
+        start_time="2026-04-02T02:00:00",
         stop_time="2026-04-05",
         step="10m",
         refplane="earth",
