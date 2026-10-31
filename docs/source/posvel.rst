@@ -108,6 +108,25 @@ The reference identifier is descriptive metadata, not the reference
 spacecraft trajectory; transformations to or from a local orbital frame
 still require that reference state.
 
+Reading CCSDS OEM files
+-----------------------
+
+The optional ``oem`` dependency reads CCSDS Orbital Ephemeris Message files
+in KVN or XML format. Install it with ``pip install "tellurion[oem]"``; the
+dependency is imported only when :func:`tellurion.oempvt` is called. OEM
+segment ``CENTER_NAME`` and ``REF_FRAME`` metadata become the PVT's frame
+descriptor. OEM state units (km and km/s) are retained::
+
+    pvt = tell.oempvt("trajectory.oem")
+    print(pvt.frame)
+
+If consecutive OEM segments change frame, the reader returns a tuple of PVTs,
+one per contiguous frame run. This keeps states in unlike frames separate.
+Known origins and axes are classified; unknown values are retained in a
+custom frame descriptor, so reading does not depend on Orekit supporting that
+frame. An unknown descriptor cannot necessarily be transformed by
+:func:`tellurion.transform_pvt`.
+
 Orekit Frame Resolution and Transformation
 ------------------------------------------
 
@@ -416,6 +435,8 @@ Constructors
 ------------
 
 .. autofunction:: tellurion.pvtcart
+
+.. autofunction:: tellurion.oempvt
 
 .. autofunction:: tellurion.resolve_orekit_frame
 
