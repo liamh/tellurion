@@ -10,9 +10,12 @@ Introduction
 Tellurion can fetch mean element sets (the data behind two-line
 elements) from `space-track.org <https://www.space-track.org>`_ using
 the `spacetrack <https://github.com/python-astrodynamics/spacetrack>`_
-package (``pip install spacetrack``). You need a free space-track.org
-account. The first call prompts for your username and password; to
-avoid that, define ``stclient`` in your Python startup file::
+package (``pip install spacetrack``). You need to `create a free
+space-track.org account
+<https://www.space-track.org/auth/createAccount>`_ if you do not
+already have one. The first call prompts for your username and
+password; to avoid that, define ``stclient`` in your Python startup
+file::
 
     import spacetrack
     stclient = spacetrack.SpaceTrackClient(identity="email", password="mypw")
