@@ -737,8 +737,136 @@ Relative frame ephemeris
     rel_ntw = tell.ntw(secondary_series, primary_series, tell.siunits)
     rel_ntw.ephemeris().pprint_all(max_width=-1)
 
+.. _multibody:
+
+Multibody (cislunar and interplanetary) propagation
+===================================================
+
+:func:`tellurion.mbprepare` and :func:`tellurion.mbpropagate` propagate a
+spacecraft under the point-mass gravity of several named bodies at once. They
+are separate from :func:`~tellurion.prepare` and :func:`~tellurion.propagate`
+(which remain the Earth-orbit tools), and use the same two-step workflow.
+
+How it works
+------------
+
+* The state is integrated in the inertial, solar-system-barycentric ICRF frame.
+  This single frame is valid near Earth, near the Moon and in deep space, so
+  the propagation never switches origin.
+* Each body in the ``bodies`` list contributes one Orekit
+  ``SingleBodyAbsoluteAttraction``, with positions from the Orekit ephemerides
+  (``CelestialBodyFactory`` names such as ``"Sun"``, ``"Earth"``, ``"Moon"``,
+  ``"Jupiter"``).  The default is Sun, Earth and Moon.
+* The initial state must carry a ``frame`` descriptor
+  (see :ref:`posvel-frames`). It is converted to barycentric ICRF internally,
+  and results are tagged with their frame and may be requested in any
+  supported frame with ``frame=``.  Supported frames are Earth-centered
+  ``FrameDescriptor("Earth", "EME2000")`` and barycentric
+  ``FrameDescriptor("Solar System Barycenter", "ICRF")``.
+* Only point-mass gravity from the listed bodies is modeled: no Earth
+  gravity field, drag, radiation pressure, or events.
+
+Cislunar example
+----------------
+
+A highly elliptical orbit reaching lunar distance, started in Earth-centered
+EME2000 and propagated for six days under Sun, Earth and Moon gravity::
+
+    import numpy as np
+    import astropy.units as u
+    import tellurion as tell
+
+    eci = tell.FrameDescriptor("Earth", "EME2000")
+    t0 = tell.abstime("2026-04-02T02:00:00")
+
+    kep = tell.kepler(
+        tell.allplane({"altper": 200*u.km, "altapo": 400000*u.km,
+                       "inc": 28.5*u.deg, "argper": 0*u.deg,
+                       "raan": 0*u.deg, "ma": 0*u.deg}),
+        t0)
+    init = tell.pvt(kep)
+    init.frame = eci                      # tag the initial state
+
+    gen = tell.mbprepare(init, 6*u.day, ["Sun", "Earth", "Moon"])
+    out = tell.mbpropagate(gen, np.linspace(1*u.day, 6*u.day, 6),
+                           include_init=True, frame=eci)
+    out.ephemeris().pprint_all(max_width=-1)
+
+Omitting ``frame=`` returns the states in barycentric ICRF, which is the
+natural frame for plotting transfers that leave the Earth-Moon system::
+
+    bary = tell.mbpropagate(gen, [6*u.day])
+    print(bary.frame)                     # Solar System Barycenter / ICRF
+
+Interplanetary example
+----------------------
+
+For a departure or heliocentric cruise, list the planets that matter and use a
+longer span and looser step limit.  Here a state at Earth, on a hyperbolic
+escape trajectory, is propagated for 200
+days under the Sun, Earth, Mars and Jupiter::
+
+    pv_eci = np.array([7000.0, 0.0, 0.0, 0.0, 10.9, 0.0])   # km, km/s
+    init = tell.pvtcart(pv_eci, tell.abstime("2026-10-01T00:00:00"),
+                        frame=tell.FrameDescriptor("Earth", "EME2000"))
+    gen = tell.mbprepare(init, 200*u.day,
+                         ["Sun", "Earth", "Moon", "Mars", "Jupiter"],
+                         maxstep=86400.0)
+    cruise = tell.mbpropagate(gen, np.linspace(10*u.day, 200*u.day, 20))
+    cruise.ephemeris().pprint_all(max_width=-1)
+
+Position is in kilometres from the solar system barycenter.
+
+Converting between frames
+-------------------------
+
+Any supported state can be moved between Earth-centered and barycentric frames
+with :func:`tellurion.transform_pvt` (including the origin's velocity)::
+
+    bary = tell.FrameDescriptor("Solar System Barycenter", "ICRF")
+    earth_view = tell.transform_pvt(cruise, tell.FrameDescriptor("Earth", "EME2000"))
+    back = tell.transform_pvt(earth_view, bary)
+
+Using Horizons or OEM states
+----------------------------
+
+States from :func:`tellurion.horizons` and :func:`tellurion.oempvt` arrive
+with frame descriptors, and can be used as initial states or as reference
+trajectories to compare against.  A Horizons query with ``center="@399"`` and
+``refplane="earth"`` is labelled ``"ICRF/Earth-equator"``, which is not yet
+resolvable by Orekit; because that frame agrees with EME2000 to a few tens of
+milliarcseconds, re-tag it before propagating::
+
+    ref = tell.horizons("-1024", "@399",
+                        "2026-04-02T02:00:00", "2026-04-05T02:00:00", "1h")
+    init = ref[0]
+    init.frame = tell.FrameDescriptor("Earth", "EME2000")
+
+    gen = tell.mbprepare(init, 3*u.day, ["Sun", "Earth", "Moon"])
+    mine = tell.mbpropagate(gen, np.linspace(1*u.hour, 3*u.day, 72))
+    mine = tell.transform_pvt(mine, tell.FrameDescriptor("Earth", "EME2000"))
+
+Comparing ``mine`` with the later Horizons or OEM rows then shows the effect of
+unmodeled forces (thrust, solar radiation pressure, Earth's non-spherical
+field), which is typically what limits cislunar accuracy.
+
+Tuning and limitations
+----------------------
+
+* ``rtol``/``atol`` (default ``1e-12``/``1e-3``) control the
+  Dormand-Prince 8(5,3) integrator; ``minstep`` and ``maxstep`` are in seconds.
+* Frames that Orekit cannot resolve (Moon-centered axes, Horizons or OEM
+  frames other than Earth/EME2000 and barycentric ICRF) raise ``ValueError``
+  rather than being guessed.
+* Orekit data (ephemerides, in particular DE) must be installed; see
+  :doc:`installation`.
+
 API Reference
 =============
+
+.. autofunction:: tellurion.mbprepare
+
+.. autofunction:: tellurion.mbpropagate
 
 .. autofunction:: tellurion.prepare
 

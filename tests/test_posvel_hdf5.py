@@ -16,7 +16,7 @@ import tempfile
 import os
 
 # Import the modules to test
-from tellurion.core import posvel
+from tellurion.core import FrameDescriptor, FrameKind, posvel
 from tellurion.core import posvel_hdf5  # This registers the HDF5 serializers
 from tellurion.astro import units
 
@@ -231,6 +231,24 @@ class TestPositionVelocityTHDF5:
             # Verify velocity
             vel_loaded = loaded_pvt.cartesian['velocity'].to(u.km / u.s).value
             assert_allclose(vel_loaded, state[3:6], rtol=1e-10)
+        finally:
+            os.unlink(filename)
+
+    def test_save_load_frame_descriptor(self):
+        frame = FrameDescriptor(
+            "Solar System Barycenter",
+            "ICRF",
+            FrameKind.INERTIAL,
+        )
+        pvt = posvel.pvtcart(SATELLITE_STATES[0, :6], None, frame=frame)
+
+        with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=False) as f:
+            filename = f.name
+
+        try:
+            save(pvt, filename)
+            loaded_pvt = load(filename)
+            assert loaded_pvt.frame == frame
         finally:
             os.unlink(filename)
 

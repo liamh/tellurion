@@ -73,6 +73,110 @@ For position without velocity information::
     pt = tell.pvtcart(position, time)
     print(pt.position_vector)
 
+
+.. _posvel-frames:
+
+Frame Metadata
+--------------
+
+State objects can carry a typed :class:`~tellurion.FrameDescriptor` describing
+the coordinate origin and axis convention. This metadata does not resolve an
+Orekit frame or perform a coordinate transformation; it makes the state
+coordinates explicit for later operations. Existing states default to
+``frame=None`` to preserve existing behavior::
+
+    earth_eme2000 = tell.FrameDescriptor(
+        origin="Earth",
+        axes="EME2000",
+        kind=tell.FrameKind.INERTIAL,
+    )
+    barycentric_icrf = tell.FrameDescriptor(
+        origin="Solar System Barycenter",
+        axes="ICRF",
+        kind=tell.FrameKind.INERTIAL,
+    )
+    pvt = tell.pvtcart(state, time, frame=earth_eme2000)
+
+Local orbital frames can record their frame kind and, when available, a
+reference identifier::
+
+    lvlh_frame = tell.FrameDescriptor(
+        origin="reference spacecraft",
+        axes="LVLH",
+        kind=tell.FrameKind.LOCAL_ORBITAL,
+        reference="chief-1",
+    )
+
+The reference identifier is descriptive metadata, not the reference
+spacecraft trajectory; transformations to or from a local orbital frame
+still require that reference state.
+
+Reading CCSDS OEM files
+-----------------------
+
+The optional ``oem`` dependency reads CCSDS Orbital Ephemeris Message files
+in KVN or XML format. Install it with ``pip install "tellurion[oem]"``; the
+dependency is imported only when :func:`tellurion.oempvt` is called. OEM
+segment ``CENTER_NAME`` and ``REF_FRAME`` metadata become the PVT's frame
+descriptor. OEM state units (km and km/s) are retained::
+
+    pvt = tell.oempvt("trajectory.oem")
+    print(pvt.frame)
+
+If consecutive OEM segments change frame, the reader returns a tuple of PVTs,
+one per contiguous frame run. This keeps states in unlike frames separate.
+Known origins and axes are classified; unknown values are retained in a
+custom frame descriptor, so reading does not depend on Orekit supporting that
+frame. An unknown descriptor cannot necessarily be transformed by
+:func:`tellurion.transform_pvt`.
+
+Querying JPL Horizons
+---------------------
+
+The optional Astroquery dependency can fetch geometric state vectors directly
+from JPL Horizons. Install it with ``pip install "tellurion[horizons]"``.
+The returned PVT uses km and km/s, and its ``frame`` records the requested
+center and reference plane. Horizons vector epochs are TDB; ``start_time`` and ``stop_time`` accept
+anything :func:`tellurion.abstime` does and are sent as ISO 8601 TDB, and the
+returned times display in ISO 8601::
+
+    pvt = tell.horizons(
+        target_id="-1024",
+        center="@399",
+        start_time="2026-04-02T02:00:00",
+        stop_time="2026-04-05",
+        step="10m",
+        refplane="earth",
+    )
+    print(pvt.frame)
+
+``refplane`` can be ``"earth"``, ``"ecliptic"``, or ``"body"``; its default
+is ``"earth"``. ``center="@399"`` identifies Earth, and ``center="@301"``
+identifies the Moon. The query uses geometric (uncorrected) vectors, suitable
+for representing the target's state rather than an apparent observation.
+
+Orekit Frame Resolution and Transformation
+------------------------------------------
+
+Tellurion resolves Earth-centered EME2000 and solar-system-barycentric ICRF
+descriptors to Orekit frames. A PVT with a supported descriptor can be
+transformed at its epoch, including the frame-origin translation and its
+contribution to velocity::
+
+    earth_eme2000 = tell.FrameDescriptor("Earth", "EME2000")
+    barycentric_icrf = tell.FrameDescriptor(
+        "Solar System Barycenter",
+        "ICRF",
+    )
+    earth_state = tell.pvtcart(state, time, frame=earth_eme2000)
+    barycentric_state = tell.transform_pvt(earth_state, barycentric_icrf)
+    earth_state_again = tell.transform_pvt(barycentric_state, earth_eme2000)
+
+Use :func:`~tellurion.resolve_orekit_frame` to resolve a descriptor directly.
+Unsupported origins, axes, and non-inertial frame kinds are rejected rather
+than inferred. Orekit and its data must be initialized before either helper
+is used.
+
 Coordinate Systems
 ==================
 
@@ -336,6 +440,12 @@ API Reference
 Classes
 -------
 
+.. autoclass:: tellurion.FrameDescriptor
+   :members:
+
+.. autoclass:: tellurion.FrameKind
+   :members:
+
 .. autoclass:: tellurion.PositionBase
    :members:
 
@@ -353,6 +463,14 @@ Constructors
 ------------
 
 .. autofunction:: tellurion.pvtcart
+
+.. autofunction:: tellurion.oempvt
+
+.. autofunction:: tellurion.horizons
+
+.. autofunction:: tellurion.resolve_orekit_frame
+
+.. autofunction:: tellurion.transform_pvt
 
 Helpers
 -------
