@@ -73,7 +73,6 @@ def test_query_other_class_returns_raw():
 def test_series_hdf5_roundtrip(tmp_path):
     fsc = pytest.importorskip("fsc.hdf5_io")
     pytest.importorskip("astropy_hdf5io")
-    import tellurion.core.spacetrack_hdf5  # noqa: F401
     c = _client([_rec(25544, "ISS", "2026-01-01T00:00:00.000000"),
                  _rec(25544, "ISS", "2026-01-03T00:00:00.000000")])
     ser = tell.spacetrack_history(25544, "2026-01-01", "2026-01-04", c)[25544]
