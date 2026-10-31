@@ -136,7 +136,7 @@ The returned PVT uses km and km/s, and its ``frame`` records the requested
 center and reference plane. Horizons vector epochs are TDB::
 
     pvt = tell.horizons(
-        target_id="-117",
+        target_id="-1024",
         center="@399",
         start_time="2026-04-01",
         stop_time="2026-04-05",

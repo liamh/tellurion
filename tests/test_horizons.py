@@ -76,6 +76,27 @@ def test_horizons_returns_pvt_with_center_frame_and_tdb_epochs(monkeypatch):
     )
 
 
+def test_default_target_is_artemis_ii_orion(monkeypatch):
+    seen = {}
+
+    class FakeHorizons:
+        def __init__(self, **kwargs):
+            seen.update(kwargs)
+
+        def vectors(self, **kwargs):
+            return _vectors()
+
+    monkeypatch.setattr(
+        horizons_reader.importlib,
+        "import_module",
+        lambda name: SimpleNamespace(Horizons=FakeHorizons),
+    )
+
+    tell.horizons()
+
+    assert seen["id"] == "-1024"
+
+
 @pytest.mark.parametrize(
     ("center", "origin"),
     [

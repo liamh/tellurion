@@ -50,7 +50,7 @@ def _frame(center, refplane):
 
 
 def horizons(
-    target_id="-117",
+    target_id="-1024",
     center="@399",
     start_time="2026-04-01",
     stop_time="2026-04-05",
@@ -66,7 +66,7 @@ def horizons(
     Parameters
     ----------
     target_id : str, optional
-        Horizons target identifier. Defaults to ``"-117"`` (Orion).
+        Horizons target identifier. Defaults to ``"-1024"`` (Artemis II Orion).
     center : str, optional
         Horizons vector center/location, e.g. ``"@399"`` for Earth or
         ``"@301"`` for the Moon.
