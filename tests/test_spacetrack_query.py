@@ -108,3 +108,22 @@ def test_scalar_not_subscriptable():
         len(one)
     with pytest.raises(TypeError):
         one[0]
+
+
+def test_history_in_orbit_filters_via_satcat():
+    c = _client([_rec(25544, "ISS", "2026-01-01T00:00:00.000000")])
+    c.satcat.return_value = [{"NORAD_CAT_ID": "25544"}]
+    out = tell.spacetrack_history([25544, 99999], "2026-01-01", "2026-01-04",
+                                  c, in_orbit=True)
+    assert set(out) == {25544}
+    assert c.satcat.call_args.kwargs == {
+        "norad_cat_id": [25544, 99999], "current": "Y", "decay": None}
+    assert c.gp_history.call_args.kwargs["norad_cat_id"] == [25544]
+
+
+def test_history_in_orbit_none_left():
+    c = _client([])
+    c.satcat.return_value = []
+    assert tell.spacetrack_history(99999, "2026-01-01", "2026-01-04", c,
+                                   in_orbit=True) == {}
+    c.gp_history.assert_not_called()

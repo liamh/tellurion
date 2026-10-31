@@ -197,7 +197,7 @@ def spacetrack_latest(satnums, stclient=None):
                             orderby="epoch desc")
 
 
-def spacetrack_history(satnums, start, end, stclient=None):
+def spacetrack_history(satnums, start, end, stclient=None, in_orbit=False):
     """Element sets with epochs between ``start`` and ``end`` (inclusive).
 
     Parameters
@@ -207,6 +207,10 @@ def spacetrack_history(satnums, start, end, stclient=None):
     start, end : anything accepted by `tellurion.abstime`
         Absolute times bounding the epochs.
     stclient : `spacetrack.SpaceTrackClient`, optional
+    in_orbit : bool, optional
+        If true, first look up ``satnums`` in ``satcat`` and keep only
+        objects with no decay date (still in orbit now), regardless of
+        the requested time range.
 
     Returns
     -------
@@ -215,6 +219,14 @@ def spacetrack_history(satnums, start, end, stclient=None):
         (``time`` is a vector `~astropy.time.Time`, ``els`` values are
         vector quantities).  IDs with no data in the range are absent.
     """
+    if in_orbit:
+        if stclient is None:
+            stclient = get_stclient()
+        cat = spacetrack_query("satcat", stclient, norad_cat_id=satnums,
+                               current="Y", decay=None)
+        satnums = [int(r["NORAD_CAT_ID"]) for r in cat]
+        if not satnums:
+            return {}
     rng = op.inclusive_range(*[atime.abstime(t).utc.to_datetime()
                                for t in (start, end)])
     return spacetrack_query("gp_history", stclient, norad_cat_id=satnums,
