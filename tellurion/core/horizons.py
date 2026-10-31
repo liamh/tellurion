@@ -52,7 +52,7 @@ def _frame(center, refplane):
 def horizons(
     target_id="-1024",
     center="@399",
-    start_time="2026-04-01",
+    start_time="2026-04-02T02:00:00",
     stop_time="2026-04-05",
     step="10m",
     refplane="earth",
