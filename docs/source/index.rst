@@ -13,6 +13,7 @@ Tellurion is a package for astrodynamics and space navigation. Input and results
    posvel
    element
    prop
+   spacetrack
    lambert
    examples
    installation

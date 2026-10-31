@@ -1,0 +1,165 @@
+"""Tests for the space-track query interface using a mocked client."""
+
+import datetime
+from unittest import mock
+
+import astropy.units as u
+import numpy as np
+import pytest
+
+import tellurion as tell
+
+
+def _rec(catid, name, epoch, inc="51.6", bstar=None):
+    return {
+        "OBJECT_NAME": name, "OBJECT_TYPE": "PAYLOAD", "NORAD_CAT_ID": str(catid),
+        "OBJECT_ID": "1998-067A", "EPOCH": epoch,
+        "SEMIMAJOR_AXIS": "6780.0", "ECCENTRICITY": "0.0005",
+        "INCLINATION": inc, "RA_OF_ASC_NODE": "10.0",
+        "ARG_OF_PERICENTER": "20.0", "MEAN_ANOMALY": "30.0",
+        "MEAN_MOTION": "15.5", "MEAN_MOTION_DOT": "0.0001",
+        "MEAN_MOTION_DDOT": "0", "PERIOD": "92.9", "PERIAPSIS": "400",
+        "APOAPSIS": "410", "BSTAR": bstar, "MEAN_ELEMENT_THEORY": "SGP4",
+        "TLE_LINE1": "1 " + epoch, "TLE_LINE2": "2 " + epoch,
+    }
+
+
+def _client(records):
+    c = mock.Mock()
+    c.gp.return_value = records
+    c.gp_history.return_value = records
+    return c
+
+
+def test_latest_scalar_keyed_by_catid():
+    c = _client([_rec(25544, "ISS", "2026-01-01T00:00:00.000000"),
+                 _rec(41335, "SENTINEL 3A", "2026-01-02T00:00:00.000000")])
+    out = tell.spacetrack_latest([25544, 41335], c)
+    assert set(out) == {25544, 41335}
+    assert out[25544].time.isscalar
+    assert out[25544].tle[0].startswith("1 ")
+    assert out[41335].scdata["name"] == "SENTINEL 3A"
+    assert c.gp.call_args.kwargs["norad_cat_id"] == [25544, 41335]
+
+
+def test_history_series_sorted_vectors():
+    c = _client([_rec(25544, "ISS", "2026-01-03T00:00:00.000000", inc="51.7"),
+                 _rec(25544, "ISS", "2026-01-01T00:00:00.000000", inc="51.5")])
+    out = tell.spacetrack_history(
+        25544, tell.abstime("2026-01-01T00:00:00"),
+        "2026-01-04T00:00:00", c)
+    ser = out[25544]
+    assert ser.time.shape == (2,)
+    assert ser.time[0] < ser.time[1]
+    assert ser.els["inc"].unit == u.deg
+    assert list(ser.els["inc"].value) == [51.5, 51.7]
+    assert ser.tle[0] == ["1 2026-01-01T00:00:00.000000",
+                          "1 2026-01-03T00:00:00.000000"]
+    rng = c.gp_history.call_args.kwargs["epoch"]
+    assert "2026-01-01" in str(rng) and "2026-01-04" in str(rng)
+
+
+def test_missing_fields_become_nan():
+    c = _client([_rec(1, "X", "2026-01-01T00:00:00.000000", bstar=None)])
+    assert np.isnan(tell.spacetrack_latest(1, c)[1].els["B"].value)
+
+
+def test_query_other_class_returns_raw():
+    c = mock.Mock()
+    c.satcat.return_value = [{"NORAD_CAT_ID": "1"}]
+    assert tell.spacetrack_query("satcat", c, norad_cat_id=1) == [{"NORAD_CAT_ID": "1"}]
+
+
+def test_series_hdf5_roundtrip(tmp_path):
+    fsc = pytest.importorskip("fsc.hdf5_io")
+    pytest.importorskip("astropy_hdf5io")
+    c = _client([_rec(25544, "ISS", "2026-01-01T00:00:00.000000"),
+                 _rec(25544, "ISS", "2026-01-03T00:00:00.000000")])
+    ser = tell.spacetrack_history(25544, "2026-01-01", "2026-01-04", c)[25544]
+    f = str(tmp_path / "s.h5")
+    fsc.save(ser, f)
+    back = fsc.load(f)
+    assert list(back.tle) == ser.tle
+    assert back.time.shape == (2,)
+    assert (back.els["inc"] == ser.els["inc"]).all()
+
+
+def test_series_len_getitem_iter():
+    c = _client([_rec(25544, "ISS", "2026-01-0%dT00:00:00.000000" % d,
+                      inc=str(50 + d)) for d in (1, 2, 3)])
+    ser = tell.spacetrack_history(25544, "2026-01-01", "2026-01-04", c)[25544]
+    assert len(ser) == 3
+    one = ser[-1]
+    assert one.time.isscalar and one.els["inc"].value == 53
+    assert one.tle == ["1 2026-01-03T00:00:00.000000",
+                       "2 2026-01-03T00:00:00.000000"]
+    sub = ser[:2]
+    assert len(sub) == 2 and len(sub.tle[0]) == 2
+    assert len(ser[[0, 2]]) == 2
+    assert [e.els["inc"].value for e in ser] == [51, 52, 53]
+    with pytest.raises(IndexError):
+        ser[3]
+
+
+def test_scalar_not_subscriptable():
+    c = _client([_rec(1, "X", "2026-01-01T00:00:00.000000")])
+    one = tell.spacetrack_latest(1, c)[1]
+    with pytest.raises(TypeError):
+        len(one)
+    with pytest.raises(TypeError):
+        one[0]
+
+
+def test_history_in_orbit_filters_via_satcat():
+    c = _client([_rec(25544, "ISS", "2026-01-01T00:00:00.000000")])
+    c.satcat.return_value = [{"NORAD_CAT_ID": "25544"}]
+    out = tell.spacetrack_history([25544, 99999], "2026-01-01", "2026-01-04",
+                                  c, in_orbit=True)
+    assert set(out) == {25544}
+    assert c.satcat.call_args.kwargs == {
+        "norad_cat_id": [25544, 99999], "current": "Y", "decay": None}
+    assert c.gp_history.call_args.kwargs["norad_cat_id"] == [25544]
+
+
+def test_history_in_orbit_none_left():
+    c = _client([])
+    c.satcat.return_value = []
+    assert tell.spacetrack_history(99999, "2026-01-01", "2026-01-04", c,
+                                   in_orbit=True) == {}
+    c.gp_history.assert_not_called()
+
+
+def _epoch_arg(c):
+    return c.gp.call_args.kwargs.get("epoch")
+
+
+def test_query_recent_default_30_days():
+    c = _client([])
+    tell.spacetrack_query("gp", c, periapsis="<500")
+    arg = _epoch_arg(c)
+    assert arg.startswith(">")
+    cutoff = datetime.datetime.fromisoformat(arg[1:])
+    age = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) - cutoff
+    assert abs(age - datetime.timedelta(days=30)) < datetime.timedelta(minutes=1)
+
+
+def test_query_recent_none_and_explicit_epoch():
+    c = _client([])
+    tell.spacetrack_query("gp", c, recent=None)
+    assert _epoch_arg(c) is None
+    tell.spacetrack_query("gp", c, epoch=">2020-01-01")
+    assert _epoch_arg(c) == ">2020-01-01"
+
+
+def test_query_recent_ignored_for_other_classes():
+    c = _client([])
+    tell.spacetrack_query("gp_history", c, norad_cat_id=1)
+    assert "epoch" not in c.gp_history.call_args.kwargs
+
+
+def test_latest_recent_default_none_and_passthrough():
+    c = _client([])
+    tell.spacetrack_latest(1, c)
+    assert _epoch_arg(c) is None
+    tell.spacetrack_latest(1, c, recent=7)
+    assert _epoch_arg(c).startswith(">")

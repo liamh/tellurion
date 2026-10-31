@@ -35,4 +35,4 @@ save(elements, str(FIXTURE_FILE))
 
 print(f"Saved fixtures to {FIXTURE_FILE}")
 for name, obj in elements.items():
-    print(f"  {name}: catid={obj.scdata['catid']}, epoch={obj.t.iso}")
+    print(f"  {name}: catid={obj.scdata['catid']}, epoch={obj.time.iso}")

@@ -72,7 +72,7 @@ def _make_sentinel3a() -> tell.MeanElementSetT:
     """Construct a MeanElementSetT for Sentinel-3A entirely in memory."""
     return tell.MeanElementSetT(
         els=_ELS,
-        t=_EPOCH,
+        time=_EPOCH,
         tle=_TLE,
         model='SGP4',
         scdata=_SCDATA,
@@ -85,7 +85,7 @@ def _make_iss() -> tell.MeanElementSetT:
     tle2 = '2 25544  51.6436 150.1234 0001234  90.1234 270.0123 15.49567890123456'
     return tell.MeanElementSetT(
         els={**_ELS, 'inc': 51.6436 * u.deg},
-        t=astropy.time.Time('2024-11-02T00:00:00', scale='utc'),
+        time=astropy.time.Time('2024-11-02T00:00:00', scale='utc'),
         tle=(tle1, tle2),
         model='SGP4',
         scdata={**_SCDATA, 'name': 'ISS', 'catid': 25544, 'intldes': '1998-067A'},
@@ -116,7 +116,7 @@ class TestMeanElementSetTConstruction:
         """All five fields are accessible as attributes."""
         obj = _make_sentinel3a()
         assert obj.els is _ELS
-        assert obj.t is _EPOCH
+        assert obj.time is _EPOCH
         assert obj.tle == _TLE
         assert obj.model == 'SGP4'
         assert obj.scdata is _SCDATA
@@ -134,7 +134,7 @@ class TestMeanElementSetTConstruction:
         # Same tle/model/scdata, different els and t
         obj2 = tell.MeanElementSetT(
             els={'sma': 9999.0 * u.km},          # different
-            t=astropy.time.Time('2020-01-01'),     # different
+            time=astropy.time.Time('2020-01-01'),     # different
             tle=_TLE,
             model='SGP4',
             scdata=_SCDATA,
@@ -151,7 +151,7 @@ class TestMeanElementSetTConstruction:
         """Objects with different models are not equal."""
         obj1 = _make_sentinel3a()
         obj2 = tell.MeanElementSetT(
-            els=_ELS, t=_EPOCH, tle=_TLE,
+            els=_ELS, time=_EPOCH, tle=_TLE,
             model='J2',          # different
             scdata=_SCDATA,
         )
@@ -161,7 +161,7 @@ class TestMeanElementSetTConstruction:
         """Objects with different scdata are not equal."""
         obj1 = _make_sentinel3a()
         obj2 = tell.MeanElementSetT(
-            els=_ELS, t=_EPOCH, tle=_TLE, model='SGP4',
+            els=_ELS, time=_EPOCH, tle=_TLE, model='SGP4',
             scdata={**_SCDATA, 'catid': 99999},   # different
         )
         assert obj1 != obj2
@@ -216,8 +216,8 @@ class TestMeanElementSetTRoundtrip:
         """Epoch Time is preserved to sub-second precision."""
         original = _make_sentinel3a()
         loaded = _roundtrip(original)
-        assert isinstance(loaded.t, astropy.time.Time)
-        dt_s = abs((loaded.t - original.t).to(u.s).value)
+        assert isinstance(loaded.time, astropy.time.Time)
+        dt_s = abs((loaded.time - original.time).to(u.s).value)
         assert dt_s < 1e-6
 
     def test_scdata_name_preserved(self):
@@ -325,7 +325,7 @@ class TestMeanElementSetTEdgeCases:
         twice = _roundtrip(once)
         assert twice == once
         assert twice.scdata['catid'] == 41335
-        dt_s = abs((twice.t - once.t).to(u.s).value)
+        dt_s = abs((twice.time - once.time).to(u.s).value)
         assert dt_s < 1e-6
 
 
@@ -381,7 +381,7 @@ class TestSpacetrackHdf5Fixture:
         """Fixture epoch is an astropy.time.Time object for every satellite."""
         data = load(str(_FIXTURE_FILE))
         for name, obj in data.items():
-            assert isinstance(obj.t, astropy.time.Time), \
+            assert isinstance(obj.time, astropy.time.Time), \
                 f"Epoch for '{name}' is not a Time object"
 
     def test_fixture_els_have_units(self):

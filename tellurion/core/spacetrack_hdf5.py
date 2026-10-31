@@ -22,12 +22,13 @@ def _mean_element_set_to_hdf5(self, hdf5_handle):
     for key, value in self.els.items():
         to_hdf5(value, els_group.create_group(key))
 
-    # t: astropy.time.Time epoch
-    to_hdf5(self.t, hdf5_handle.create_group("t"))
+    # time: astropy.time.Time epoch (scalar or vector)
+    to_hdf5(self.time, hdf5_handle.create_group("time"))
 
-    # tle: two ASCII TLE line strings
-    hdf5_handle.attrs["tle_line1"] = self.tle[0]
-    hdf5_handle.attrs["tle_line2"] = self.tle[1]
+    # tle: two ASCII TLE line strings, or two lists of them for a series
+    for name, lines in zip(("tle_line1", "tle_line2"), self.tle):
+        hdf5_handle.attrs[name] = (lines if isinstance(lines, str)
+                                   else [str(x) for x in lines])
 
     # model: plain string (e.g. 'SGP4')
     hdf5_handle.attrs["model"] = self.model
@@ -50,10 +51,16 @@ class _MeanElementSetDeserializer:
         els = {key: from_hdf5(hdf5_handle["els"][key])
                for key in hdf5_handle["els"].keys()}
 
-        t = from_hdf5(hdf5_handle["t"])
+        # Files written before the rename stored the epoch as "t"
+        time = from_hdf5(hdf5_handle["time" if "time" in hdf5_handle else "t"])
 
-        tle = (str(hdf5_handle.attrs["tle_line1"]),
-               str(hdf5_handle.attrs["tle_line2"]))
+        def _lines(name):
+            val = hdf5_handle.attrs[name]
+            if isinstance(val, (str, bytes)):
+                return str(val)
+            return [x.decode() if isinstance(x, bytes) else str(x) for x in val]
+
+        tle = (_lines("tle_line1"), _lines("tle_line2"))
 
         model = str(hdf5_handle.attrs["model"])
 
@@ -62,4 +69,4 @@ class _MeanElementSetDeserializer:
         if "catid" in scdata:
             scdata["catid"] = int(scdata["catid"])
 
-        return MeanElementSetT(els=els, t=t, tle=tle, model=model, scdata=scdata)
+        return MeanElementSetT(els=els, time=time, tle=tle, model=model, scdata=scdata)
