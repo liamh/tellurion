@@ -21,6 +21,7 @@ _OREKIT_TOPLEVEL_SUBMODULES = (
     "geog",
     "iod",
     "jacobian",
+    "multibody",
     "obs",
     "prop",
     "relative",

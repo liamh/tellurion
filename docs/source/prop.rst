@@ -737,8 +737,29 @@ Relative frame ephemeris
     rel_ntw = tell.ntw(secondary_series, primary_series, tell.siunits)
     rel_ntw.ephemeris().pprint_all(max_width=-1)
 
+Multibody (cislunar and interplanetary) propagation
+===================================================
+
+:func:`tellurion.mbprepare` and :func:`tellurion.mbpropagate` propagate in the
+inertial solar-system-barycentric ICRF frame, with one Orekit
+``SingleBodyAbsoluteAttraction`` per named body.  They are separate from
+:func:`~tellurion.prepare` and :func:`~tellurion.propagate`.  The initial state
+needs a ``frame`` descriptor, and is converted to ICRF internally; results are
+tagged with their frame and can be returned in another supported frame::
+
+    eci = tell.FrameDescriptor("Earth", "EME2000")
+    init = tell.pvtcart(pv, tell.abstime('2025-01-01T00:00:00'), frame=eci)
+    gen = tell.mbprepare(init, 5*u.day, ["Sun", "Earth", "Moon", "Jupiter"])
+    out = tell.mbpropagate(gen, np.linspace(1*u.day, 5*u.day, 5), frame=eci)
+
+Only gravity from the listed bodies is modeled.
+
 API Reference
 =============
+
+.. autofunction:: tellurion.mbprepare
+
+.. autofunction:: tellurion.mbpropagate
 
 .. autofunction:: tellurion.prepare
 

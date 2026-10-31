@@ -200,6 +200,16 @@ def transform_pvt(*args, **kwargs):
     return _ork_attr("transform_pvt")(*args, **kwargs)
 
 
+def mbprepare(*args, **kwargs):
+    """Prepare a multibody propagation in barycentric ICRF."""
+    return _ork_attr("mbprepare")(*args, **kwargs)
+
+
+def mbpropagate(*args, **kwargs):
+    """Evaluate a multibody propagation generator at given times."""
+    return _ork_attr("mbpropagate")(*args, **kwargs)
+
+
 def elementval(*args, **kwargs):
     """Compute orbital element values from a state representation."""
     return _ork_attr("elementval")(*args, **kwargs)
@@ -300,6 +310,8 @@ __all__ = [
     "prefnumabstime",
     "prepare",
     "propagate",
+    "mbprepare",
+    "mbpropagate",
     "pvt",
     "pvtcart",
     "resolve_orekit_frame",
