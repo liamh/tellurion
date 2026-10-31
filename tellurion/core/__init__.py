@@ -25,6 +25,7 @@ from tellurion.core.element import (
 from tellurion.core.frame import FrameDescriptor, FrameKind
 from tellurion.core.geog import earthloc, nullisland, observer_location
 from tellurion.core.geonames import elev, gnuserid, location, userid
+from tellurion.core.horizons import horizons
 from tellurion.core.obs import EarthObservationT, azelrange, obsdict1
 from tellurion.core.oem import oempvt
 from tellurion.core.posvel import (
@@ -66,6 +67,7 @@ __all__ = [
     "equinoctial",
     "equtimeelements",
     "gnuserid",
+    "horizons",
     "iscircels",
     "isequels",
     "iskepels",

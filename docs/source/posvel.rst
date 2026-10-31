@@ -127,6 +127,29 @@ custom frame descriptor, so reading does not depend on Orekit supporting that
 frame. An unknown descriptor cannot necessarily be transformed by
 :func:`tellurion.transform_pvt`.
 
+Querying JPL Horizons
+---------------------
+
+The optional Astroquery dependency can fetch geometric state vectors directly
+from JPL Horizons. Install it with ``pip install "tellurion[horizons]"``.
+The returned PVT uses km and km/s, and its ``frame`` records the requested
+center and reference plane. Horizons vector epochs are TDB::
+
+    pvt = tell.horizons(
+        target_id="-117",
+        center="@399",
+        start_time="2026-04-01",
+        stop_time="2026-04-05",
+        step="10m",
+        refplane="earth",
+    )
+    print(pvt.frame)
+
+``refplane`` can be ``"earth"``, ``"ecliptic"``, or ``"body"``; its default
+is ``"earth"``. ``center="@399"`` identifies Earth, and ``center="@301"``
+identifies the Moon. The query uses geometric (uncorrected) vectors, suitable
+for representing the target's state rather than an apparent observation.
+
 Orekit Frame Resolution and Transformation
 ------------------------------------------
 
@@ -437,6 +460,8 @@ Constructors
 .. autofunction:: tellurion.pvtcart
 
 .. autofunction:: tellurion.oempvt
+
+.. autofunction:: tellurion.horizons
 
 .. autofunction:: tellurion.resolve_orekit_frame
 
