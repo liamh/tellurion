@@ -139,6 +139,7 @@ def horizons(
         format="jd",
         scale="tdb",
     )
+    times.format = "isot"
     result = pvtcart(
         cartesian,
         times,

@@ -192,3 +192,21 @@ def test_epochs_accept_any_time_form_and_are_sent_as_iso8601_tdb(monkeypatch):
     assert seen["epochs"]["start"] == _tdb_iso("2026-04-02T01:30:00")
     assert seen["epochs"]["stop"] == _tdb_iso("2026-04-03T01:30:00")
     assert seen["epochs"]["start"].startswith("2026-04-02T01:31:09.")
+
+
+def test_epochs_display_as_iso8601(monkeypatch):
+    class FakeHorizons:
+        def __init__(self, **kwargs):
+            pass
+
+        def vectors(self, **kwargs):
+            return _vectors()
+
+    monkeypatch.setattr(
+        horizons_reader.importlib,
+        "import_module",
+        lambda name: SimpleNamespace(Horizons=FakeHorizons),
+    )
+    pvt = tell.horizons()
+    assert pvt.time.format == "isot"
+    assert pvt.time.scale == "tdb"
