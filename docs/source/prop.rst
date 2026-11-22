@@ -549,6 +549,37 @@ Propagation Output
 The :func:`~tellurion.prepare` returns a generator dictionary with propagation
 setup. The :func:`~tellurion.propagate` function then computes the position and velocity over the requested time steps as a :class:`~tellurion.PositionVelocityT` or an :ref:`ephemeris`.
 
+Mean and Osculating States
+--------------------------
+
+The ``state_type`` argument of :func:`~tellurion.prepare` selects the orbit
+represented by the output, independently of the ``output`` format::
+
+    gen = tell.prepare(initstate, 1*u.day, forceenv=tell.setgravity(5, 0),
+                       propagator='dsst', state_type='osculating')
+    pvt = tell.propagate(gen, times, output='pvt')
+
+``'osculating'`` is supported for all propagators. ``'mean'`` is supported
+for DSST and Brouwer-Lyddane; other propagators reject it. For backward
+compatibility the default is mean for DSST and osculating for the others.
+The DSST default is deprecated and will change to osculating in a future
+release; specify the desired type explicitly. The selected type is recorded
+in ``gen['state_type']``.
+
+Mean orbits depend on the propagation theory and are not interchangeable
+between DSST, Brouwer-Lyddane and SGP4. A mean orbit's Cartesian coordinates
+do not represent an instantaneous spacecraft position. Choose osculating
+output when comparing with a numerical trajectory. Brouwer-Lyddane mean
+output is computed by converting each osculating result and may fail if the
+mean-element conversion does not converge.
+
+This option does not change the interpretation of the initial state.
+Eclipse, visibility and altitude events, their transition states, and event
+labels are computed from osculating states. With mean output, DSST performs
+a separate mean propagation in addition to the osculating propagation used
+for events. State-transition matrices and parameter Jacobians, when available,
+correspond to the osculating propagation, not to the mean output.
+
 Output Formats
 --------------
 

@@ -11,6 +11,30 @@ import tellurion as tell
 """Propagation tests using shared orbit fixtures."""
 
 
+@pytest.mark.parametrize("propagator,state_type", [
+    ("sgp4", "mean"),
+    ("numerical", "mean"),
+    ("keplerian", "mean"),
+    ("dsst", "invalid"),
+])
+def test_unsupported_state_type(propagator, state_type):
+    with pytest.raises(ValueError, match="state"):
+        tell.prepare(None, 1 * u.hour, propagator=propagator, state_type=state_type)
+
+
+def test_sgp4_explicit_osculating():
+    tle = (
+        "1 25544U 98067A   24306.50000000  .00001234  00000-0  23456-4 0  9991",
+        "2 25544  51.6436 150.1234 0001234  90.1234 270.0123 15.49567890123456",
+    )
+    initial = tell.MeanElementSetT({}, tell.abstime("2024-11-01T12:00:00"),
+                                  tle, "SGP4", {})
+    default = tell.prepare(initial, 10 * u.min)
+    explicit = tell.prepare(initial, 10 * u.min, state_type="osculating")
+    assert default["state_type"] == explicit["state_type"] == "osculating"
+    assert np.linalg.norm((default["final"]["pvt"].position_vector -
+                           explicit["final"]["pvt"].position_vector).to_value(u.m)) < 1e-6
+
 
 class TestKeplerianPropagator:
     """Test Keplerian (two-body) propagator on various orbits."""
@@ -56,6 +80,58 @@ class TestKeplerianPropagator:
 
 class TestBrouwerLyddanePropagator:
     """Test Brouwer-Lyddane (J2-J5 perturbations) propagator."""
+
+    def test_state_type_and_initial_state(self, ell2):
+        from tellurion.ork import convert
+        from org.orekit.propagation.analytical import BrouwerLyddanePropagator
+
+        forceenv = tell.setgravity(5, 0)
+        gens = {
+            kind: tell.prepare(ell2["pvt"], 30 * u.min, forceenv=forceenv,
+                               propagator="brouwer-lyddane", state_type=kind)
+            for kind in ("osculating", "mean")
+        }
+        initial = tell.propagate(gens["osculating"], 0 * u.s,
+                                 include_init=False, output="pvt")
+        assert np.linalg.norm((initial.position_vector - ell2["pvt"].position_vector)
+                              .to_value(u.m)) < 10
+
+        date = gens["mean"]["epoch"].shiftedBy(600.0)
+        physical = gens["mean"]["osculating propfn"](date)
+        provider = forceenv["gravity-unnorm"]
+        expected = BrouwerLyddanePropagator.computeMeanOrbit(
+            physical.getOrbit(), provider, provider.onDate(date), 0.0, 1e-5, 500
+        )
+        actual = gens["mean"]["propfn"](date)
+        assert actual.getPVCoordinates().getPosition().distance(
+            expected.getPVCoordinates().getPosition()
+        ) < 1e-6
+        assert actual.getPVCoordinates().getPosition().distance(
+            physical.getPVCoordinates().getPosition()
+        ) > 1.0
+        assert np.linalg.norm((gens["mean"]["final"]["pvt"].position_vector -
+                               convert._pvt(gens["mean"]["final"]["state"]).position_vector)
+                              .to_value(u.m)) < 1e-6
+
+    def test_mean_output_uses_osculating_event_states(self, ell2, monkeypatch):
+        from tellurion.ork.event import prop as event
+
+        gen = tell.prepare(ell2["pvt"], 30 * u.min, forceenv=tell.setgravity(5, 0),
+                           propagator="brouwer-lyddane", state_type="mean")
+        captured = []
+        original = event._evstates
+
+        def capture(generator, states):
+            captured.extend(states if isinstance(states, list) else [states])
+            return original(generator, states)
+
+        monkeypatch.setattr(event, "_evstates", capture)
+        tell.propagate(gen, 10 * u.min, include_init=False, output="pvt")
+        date = gen["epoch"].shiftedBy(600)
+        assert captured[0].getPosition().distance(
+            gen["osculating propfn"](date).getPosition()
+        ) < 1e-6
+        assert captured[0].getPosition().distance(gen["propfn"](date).getPosition()) > 1
 
     def test_bl_ell2_from_kep(self, ell2):
         """Propagate moderately elliptical orbit (Keplerian elements)."""
@@ -576,6 +652,70 @@ class TestEclipseDetection:
 
 class TestDSSSTPropagator:
     """Test DSST (Draper Semi-analytical Satellite Theory) propagator."""
+
+    def test_state_types_and_physical_events(self, leo1, monkeypatch):
+        from tellurion.ork.event import prop as event
+
+        forceenv = tell.setgravity(2, 0)
+        events = {"altitude": 125 * u.km, "eclipse": [True, True], "visibility": []}
+        mean = tell.prepare(leo1["pvt"], 100 * u.min, events=events,
+                            forceenv=forceenv, propagator="dsst", state_type="mean")
+        osc = tell.prepare(leo1["pvt"], 100 * u.min, events=events,
+                           forceenv=forceenv, propagator="dsst", state_type="osculating")
+        with pytest.warns(FutureWarning, match="state_type"):
+            default = tell.prepare(leo1["pvt"], 100 * u.min, events=events,
+                                   forceenv=forceenv, propagator="dsst")
+        assert mean["state_type"] == "mean"
+        assert osc["state_type"] == "osculating"
+        assert default["state_type"] == "mean"
+        date = mean["epoch"].shiftedBy(600)
+        mean_state = mean["propfn"](date)
+        physical = mean["osculating propfn"](date)
+        assert mean_state.getPosition().distance(physical.getPosition()) > 1
+        assert mean_state.getPosition().distance(default["propfn"](date).getPosition()) < 1e-4
+        assert physical.getPosition().distance(osc["propfn"](date).getPosition()) < 1e-4
+        initial = tell.propagate(osc, 0 * u.s, include_init=False, output="pvt")
+        assert np.linalg.norm((initial.position_vector - leo1["pvt"].position_vector)
+                              .to_value(u.m)) < 0.1
+
+        captured = []
+        original = event._evstates
+
+        def capture(generator, states):
+            captured.extend(states if isinstance(states, list) else [states])
+            return original(generator, states)
+
+        monkeypatch.setattr(event, "_evstates", capture)
+        mean_pvt = tell.propagate(mean, [10 * u.min, 40 * u.min],
+                                  include_init=False, output="pvt")
+        osc_pvt = tell.propagate(osc, [10 * u.min, 40 * u.min],
+                                 include_init=False, output="pvt")
+        assert captured[0].getPosition().distance(physical.getPosition()) < 1e-6
+        assert mean_pvt.aux == osc_pvt.aux
+        assert mean["sun transition"].time.size == osc["sun transition"].time.size
+
+    @pytest.mark.parametrize("state_type", ["mean", "osculating"])
+    def test_dsst_zero_degree(self, leo1, state_type):
+        gen = tell.prepare(leo1["pvt"], 20 * u.min, forceenv=tell.setgravity(0, 0),
+                           propagator="dsst", state_type=state_type)
+        assert tell.propagate(gen, 10 * u.min, include_init=False, output="pvt") is not None
+
+    def test_dsst_osculating_against_numerical(self, leo1):
+        forceenv = tell.setgravity(2, 0)
+        dsst = tell.prepare(leo1["pvt"], 1 * u.hour, forceenv=forceenv,
+                            propagator="dsst", state_type="osculating")
+        numerical = tell.prepare(leo1["pvt"], 1 * u.hour, forceenv=forceenv,
+                                 propagator="numerical")
+        actual = tell.propagate(dsst, 1 * u.hour, include_init=False, output="pvt")
+        reference = tell.propagate(numerical, 1 * u.hour, include_init=False, output="pvt")
+        assert np.linalg.norm((actual.position_vector - reference.position_vector)
+                              .to_value(u.m)) < 1000
+
+    def test_dsst_drag_force(self, leo1):
+        forceenv = tell.dragforce(tell.setgravity(2, 0))
+        gen = tell.prepare(leo1["pvt"], 10 * u.min, forceenv=forceenv,
+                           propagator="dsst", state_type="osculating")
+        assert tell.propagate(gen, 5 * u.min, include_init=False, output="pvt") is not None
 
     def test_dsst_leo1_pvt(self, leo1):
         """Propagate LEO orbit with DSST (PVT)."""
