@@ -365,7 +365,9 @@ series) of relative states of the secondary to the primary.
 * :func:`tellurion.ntw` — NTW relative frame
 
 The inverse functions convert the relative state(s) and the reference
-state(s) to the inertial state(s) of the secondary.
+state(s) to the inertial state(s) of the secondary. The result inherits
+the frame descriptor of a PVT reference; if the reference has no descriptor
+or is an Orekit state, the result's frame is unspecified.
 
 * :func:`tellurion.inv_lvlh` — inverse LVLH/RSW transform (relative -> inertial)
 * :func:`tellurion.inv_ntw` — inverse NTW transform (relative -> inertial)

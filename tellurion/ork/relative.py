@@ -125,7 +125,8 @@ def inv_ntw(relpvt, refsc):
     Returns
     -------
     `~tellurion.PositionVelocityTime`
-        Inertial state(s) of the secondary spacecraft.
+        Inertial state(s) of the secondary spacecraft. The frame descriptor
+        is copied from a PVT reference, or left unspecified otherwise.
 
     See Also
     --------
@@ -149,7 +150,8 @@ def inv_lvlh(relpvt, refsc):
     Returns
     -------
     `~tellurion.PositionVelocityTime`
-        Inertial state(s) of the secondary spacecraft.
+        Inertial state(s) of the secondary spacecraft. The frame descriptor
+        is copied from a PVT reference, or left unspecified otherwise.
 
     See Also
     --------
@@ -182,7 +184,9 @@ def _inv_relframe(frame, relsc, refsc):
     ref = prop._to_spacecraft_state(refsc)
     if isinstance(ref, collections.abc.Iterable):
         inertial = [_inv_relframe(frame, rel, ref) for rel, ref in zip(relsc, ref)]
-        return inertial[0].merge(inertial[1:])
+        result = inertial[0].merge(inertial[1:])
+        result.frame = getattr(refsc, "frame", None)
+        return result
 
     relframe = LofOffset(ref.getFrame(), frame)
     converted = SpacecraftState(
@@ -202,7 +206,9 @@ def _inv_relframe(frame, relsc, refsc):
         ref.getDate(),
         ref.getOrbit().getMu(),
     )
-    return convert._pvt(SpacecraftState(sec_orbit))
+    result = convert._pvt(SpacecraftState(sec_orbit))
+    result.frame = getattr(refsc, "frame", None)
+    return result
 
 
 def _relative_frame_descriptor(refsc, axes):
