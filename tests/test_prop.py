@@ -655,6 +655,54 @@ class TestEclipseDetection:
 class TestDSSSTPropagator:
     """Test DSST (Draper Semi-analytical Satellite Theory) propagator."""
 
+    def test_mean_early_stop_matches_osculating(self):
+        from tellurion.ork import convert
+
+        descending = tell.kepler(
+                tell.allplane(
+                    {
+                        "altper": 160 * u.km,
+                        "altapo": 20250 * u.km,
+                        "inc": 28.5 * u.deg,
+                        "argper": 0 * u.deg,
+                        "raan": 0 * u.deg,
+                        "ma": 180 * u.deg,
+                    }
+                ),
+                tell.abstime("2026-01-01 08:05:00"),
+        ).pvt()
+        proptime = 4 * u.hour
+        events = {"altitude": 5000 * u.km, "eclipse": [], "visibility": []}
+        gens = {
+            kind: tell.prepare(
+                descending,
+                proptime,
+                events=events,
+                forceenv=tell.setgravity(2, 0),
+                propagator="dsst",
+                state_type=kind,
+            )
+            for kind in ("mean", "osculating")
+        }
+
+        mean_final = gens["mean"]["final"]["state"]
+        osculating_final = gens["osculating"]["final"]["state"]
+        assert mean_final.getDate().equals(osculating_final.getDate())
+        assert gens["mean"]["mindate"].equals(gens["mean"]["epoch"])
+        assert gens["mean"]["maxdate"].equals(mean_final.getDate())
+        assert gens["osculating"]["maxdate"].equals(osculating_final.getDate())
+
+        mean_pvt = gens["mean"]["final"]["pvt"]
+        assert np.linalg.norm(
+            (
+                mean_pvt.position_vector
+                - convert._pvt(mean_final).position_vector
+            ).to_value(u.m)
+        ) < 1e-6
+        assert mean_final.getDate().durationFrom(gens["mean"]["epoch"]) < (
+            proptime.to_value(u.s)
+        )
+
     def test_state_types_and_physical_events(self, leo1, monkeypatch):
         from tellurion.ork.event import prop as event
 
