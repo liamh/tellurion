@@ -24,7 +24,7 @@ dependencies = [
     "astropy>=8.0",
     "numpy>=1.20",
     "jdk4py",
-    "orekit-jpype",
+    "orekit-jpype>=12.1",
     "funcy",
     "pandas",
     "spacetrack",
