@@ -562,9 +562,7 @@ represented by the output, independently of the ``output`` format::
 ``'osculating'`` is supported for all propagators. ``'mean'`` is supported
 for DSST and Brouwer-Lyddane; other propagators reject it. For backward
 compatibility the default is mean for DSST and osculating for the others.
-The DSST default is deprecated and will change to osculating in a future
-release; specify the desired type explicitly. The selected type is recorded
-in ``gen['state_type']``.
+The selected type is recorded in ``gen['state_type']``.
 
 Mean orbits depend on the propagation theory and are not interchangeable
 between DSST, Brouwer-Lyddane and SGP4. A mean orbit's Cartesian coordinates

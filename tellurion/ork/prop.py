@@ -54,8 +54,6 @@ Adding new event detectors requires defining three support functions:
 ``_mkdetlog()``, ``_gentrans()``, and ``_statechar()``.
 """
 
-import warnings
-
 import astropy.units as u
 
 from tellurion.ork import ensure_orekit_initialized
@@ -167,13 +165,6 @@ def prepare(
         raise ValueError("state_type must be 'mean', 'osculating', or None")
     if state_type == "mean" and propagator not in ("dsst", "brouwer-lyddane"):
         raise ValueError(f"mean state output is not supported for {propagator}")
-    if state_type is None and propagator == "dsst":
-        warnings.warn(
-            "The default DSST state_type is currently 'mean' and will change "
-            "to 'osculating' in a future release; pass state_type explicitly.",
-            FutureWarning,
-            stacklevel=2,
-        )
     selected_type = state_type or ("mean" if propagator == "dsst" else "osculating")
     if propagator in ("dsst", "brouwer-lyddane"):
         generator = propagator_func(

@@ -1,6 +1,8 @@
 # test_prop.py
 """Propagation tests using shared orbit fixtures."""
 
+import warnings
+
 import astropy.units as u
 import numpy as np
 import pytest
@@ -662,9 +664,12 @@ class TestDSSSTPropagator:
                             forceenv=forceenv, propagator="dsst", state_type="mean")
         osc = tell.prepare(leo1["pvt"], 100 * u.min, events=events,
                            forceenv=forceenv, propagator="dsst", state_type="osculating")
-        with pytest.warns(FutureWarning, match="state_type"):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", FutureWarning)
             default = tell.prepare(leo1["pvt"], 100 * u.min, events=events,
                                    forceenv=forceenv, propagator="dsst")
+        assert not any(isinstance(w.message, FutureWarning) and
+                       "state_type" in str(w.message) for w in caught)
         assert mean["state_type"] == "mean"
         assert osc["state_type"] == "osculating"
         assert default["state_type"] == "mean"
