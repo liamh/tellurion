@@ -6,6 +6,7 @@
 import os
 import sys
 from sphinx_astropy.conf.v2 import *
+from importlib.metadata import version as _distribution_version
 
 # Compute project root relative to this conf.py file (docs/source/ -> project_root)
 project_root = os.path.abspath("../..")
@@ -17,7 +18,8 @@ if project_root not in sys.path:
 project = 'Tellurion'
 copyright = '2026, Liam M. Healy'
 author = 'Liam M. Healy'
-release = '0.1.0'
+release = _distribution_version("tellurion")
+version = release
 
 # -- General configuration ---------------------------------------------------
 extensions = [

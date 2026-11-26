@@ -63,7 +63,7 @@ ensure_orekit_initialized()
 import org.orekit.forces.gravity as okgrav
 from org.hipparchus.ode.nonstiff import DormandPrince853Integrator
 from org.orekit.orbits import CartesianOrbit, OrbitType
-from org.orekit.propagation import SpacecraftState
+from org.orekit.propagation import PropagationType, SpacecraftState
 from org.orekit.propagation.analytical import (
     BrouwerLyddanePropagator,
     KeplerianPropagator,
@@ -97,6 +97,7 @@ def prepare(
     reftime="epoch",
     output="et",
     propagator="auto",
+    state_type=None,
 ):
     """Prepare a propagation.
 
@@ -131,6 +132,13 @@ def prepare(
         ``'numerical'``        Numerical integration
         ``'sgp4'``             SGP4 mean elements (requires ``MeanElementSetT``)
         =====================  ==================================================
+    state_type : {None, 'mean', 'osculating'}, optional
+        Orbit type of returned states, independent of ``output``. The default
+        preserves the existing behavior: mean for DSST, osculating otherwise.
+        Mean output is supported for DSST and Brouwer-Lyddane only. Mean
+        states are model-specific and their Cartesian coordinates do not
+        represent instantaneous spacecraft positions. Event detection uses
+        osculating states. Initial-state interpretation is unchanged.
     """
     if propagator == "auto":
         propagator = _select_propagator(initstate, forceenv)
@@ -153,8 +161,19 @@ def prepare(
     if not propagator_func:
         raise ValueError(f"Unknown propagator: {propagator}")
 
-    # ... rest of validation code
-    return propagator_func(initstate, proptime, events, forceenv, reftime, output)
+    if state_type not in (None, "mean", "osculating"):
+        raise ValueError("state_type must be 'mean', 'osculating', or None")
+    if state_type == "mean" and propagator not in ("dsst", "brouwer-lyddane"):
+        raise ValueError(f"mean state output is not supported for {propagator}")
+    selected_type = state_type or ("mean" if propagator == "dsst" else "osculating")
+    if propagator in ("dsst", "brouwer-lyddane"):
+        generator = propagator_func(
+            initstate, proptime, events, forceenv, reftime, output, selected_type
+        )
+    else:
+        generator = propagator_func(initstate, proptime, events, forceenv, reftime, output)
+    generator["state_type"] = selected_type
+    return generator
 
 
 def _select_propagator(initstate, forceenv):
@@ -242,7 +261,7 @@ def blprep_def(initstate, proptime, events, forceenv, reftime, output):
     return generator
 
 
-def blprep(initstate, proptime, events, forceenv, reftime, output):
+def blprep(initstate, proptime, events, forceenv, reftime, output, state_type="osculating"):
     """Prepare the Brouwer-Lyddane analytic propagator (J2 perturbations)"""
 
     ork0 = _convert_to_orbit(initstate, forceenv)
@@ -261,13 +280,28 @@ def blprep(initstate, proptime, events, forceenv, reftime, output):
     # Now create the propagator with the mean orbit
     propagator = BrouwerLyddanePropagator(
         mean_orbit,
-        1.0,  # default mass
         provider,
+        PropagationType.MEAN,
         m2,
     )
-    generator = _make_generator(mean_orbit, lambda propto: propagator.propagate(propto))
+    generator = _make_generator(ork0, lambda propto: propagator.propagate(propto))
     generator["pvt0"] = convert._pvt(generator["propfn"](generator["epoch"]))
     _additional(events, propagator, generator, proptime, forceenv, reftime, output)
+    if state_type == "mean":
+        def to_mean(state):
+            orbit = state.getOrbit()
+            mean = BrouwerLyddanePropagator.computeMeanOrbit(
+                orbit, provider, provider.onDate(orbit.getDate()),
+                m2, epsilon, max_iterations,
+            )
+            return SpacecraftState(mean, state.getAttitude(), state.getMass())
+
+        physical_propfn = generator["propfn"]
+        generator["osculating propfn"] = physical_propfn
+        generator["propfn"] = lambda date: to_mean(physical_propfn(date))
+        generator["pvt0"] = convert._pvt(generator["propfn"](generator["epoch"]))
+        generator["final"]["state"] = to_mean(generator["final"]["state"])
+        generator["final"]["pvt"] = convert._pvt(generator["final"]["state"])
     return generator
 
 
@@ -422,7 +456,18 @@ def propagate(generator, reltimes, include_init=True, reftime="epoch", output="e
             for at in atimes
         ]
     pvt = convert._pvt(ss)
-    pvt.aux = event._evstates(generator, ss)
+    if "osculating propfn" in generator:
+        physical = generator["osculating propfn"]
+        if atimes.isscalar:
+            event_states = _to_spacecraft_state(physical(convert._abstime_to_okad(atimes)))
+        else:
+            event_states = [
+                _to_spacecraft_state(physical(convert._abstime_to_okad(at)))
+                for at in atimes
+            ]
+    else:
+        event_states = ss
+    pvt.aux = event._evstates(generator, event_states)
     if output == "pvt":
         return pvt.timeorder()
     else:

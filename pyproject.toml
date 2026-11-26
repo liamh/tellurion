@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tellurion"
-version = "0.1.0"
+version = "0.1.1"
 description = "Astrodynamics and satellite navigation using Orekit and AstroPy"
 authors = [{name = "Liam Healy"}]
 readme = "README.md"
@@ -24,7 +24,7 @@ dependencies = [
     "astropy>=8.0",
     "numpy>=1.20",
     "jdk4py",
-    "orekit-jpype",
+    "orekit-jpype>=12.1",
     "funcy",
     "pandas",
     "spacetrack",
