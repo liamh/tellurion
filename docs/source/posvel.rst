@@ -390,3 +390,14 @@ Note that the functions :func:`tellurion.kepler`, :func:`tellurion.equinoctial`,
 
 .. seealso::
    :ref:`hdf5-serialization` — saving and loading ``PositionVelocityT`` objects.
+
+Conversion of reference frames
+------------------------------
+
+.. autofunction:: tellurion.lvlh
+
+.. autofunction:: tellurion.inv_lvlh
+
+.. autofunction:: tellurion.ntw
+
+.. autofunction:: tellurion.inv_ntw
