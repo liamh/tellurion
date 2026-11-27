@@ -7,7 +7,32 @@ Simply import this module after importing astropy_hdf5io to enable serialization
 
 from fsc.hdf5_io import subscribe_hdf5
 
+from tellurion.core.frame import FrameDescriptor, FrameKind
 from tellurion.core.posvel import PositionT, PositionVelocityT
+
+
+def _write_frame_descriptor(state, hdf5_handle):
+    hdf5_handle.attrs["has_frame"] = state.frame is not None
+    if state.frame is not None:
+        hdf5_handle.attrs["frame_origin"] = state.frame.origin
+        hdf5_handle.attrs["frame_axes"] = state.frame.axes
+        hdf5_handle.attrs["frame_kind"] = state.frame.kind.value
+        hdf5_handle.attrs["frame_reference"] = state.frame.reference or ""
+
+
+def _read_frame_descriptor(hdf5_handle):
+    if not hdf5_handle.attrs.get("has_frame", False):
+        return None
+    reference = hdf5_handle.attrs.get("frame_reference", "")
+    if isinstance(reference, bytes):
+        reference = reference.decode()
+    return FrameDescriptor(
+        origin=hdf5_handle.attrs["frame_origin"],
+        axes=hdf5_handle.attrs["frame_axes"],
+        kind=FrameKind(hdf5_handle.attrs["frame_kind"]),
+        reference=reference or None,
+    )
+
 
 ##################################################
 #### HDF5 Support for PositionT ####
@@ -51,6 +76,7 @@ def _position_t_to_hdf5(self, hdf5_handle):
 
     # Store the isscalar flag
     hdf5_handle.attrs["isscalar"] = self.isscalar
+    _write_frame_descriptor(self, hdf5_handle)
 
 
 # Monkey-patch the to_hdf5 method onto PositionT
@@ -106,7 +132,8 @@ class _PositionTDeserializer:
         return PositionT(
             time=time,
             cartesian=cartesian,
-            aux=aux
+            aux=aux,
+            frame=_read_frame_descriptor(hdf5_handle),
         )
 
 
@@ -150,6 +177,7 @@ def _position_velocity_t_to_hdf5(self, hdf5_handle):
 
     # Store the isscalar flag
     hdf5_handle.attrs["isscalar"] = self.isscalar
+    _write_frame_descriptor(self, hdf5_handle)
 
 
 # Monkey-patch the to_hdf5 method onto PositionVelocityT
@@ -205,5 +233,6 @@ class _PositionVelocityTDeserializer:
         return PositionVelocityT(
             time=time,
             cartesian=cartesian,
-            aux=aux
+            aux=aux,
+            frame=_read_frame_descriptor(hdf5_handle),
         )

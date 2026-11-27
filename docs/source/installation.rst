@@ -16,6 +16,8 @@ Requirements
 * Matplotlib (for plotting)
 * SciPy (for advanced analysis)
 * astropy-hdf5io (for HDF5 serialization, see :ref:`hdf5-installation`)
+* oem (for CCSDS OEM ephemeris reading, see :ref:`oem-reading`)
+* astroquery (for JPL Horizons queries, see :ref:`horizons-query`)
 
 Installing with pip
 -------------------
@@ -50,6 +52,8 @@ only needed if you want to install dependencies individually:
    pip install spacetrack
    pip install geocoder
    pip install munch # for demos
+   pip install "tellurion[oem]" # for CCSDS OEM reading
+   pip install "tellurion[horizons]" # for JPL Horizons queries
    pip install sphinx sphinx-automodapi sphinx-astropy numpydoc # for documentation
 
 Installing with conda
@@ -60,6 +64,33 @@ If you use conda/mamba:
 .. code-block:: bash
 
    conda install -c conda-forge tellurion
+
+.. _oem-reading:
+
+CCSDS OEM reading
+-----------------
+
+CCSDS OEM support is optional and uses the ``oem`` package. Install it
+alongside Tellurion with::
+
+   pip install "tellurion[oem]"
+
+The dependency is loaded only when :func:`tellurion.oempvt` is called, so
+Tellurion can be imported without installing it. See :ref:`posvel` for the
+reader's frame and multi-segment behavior.
+
+.. _horizons-query:
+
+JPL Horizons queries
+--------------------
+
+JPL Horizons state-vector queries are optional and use Astroquery. Install
+them with::
+
+   pip install "tellurion[horizons]"
+
+Astroquery is loaded only when :func:`tellurion.horizons` is called. See
+:ref:`posvel` for the returned PVT's units and frame metadata.
 
 Installing from Source
 ----------------------

@@ -7,6 +7,8 @@ import pytest
 import astropy.units as u
 
 import tellurion as tell
+from tellurion.core import FrameKind
+from tellurion.ork import prop
 
 pytestmark = pytest.mark.requires_orekit_data
 
@@ -52,6 +54,8 @@ def test_names(leo1):
     sec = _offset(leo1["pvt"], np.array([1.0, 0.0, 0.0]))
     assert tell.ntw(sec, leo1["pvt"]).name == "NTW"
     assert tell.lvlh(sec, leo1["pvt"]).name == "LVLH"
+    assert tell.ntw(sec, leo1["pvt"]).frame.kind is FrameKind.LOCAL_ORBITAL
+    assert tell.lvlh(sec, leo1["pvt"]).frame.axes == "LVLH"
 
 
 def test_lvlh_radial_offset_is_first_axis(leo1):
@@ -86,6 +90,25 @@ def test_ntw_intrack_offset_is_second_axis(leo1):
     "fwd, inv",
     [(tell.ntw, tell.inv_ntw), (tell.lvlh, tell.inv_lvlh)],
 )
+@pytest.mark.parametrize("frame", [None, tell.FrameDescriptor("Earth", "EME2000")])
+def test_inverse_uses_reference_frame(leo1, fwd, inv, frame):
+    ref = leo1["pvt"]
+    ref.frame = frame
+    sec = _offset(ref, np.array([3.0, -1.0, 2.0]))
+    rel = fwd(sec, ref)
+    back = inv(rel, ref)
+    assert back.frame == frame
+    assert _pos(back) == pytest.approx(_pos(sec), abs=1e-6)
+    assert _vel(back) == pytest.approx(_vel(sec), abs=1e-9)
+
+    orekit_ref = prop._to_spacecraft_state(ref)
+    assert inv(rel, orekit_ref).frame is None
+
+
+@pytest.mark.parametrize(
+    "fwd, inv",
+    [(tell.ntw, tell.inv_ntw), (tell.lvlh, tell.inv_lvlh)],
+)
 def test_roundtrip(ref, fwd, inv):
     sec = _offset(ref, np.array([3.0, -1.0, 2.0]))
     back = inv(fwd(sec, ref, tell.siunits), ref)
@@ -103,13 +126,21 @@ def test_curtis_example_7_1():
     )
 
 
-def test_time_series_roundtrip(leo1):
+@pytest.mark.parametrize(
+    "fwd, inv",
+    [(tell.ntw, tell.inv_ntw), (tell.lvlh, tell.inv_lvlh)],
+)
+@pytest.mark.parametrize("frame", [None, tell.FrameDescriptor("Earth", "EME2000")])
+def test_time_series_roundtrip(leo1, fwd, inv, frame):
     ref0 = leo1["pvt"]
     gen_ref = tell.prepare(ref0, 1 * u.hour)
     gen_sec = tell.prepare(_offset(ref0, np.array([0.5, 0.0, 0.0])), 1 * u.hour)
     steps = np.linspace(5 * u.minute, 30 * u.minute, 6)
     ref = tell.propagate(gen_ref, steps, True, output="pvt")
     sec = tell.propagate(gen_sec, steps, True, output="pvt")
-    back = tell.inv_lvlh(tell.lvlh(sec, ref, tell.siunits), ref)
+    ref.frame = frame
+    back = inv(fwd(sec, ref, tell.siunits), ref)
+    assert back.frame == ref.frame
+    assert back[0].frame == ref.frame
     assert np.allclose(_pos(back), _pos(sec), atol=1e-6)
     assert np.allclose(_vel(back), _vel(sec), atol=1e-9)

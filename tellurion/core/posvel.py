@@ -18,6 +18,7 @@ from astropy.timeseries import TimeSeries
 
 import tellurion.astro.time as atime
 from tellurion.astro import quantity_utils as quant, units
+from tellurion.core.frame import FrameDescriptor
 from tellurion.core import pvhelper
 
 # Make the scalar structured quantity a singleton vector
@@ -69,6 +70,8 @@ class PositionBase(abc.ABC):
     """
     time: astropy.time.Time = None
     """The date and time of the position (optional)"""
+    frame: FrameDescriptor = None
+    """Coordinate-frame metadata, if known"""
     aux: dict = dataclasses.field(default_factory=dict)
     """Discrete attributes (labels, flags, metadata, etc.)"""
     _cartesian: u.Quantity = dataclasses.field(default=None, init=False, repr=False)
@@ -76,7 +79,9 @@ class PositionBase(abc.ABC):
     _spherical: u.Quantity = dataclasses.field(default=None, init=False, repr=False)
     """Internal storage for spherical coordinates"""
 
-    def __init__(self, time, aux=None, cartesian=None, spherical=None, pv=None):
+    def __init__(
+        self, time, aux=None, cartesian=None, spherical=None, pv=None, frame=None
+    ):
         """
         Initialize PositionBase with either cartesian or spherical coordinates.
 
@@ -84,6 +89,8 @@ class PositionBase(abc.ABC):
         ----------
         time : `~astropy.time.Time` or None
             Time object or None
+        frame : FrameDescriptor, optional
+            Coordinate-frame metadata; None means the frame is unspecified.
         aux : dict, optional
             Dictionary of auxiliary attributes
         cartesian : `~astropy.units.Quantity`, optional
@@ -99,6 +106,9 @@ class PositionBase(abc.ABC):
             If both cartesian and spherical are specified, or if neither is specified
         """
         self.time = time
+        if frame is not None and not isinstance(frame, FrameDescriptor):
+            raise TypeError("frame must be a FrameDescriptor or None")
+        self.frame = frame
         # Handle None time
         self.isscalar = self.time.isscalar if self.time is not None else True
         self.aux = aux if aux is not None else {}
@@ -167,6 +177,7 @@ class PositionBase(abc.ABC):
             return type(self)( # or equivalently self.__class__
                 time=self.time[index],
                 cartesian=self.cartesian[index],
+                frame=self.frame,
                 aux={k: v.split(" ")[index] for k, v in self.aux.items()}
                 if self.aux else {}
             )
@@ -438,6 +449,8 @@ class PositionBase(abc.ABC):
                 return self.concatenate(other[0]).concatenate(other[1:])
             else:
                 return self
+        if self.frame != other.frame:
+            raise ValueError("Cannot concatenate states with different frames")
 
         # Concatenate cartesian coordinates
         self._cartesian = np.concatenate((self.cartesian.tovector(),
@@ -780,9 +793,11 @@ class PositionT(PositionBase):
     pvtcart : Helper function to create position/velocity objects
     """
 
-    def __init__(self, time, aux=None, cartesian=None, spherical=None, pv=None):
+    def __init__(
+        self, time, aux=None, cartesian=None, spherical=None, pv=None, frame=None
+    ):
         """Initialize PositionT, passing pv parameter to parent."""
-        super().__init__(time, aux, cartesian, spherical, pv)
+        super().__init__(time, aux, cartesian, spherical, pv, frame)
 
     def _cartesian_to_spherical(self, cartesian):
         """
@@ -874,13 +889,15 @@ class PositionT(PositionBase):
             return PositionT(
                 time=self.time.copy() if self.time is not None else None,
                 aux=self.aux.copy(),
-                cartesian=self.cartesian.copy()
+                cartesian=self.cartesian.copy(),
+                frame=self.frame,
             )
         else:
             return PositionT(
                 time=self.time.copy() if self.time is not None else None,
                 aux=self.aux.copy(),
-                spherical=self.spherical.copy()
+                spherical=self.spherical.copy(),
+                frame=self.frame,
             )
 
     def _make_instance(self, time, cartesian, aux):
@@ -901,7 +918,7 @@ class PositionT(PositionBase):
         PositionT
             New PositionT instance
         """
-        return PositionT(time=time, cartesian=cartesian, aux=aux)
+        return PositionT(time=time, cartesian=cartesian, aux=aux, frame=self.frame)
 
 ##################################################
 ####   PositionVelocityT: Full state vector   ####
@@ -976,9 +993,11 @@ class PositionVelocityT(PositionBase):
     PositionT : Position without velocity information
     pvtcart : Helper function to create position/velocity objects
     """
-    def __init__(self, time, aux=None, cartesian=None, spherical=None, pv=None):
+    def __init__(
+        self, time, aux=None, cartesian=None, spherical=None, pv=None, frame=None
+    ):
         """Initialize PositionVelocityT, passing pv parameter to parent."""
-        super().__init__(time, aux, cartesian, spherical, pv)
+        super().__init__(time, aux, cartesian, spherical, pv, frame)
 
     @property
     def pv(self):
@@ -1022,7 +1041,7 @@ class PositionVelocityT(PositionBase):
         False
         """
         return PositionT(time=self.time, aux=self.aux.copy(),
-                         cartesian=self.position_vector)
+                         cartesian=self.position_vector, frame=self.frame)
 
     def _cartesian_to_spherical(self, cartesian):
         """
@@ -1167,13 +1186,15 @@ class PositionVelocityT(PositionBase):
             return PositionVelocityT(
                 time=self.time.copy(),
                 cartesian=self.cartesian.copy(),
-                aux=self.aux.copy()
+                aux=self.aux.copy(),
+                frame=self.frame,
             )
         else:
             return PositionVelocityT(
                 time=self.time.copy(),
                 spherical=self.spherical.copy(),
-                aux=self.aux.copy()
+                aux=self.aux.copy(),
+                frame=self.frame,
             )
 
     def _make_instance(self, time, cartesian, aux):
@@ -1194,7 +1215,9 @@ class PositionVelocityT(PositionBase):
         PositionVelocityT
             New PositionVelocityT instance
         """
-        return PositionVelocityT(time=time, cartesian=cartesian, aux=aux)
+        return PositionVelocityT(
+            time=time, cartesian=cartesian, aux=aux, frame=self.frame
+        )
 
     def pvt(self):
         """
@@ -1248,7 +1271,7 @@ class PositionVelocityT(PositionBase):
 ####    Make PositionT,  PositionVelocityT    ####
 ##################################################
 
-def pvtcart(pv, time, specunits=units.prefunits):
+def pvtcart(pv, time, specunits=units.prefunits, frame=None):
     """
     Define a PositionVelocityT or PositionT by its Cartesian components.
 
@@ -1271,6 +1294,8 @@ def pvtcart(pv, time, specunits=units.prefunits):
     specunits : dict, optional
         The units to be assigned to the numbers in `pv`. Default is `prefunits`
         which expects km and km/s.
+    frame : FrameDescriptor, optional
+        Coordinate-frame metadata. If omitted, the frame is unspecified.
 
     Returns
     -------
@@ -1344,9 +1369,11 @@ def pvtcart(pv, time, specunits=units.prefunits):
 
     # Create the appropriate object
     if cart.dtype.names and pvhelper._eph_vel in cart.dtype.names:
-        result = PositionVelocityT(time=atime.abstime(time), cartesian=cart)
+        result = PositionVelocityT(
+            time=atime.abstime(time), cartesian=cart, frame=frame
+        )
     else:
-        result = PositionT(time=atime.abstime(time), cartesian=cart)
+        result = PositionT(time=atime.abstime(time), cartesian=cart, frame=frame)
 
     # Force scalar if input was 1D array with time
     if is_single_state:

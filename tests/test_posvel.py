@@ -14,7 +14,7 @@ from astropy.timeseries import TimeSeries
 from numpy.testing import assert_allclose
 
 # Import the module to test
-from tellurion.core import posvel
+from tellurion.core import FrameDescriptor, FrameKind, posvel
 
 
 # Test data: satellite states (km, km/s, MJD)
@@ -187,6 +187,40 @@ class TestPositionVelocityT:
         assert pvt.time == time
         assert pvt.isscalar is True
         assert pvt.has_velocity is True
+
+    def test_frame_descriptor_is_preserved(self):
+        frame = FrameDescriptor("Earth", "EME2000")
+        pvt = posvel.pvtcart(SATELLITE_STATES[:3], None, frame=frame)
+
+        assert pvt.frame == frame
+        assert pvt[0].frame == frame
+        assert pvt.copy().frame == frame
+        assert pvt.position.frame == frame
+        assert FrameDescriptor(
+            "reference spacecraft",
+            "LVLH",
+            FrameKind.LOCAL_ORBITAL,
+            "chief-1",
+        ).reference == "chief-1"
+
+    def test_concatenate_rejects_mismatched_frames(self):
+        earth_frame = FrameDescriptor("Earth", "EME2000")
+        barycentric_frame = FrameDescriptor(
+            "Solar System Barycenter", "ICRF"
+        )
+        first = posvel.pvtcart(SATELLITE_STATES[0], None, frame=earth_frame)
+        second = posvel.pvtcart(SATELLITE_STATES[1], None, frame=barycentric_frame)
+
+        with pytest.raises(ValueError, match="different frames"):
+            first.concatenate(second)
+
+    def test_frame_descriptor_requires_typed_value(self):
+        with pytest.raises(TypeError, match="FrameDescriptor"):
+            posvel.PositionVelocityT(
+                time=None,
+                cartesian=posvel.pvtcart(SATELLITE_STATES[0, :6], None).cartesian,
+                frame="EME2000",
+            )
 
     def test_position_extraction(self):
         """Test extracting position-only as PositionT."""

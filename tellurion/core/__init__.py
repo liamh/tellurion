@@ -22,9 +22,12 @@ from tellurion.core.element import (
     statefnval,
     timeelements,
 )
+from tellurion.core.frame import FrameDescriptor, FrameKind
 from tellurion.core.geog import earthloc, nullisland, observer_location
 from tellurion.core.geonames import elev, gnuserid, location, userid
+from tellurion.core.horizons import horizons
 from tellurion.core.obs import EarthObservationT, azelrange, obsdict1
+from tellurion.core.oem import oempvt
 from tellurion.core.posvel import (
     PVT,
     PositionBase,
@@ -45,6 +48,8 @@ from tellurion.core.util import magdiff
 __all__ = [
     "ElementSetT",
     "EarthObservationT",
+    "FrameDescriptor",
+    "FrameKind",
     "MeanElementSetT",
     "PVT",
     "PositionBase",
@@ -62,6 +67,7 @@ __all__ = [
     "equinoctial",
     "equtimeelements",
     "gnuserid",
+    "horizons",
     "iscircels",
     "isequels",
     "iskepels",
@@ -71,6 +77,7 @@ __all__ = [
     "location",
     "magdiff",
     "nullisland",
+    "oempvt",
     "obsdict1",
     "observer_location",
     "pvtcart",

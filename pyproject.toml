@@ -39,6 +39,16 @@ hdf5 = [
     "astropy-hdf5io>=0.1.0",
 ]
 
+# CCSDS Orbit Ephemeris Message reader
+oem = [
+    "oem>=0.4.5",
+]
+
+# JPL Horizons state-vector queries
+horizons = [
+    "astroquery>=0.4.7",
+]
+
 # Documentation dependencies
 docs = [
     "sphinx>=7.0",

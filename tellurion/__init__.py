@@ -41,6 +41,8 @@ from tellurion.astro import (
     vstack,
 )
 from tellurion.core import (
+    FrameDescriptor,
+    FrameKind,
     PVT,
     EarthObservationT,
     ElementSetT,
@@ -60,6 +62,7 @@ from tellurion.core import (
     equinoctial,
     equtimeelements,
     gnuserid,
+    horizons,
     iscircels,
     isequels,
     iskepels,
@@ -69,6 +72,7 @@ from tellurion.core import (
     location,
     magdiff,
     nullisland,
+    oempvt,
     obsdict1,
     observer_location,
     pvtcart,
@@ -188,6 +192,26 @@ def siderealtime(*args, **kwargs):
     return _ork_attr("siderealtime")(*args, **kwargs)
 
 
+def resolve_orekit_frame(*args, **kwargs):
+    """Resolve a supported frame descriptor to an Orekit Frame."""
+    return _ork_attr("resolve_orekit_frame")(*args, **kwargs)
+
+
+def transform_pvt(*args, **kwargs):
+    """Transform a PVT state or series to a supported inertial frame."""
+    return _ork_attr("transform_pvt")(*args, **kwargs)
+
+
+def mbprepare(*args, **kwargs):
+    """Prepare a multibody propagation in barycentric ICRF."""
+    return _ork_attr("mbprepare")(*args, **kwargs)
+
+
+def mbpropagate(*args, **kwargs):
+    """Evaluate a multibody propagation generator at given times."""
+    return _ork_attr("mbpropagate")(*args, **kwargs)
+
+
 def elementval(*args, **kwargs):
     """Compute orbital element values from a state representation."""
     return _ork_attr("elementval")(*args, **kwargs)
@@ -238,6 +262,8 @@ __all__ = [
     "__version__",
     "ElementSetT",
     "EarthObservationT",
+    "FrameDescriptor",
+    "FrameKind",
     "MeanElementSetT",
     "PVT",
     "PositionBase",
@@ -262,6 +288,7 @@ __all__ = [
     "from_array",
     "fromtime",
     "gnuserid",
+    "horizons",
     "gravconstunits",
     "hcat",
     "hstack",
@@ -281,13 +308,17 @@ __all__ = [
     "obsdict1",
     "prefunits",
     "nullisland",
+    "oempvt",
     "observer_location",
     "orekit_available",
     "prefnumabstime",
     "prepare",
     "propagate",
+    "mbprepare",
+    "mbpropagate",
     "pvt",
     "pvtcart",
+    "resolve_orekit_frame",
     "quantity_to_array",
     "quantity_to_dict",
     "rev",
@@ -309,6 +340,7 @@ __all__ = [
     "timeelements",
     "time_concat",
     "timesec",
+    "transform_pvt",
     "to_array",
     "tselements",
     "tq",
