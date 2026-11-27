@@ -37,8 +37,10 @@ demoa.init.cart = demoa.init.kep.pvt()  # Convert back to Cartesian, same as dem
 curtis_ex71 = Munch()
 curtis_ex71.a_pvt = tell.pvtcart(([-266.77, 3865.8, 5426.2,
                                    -6.4836, -3.6198, 2.4156]), newyear)
+curtis_ex71.a_pvt.name = "Curtis-ex7.1 A"
 curtis_ex71.b_pvt = tell.pvtcart(([-5890.71, -2979.8, 1792.2,
                                    0.93583, -5.2403, -5.5009]), newyear)
+curtis_ex71.b_pvt.name = "Curtis-ex7.1 B"
 # Compare curtis_ex71.lvlh.cartesian with results at step 9, at the top of p. 357
 curtis_ex71.lvlh = tell.lvlh(curtis_ex71.b_pvt, curtis_ex71.a_pvt)
 curtis_ex71.ntw = tell.ntw(curtis_ex71.b_pvt, curtis_ex71.a_pvt)
