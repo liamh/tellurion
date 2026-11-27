@@ -23,7 +23,7 @@ def _key(value):
 def resolve_orekit_frame(descriptor):
     """Resolve a supported inertial frame descriptor to an Orekit ``Frame``.
 
-    Currently supported descriptors are Earth-centered EME2000 and
+    Currently supported descriptors are Earth-centered EME2000 and GCRF and
     solar-system-barycentric ICRF. Other origins, axes, and frame kinds are
     rejected rather than guessed.
     """
@@ -38,6 +38,8 @@ def resolve_orekit_frame(descriptor):
     axes = _key(descriptor.axes)
     if origin in _EARTH and axes in {"eme2000", "j2000"}:
         return FramesFactory.getEME2000()
+    if origin in _EARTH and axes == "gcrf":
+        return FramesFactory.getGCRF()
     if origin in _SSB and axes == "icrf":
         return FramesFactory.getICRF()
     raise ValueError(

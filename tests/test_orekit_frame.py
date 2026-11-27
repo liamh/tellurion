@@ -9,11 +9,13 @@ pytestmark = pytest.mark.requires_orekit_data
 
 
 EARTH_EME2000 = tell.FrameDescriptor("Earth", "EME2000")
+EARTH_GCRF = tell.FrameDescriptor("Earth", "GCRF")
 SSB_ICRF = tell.FrameDescriptor("Solar System Barycenter", "ICRF")
 
 
 def test_resolve_supported_inertial_frames():
     assert tell.resolve_orekit_frame(EARTH_EME2000).getName() == "EME2000"
+    assert tell.resolve_orekit_frame(EARTH_GCRF).getName() == "GCRF"
     assert tell.resolve_orekit_frame(SSB_ICRF).getName() == "ICRF"
     assert tell.resolve_orekit_frame(
         tell.FrameDescriptor("earth", "J2000")
@@ -27,6 +29,7 @@ def test_resolve_supported_inertial_frames():
     "descriptor",
     [
         tell.FrameDescriptor("Earth", "ICRF"),
+        tell.FrameDescriptor("Moon", "GCRF"),
         tell.FrameDescriptor("Moon", "EME2000"),
         tell.FrameDescriptor(
             "Earth", "ITRF", tell.FrameKind.BODY_FIXED
@@ -62,6 +65,48 @@ def test_transform_pvt_round_trip_scalar():
         rtol=0.0,
         atol=1e-5,
     )
+
+
+def test_gcrf_transforms_translate_origin_and_rotate_eme2000():
+    from org.orekit.bodies import CelestialBodyFactory
+    from org.orekit.frames import FramesFactory
+    from tellurion.ork import convert
+
+    state = tell.pvtcart(
+        [7000.0, -1200.0, 500.0, 1.0, 7.0, -0.5],
+        tell.abstime("2025-01-01T00:00:00"),
+        frame=EARTH_GCRF,
+    )
+    bary = tell.transform_pvt(state, SSB_ICRF)
+    earth = CelestialBodyFactory.getEarth().getPVCoordinates(
+        convert._abstime_to_okad(state.time), FramesFactory.getICRF()
+    )
+    expected_pos = np.array([earth.getPosition().getX(), earth.getPosition().getY(),
+                             earth.getPosition().getZ()])
+    expected_vel = np.array([earth.getVelocity().getX(), earth.getVelocity().getY(),
+                             earth.getVelocity().getZ()])
+    np.testing.assert_allclose(
+        bary.position_vector.to_value(u.m),
+        expected_pos + state.position_vector.to_value(u.m), rtol=0, atol=1e-3
+    )
+    np.testing.assert_allclose(
+        bary.velocity_vector.to_value(u.m / u.s),
+        expected_vel + state.velocity_vector.to_value(u.m / u.s), rtol=0, atol=1e-8
+    )
+    restored = tell.transform_pvt(bary, EARTH_GCRF)
+    assert restored.frame == EARTH_GCRF
+    np.testing.assert_allclose(
+        restored.position_vector.to_value(u.m),
+        state.position_vector.to_value(u.m), rtol=0, atol=1e-3
+    )
+    np.testing.assert_allclose(
+        restored.velocity_vector.to_value(u.m / u.s),
+        state.velocity_vector.to_value(u.m / u.s), rtol=0, atol=1e-8
+    )
+    eme = tell.transform_pvt(state, EARTH_EME2000)
+    assert np.linalg.norm(
+        eme.position_vector.to_value(u.m) - state.position_vector.to_value(u.m)
+    ) > 0.01
 
 
 def test_transform_pvt_round_trip_series():

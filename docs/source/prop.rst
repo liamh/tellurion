@@ -790,7 +790,8 @@ How it works
   (see :ref:`posvel-frames`). It is converted to barycentric ICRF internally,
   and results are tagged with their frame and may be requested in any
   supported frame with ``frame=``.  Supported frames are Earth-centered
-  ``FrameDescriptor("Earth", "EME2000")`` and barycentric
+  ``FrameDescriptor("Earth", "EME2000")``, ``FrameDescriptor("Earth", "GCRF")``,
+  and barycentric
   ``FrameDescriptor("Solar System Barycenter", "ICRF")``.
 * Only point-mass gravity from the listed bodies is modeled: no Earth
   gravity field, drag, radiation pressure, or events.
@@ -861,19 +862,17 @@ Using Horizons or OEM states
 
 States from :func:`tellurion.horizons` and :func:`tellurion.oempvt` arrive
 with frame descriptors, and can be used as initial states or as reference
-trajectories to compare against.  A Horizons query with ``center="@399"`` and
-``refplane="earth"`` is labelled ``"ICRF/Earth-equator"``, which is not yet
-resolvable by Orekit; because that frame agrees with EME2000 to a few tens of
-milliarcseconds, re-tag it before propagating::
+trajectories to compare against. A Horizons query with ``center="@399"`` and
+``refplane="earth"`` returns an Earth-centered state with ICRF-aligned axes,
+tagged Earth/GCRF. This can be propagated directly; the multibody propagator
+transforms it to barycentric ICRF, including the Earth's position and velocity::
 
     ref = tell.horizons("-1024", "@399",
                         "2026-04-02T02:00:00", "2026-04-05T02:00:00", "1h")
     init = ref[0]
-    init.frame = tell.FrameDescriptor("Earth", "EME2000")
-
     gen = tell.mbprepare(init, 3*u.day, ["Sun", "Earth", "Moon"])
     mine = tell.mbpropagate(gen, np.linspace(1*u.hour, 3*u.day, 72))
-    mine = tell.transform_pvt(mine, tell.FrameDescriptor("Earth", "EME2000"))
+    mine = tell.transform_pvt(mine, tell.FrameDescriptor("Earth", "GCRF"))
 
 Comparing ``mine`` with the later Horizons or OEM rows then shows the effect of
 unmodeled forces (thrust, solar radiation pressure, Earth's non-spherical
@@ -884,9 +883,12 @@ Tuning and limitations
 
 * ``rtol``/``atol`` (default ``1e-12``/``1e-3``) control the
   Dormand-Prince 8(5,3) integrator; ``minstep`` and ``maxstep`` are in seconds.
-* Frames that Orekit cannot resolve (Moon-centered axes, Horizons or OEM
-  frames other than Earth/EME2000 and barycentric ICRF) raise ``ValueError``
+* Descriptors that Tellurion cannot resolve (Moon-centered frames and
+  Horizons or OEM frames other than Earth/GCRF, Earth/EME2000 and barycentric
+  ICRF) raise ``ValueError``
   rather than being guessed.
+* Changing ``forceenv["celestialframe"]`` to ICRF does not make the ordinary
+  Earth-orbit propagators barycentric multibody propagators.
 * Orekit data (ephemerides, in particular DE) must be installed; see
   :doc:`installation`.
 

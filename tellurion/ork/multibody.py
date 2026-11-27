@@ -52,7 +52,8 @@ def mbprepare(pvt, duration, bodies=DEFAULT_BODIES, rtol=1e-12, atol=1e-3,
     ----------
     pvt : `~tellurion.PositionVelocityTime`
         Initial state; must be a scalar with an epoch and a ``frame``
-        descriptor (e.g. Earth/EME2000 or Solar System Barycenter/ICRF).
+        descriptor (e.g. Earth/EME2000, Earth/GCRF, or Solar System
+        Barycenter/ICRF).
         It is converted to barycentric ICRF internally.
     duration : `~astropy.units.Quantity`
         Time span to cover from the epoch; negative values propagate

@@ -154,14 +154,19 @@ returned times display in ISO 8601::
 is ``"earth"``. ``center="@399"`` identifies Earth, and ``center="@301"``
 identifies the Moon. The query uses geometric (uncorrected) vectors, suitable
 for representing the target's state rather than an apparent observation.
+An Earth-centered vector with ``refplane="earth"`` is tagged Earth/GCRF:
+its origin is Earth and its axes are ICRF-aligned.
 
 Orekit Frame Resolution and Transformation
 ------------------------------------------
 
-Tellurion resolves Earth-centered EME2000 and solar-system-barycentric ICRF
+Tellurion resolves Earth-centered GCRF and EME2000 and solar-system-barycentric ICRF
 descriptors to Orekit frames. A PVT with a supported descriptor can be
 transformed at its epoch, including the frame-origin translation and its
-contribution to velocity::
+contribution to velocity. In Orekit, GCRF and ICRF have aligned axes but
+different origins; GCRF and EME2000 share Earth's center but differ by a
+small frame-bias rotation. Merely changing a descriptor does not transform
+coordinates::
 
     earth_eme2000 = tell.FrameDescriptor("Earth", "EME2000")
     barycentric_icrf = tell.FrameDescriptor(

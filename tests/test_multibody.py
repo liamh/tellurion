@@ -35,6 +35,22 @@ def test_output_frame_tags(leo_eci):
     assert len(bary) == len(eci) == 6
 
 
+def test_gcrf_input_and_output(leo_eci):
+    frame = tell.FrameDescriptor("Earth", "GCRF")
+    initial = tell.transform_pvt(leo_eci, frame)
+    gen = tell.mbprepare(initial, 1 * u.hour)
+    out = tell.mbpropagate(gen, [30 * u.minute], include_init=True, frame=frame)
+    assert out.frame == frame
+    np.testing.assert_allclose(
+        out[0].position_vector.to_value(u.m),
+        initial.position_vector.to_value(u.m), rtol=0, atol=1e-2
+    )
+    np.testing.assert_allclose(
+        out[0].velocity_vector.to_value(u.m / u.s),
+        initial.velocity_vector.to_value(u.m / u.s), rtol=0, atol=1e-5
+    )
+
+
 def test_include_init_round_trips_to_input(leo_eci):
     gen = tell.mbprepare(leo_eci, 1 * u.hour)
     out = tell.mbpropagate(

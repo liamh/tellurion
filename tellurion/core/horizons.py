@@ -46,7 +46,7 @@ def _iso8601(time):
 def _frame(center, refplane):
     origin = _center_origin(center)
     if refplane == "earth":
-        axes = "ICRF/Earth-equator"
+        axes = "GCRF" if origin == "Earth" else "ICRF/Earth-equator"
         kind = FrameKind.INERTIAL
     elif refplane == "ecliptic":
         axes = "ICRF/Ecliptic"
@@ -87,7 +87,8 @@ def horizons(
     refplane : {"earth", "ecliptic", "body"}, optional
         Output reference plane. Earth and ecliptic planes are described as
         inertial ICRF-oriented axes; the body-equator-of-date option is
-        tagged custom because its axes vary with date. Defaults to "earth".
+        tagged custom because its axes vary with date. Earth-centered states
+        with the Earth plane are tagged GCRF. Defaults to "earth".
 
     Returns
     -------

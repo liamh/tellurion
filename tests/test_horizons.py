@@ -60,7 +60,7 @@ def test_horizons_returns_pvt_with_center_frame_and_tdb_epochs(monkeypatch):
     )
 
     assert pvt.frame == tell.FrameDescriptor(
-        "Earth", "ICRF/Earth-equator", kind=tell.FrameKind.INERTIAL
+        "Earth", "GCRF", kind=tell.FrameKind.INERTIAL
     )
     assert pvt.name == "ORION"
     assert pvt.time.scale == "tdb"
@@ -127,6 +127,30 @@ def test_center_aliases_are_preserved(center, origin, monkeypatch):
     assert pvt.frame.origin == origin
     assert pvt.frame.axes == "ICRF/Ecliptic"
     assert pvt.frame.kind is tell.FrameKind.INERTIAL
+
+
+@pytest.mark.parametrize(
+    ("center", "origin", "axes"),
+    [
+        ("399", "Earth", "GCRF"),
+        ("@301", "Moon", "ICRF/Earth-equator"),
+        ("@0", "Solar System Barycenter", "ICRF/Earth-equator"),
+        ("500@399", "500@399", "ICRF/Earth-equator"),
+    ],
+)
+def test_earth_plane_only_tags_geocentric_states_gcrf(
+    center, origin, axes, monkeypatch
+):
+    monkeypatch.setattr(
+        horizons_reader.importlib,
+        "import_module",
+        lambda name: SimpleNamespace(
+            Horizons=lambda **kwargs: SimpleNamespace(
+                vectors=lambda **options: _vectors()
+            )
+        ),
+    )
+    assert tell.horizons(center=center).frame == tell.FrameDescriptor(origin, axes)
 
 
 def test_body_plane_is_custom_and_invalid_plane_is_rejected(monkeypatch):
